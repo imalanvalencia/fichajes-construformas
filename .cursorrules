@@ -7,10 +7,39 @@
 - Output code in tiny, incremental blocks (max 30-40 lines per file). Do not write massive files Alan cannot easily review in LazyVim.
 
 ## Tech Stack & Architecture Context
-- Backend: Java 17/21, Spring Boot 3.x, Spring Data JPA, `es.construformas.api`.
+- Backend: Java 17/21, Spring Boot 4.x, Spring Data JPA, `es.construformas.api`.
 - Frontend: Angular (Latest stable), TailwindCSS, Angular Signals for state.
-- Project Rules: Read `AI-RULES.md` in the root for full business constraints.
+- Project Rules: Read `AI-rules.md` in the root for full business constraints.
 
-## Communication
-- Code artifacts, configuration keys, and properties ("config codes") MUST be in English.
-- Speak to Alan in Spanish. Be concise. Skip elementary programming explanations.
+
+## Config Codes & Naming Conventions
+- **Language Boundary:** All technical code, configuration keys (such as `application.yml` structures, environment variables, Spring profiles), database column names, and Git commit messages MUST be strictly in English.
+- **Spanish for Business Context:** Only logs meant for user viewing, error messages displayed on the UI, and conversation with Alan should be in Spanish.
+
+## Context Self-Maintenance
+- At the end of every successful code iteration or task verification, you MUST modify `.context/current_task.md` using your file-writing skills.
+- Mark the completed sub-step with `[x]` and update the "Blockers / Notes" section if applicable.
+- If you discover a new sub-step while coding, append it to the micro-steps list in that file before finishing the turn.
+
+## Git Workflow & Commit Guidelines (CRITICAL)
+
+1. **Commit Rules (Conventional Commits):**
+   - Write all commit messages strictly in **English** as part of the config codes policy.
+   - Use the **Conventional Commits** specification (`type(scope): description` in lowercase, imperative mood).
+   - Valid types: `feat`, `fix`, `docs`, `style`, `refactor`, `chore`.
+   - Example: `feat(backend): add usuario entity and roles enum`
+
+2. **Git Flow Guardrails & Terminal Isolation:**
+   - **NO AUTOMATIC EXECUTION:** You are STRICTLY FORBIDDEN from executing any Git commands (`git add`, `git commit`, `git checkout`, etc.) using your shell skills. 
+   - **Copy-Paste Output ONLY:** You must ONLY provide the exact commands wrapped inside a standard markdown code block so Alan can manually copy, paste, and execute them in his Arch terminal.
+
+3. **Branch & Safety Verification Workflow:**
+   - When Alan says *"confirmo los cambios"* (or similar validation), you MUST check or ask for the current branch first.
+   - **Branch Guardrail:** Remind Alan NOT to commit directly into `main` or `dev`. Ensure the commands guide him to work on descriptive feature branches (e.g., `feat/backend-db-setup` or `feat/v1-models`).
+   - **Atomic & Clean Check:** Before giving the commit message, prompt Alan to make sure he is only staging the specific files related to the active micro-step in `.context/current_task.md`.
+
+4. **Response Format:**
+   When changes are confirmed, output exactly this structure:
+   - 1. Verification alert (Check branch name).
+   - 2. Markdown code block with: `git status`, `git add [files]`, and `git commit -m "[message]"`.
+   - 3. Next micro-step reminder.
