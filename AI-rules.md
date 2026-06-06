@@ -10,7 +10,7 @@ This is an enterprise management and clocking web application (MVP v1) for a ren
 ## Architecture & Stack
 
 - **Monorepo Structure:** `/backend` (Spring Boot API), `/frontend` (Angular SPA).
-- **Backend:** Java 17/21, Spring Boot 3.x, Spring Data JPA, Spring Security + JWT, Lombok.
+- **Backend:** Java 17/21, Spring Boot 4.x, Spring Data JPA, Spring Security + JWT, Lombok.
   - **Base Package:** `es.construformas.api`
   - **Database:** MySQL/PostgreSQL (Managed via Hibernate `ddl-auto: update` in local development).
 - **Frontend:** Angular (Latest stable), Mobile-First SPA, TailwindCSS. Utilizing **Angular Signals** for reactive state management.
