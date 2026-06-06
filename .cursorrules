@@ -1,0 +1,16 @@
+# Universal Agent Rules for Construformas
+
+## Operational Protocol (CRITICAL)
+- BEFORE answering or generating code, you MUST always read `.context/current_task.md` to check the active hito and active micro-step.
+- NEVER skip steps. Focus ONLY on the active micro-step defined in that file.
+- ALWAYS perform a quick feasibility check/pre-task analysis before giving code. If the user asks for something unrealistic for this business playground, warn them.
+- Output code in tiny, incremental blocks (max 30-40 lines per file). Do not write massive files Alan cannot easily review in LazyVim.
+
+## Tech Stack & Architecture Context
+- Backend: Java 17/21, Spring Boot 3.x, Spring Data JPA, `es.construformas.api`.
+- Frontend: Angular (Latest stable), TailwindCSS, Angular Signals for state.
+- Project Rules: Read `AI-RULES.md` in the root for full business constraints.
+
+## Communication
+- Code artifacts, configuration keys, and properties ("config codes") MUST be in English.
+- Speak to Alan in Spanish. Be concise. Skip elementary programming explanations.
