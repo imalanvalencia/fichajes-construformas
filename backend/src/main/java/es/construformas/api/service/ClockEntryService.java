@@ -2,7 +2,9 @@ package es.construformas.api.service;
 
 import es.construformas.api.model.ClockEntry;
 import es.construformas.api.model.ClockType;
+import es.construformas.api.model.Project;
 import es.construformas.api.repository.ClockEntryRepository;
+import es.construformas.api.util.HaversineUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +22,22 @@ public class ClockEntryService {
     }
 
     public ClockEntry register(ClockEntry clockEntry) {
+        Project project = clockEntry.getProject();
+
+        boolean withinRadius = HaversineUtil.isWithinRadius(
+                clockEntry.getUserLatitude(),
+                clockEntry.getUserLongitude(),
+                project.getLatitude(),
+                project.getLongitude(),
+                project.getAllowedRadiusMeters());
+
+        if (!withinRadius) {
+            throw new IllegalArgumentException(
+                    "User is outside the allowed radius (" +
+                    project.getAllowedRadiusMeters() + "m) from project: " +
+                    project.getName());
+        }
+
         return clockEntryRepository.save(clockEntry);
     }
 

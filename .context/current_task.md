@@ -28,7 +28,7 @@ Setting up the basic Spring Boot V1 backend architecture and verifying local dat
 - [x] Add Spring Security with JWT authentication.
 - [x] Create auth endpoints: `/auth/login`, `/auth/register`.
 - [x] Add password hashing with BCrypt.
-- [ ] Add Haversine distance validation for clock-in location.
+- [x] Add Haversine distance validation for clock-in location.
 - [ ] Create missing clock-out flow (manual correction request).
 
 ## Blockers / Notes
