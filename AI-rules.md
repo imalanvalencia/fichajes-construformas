@@ -12,7 +12,7 @@ This is an enterprise management and clocking web application (MVP v1) for a ren
 - **Monorepo Structure:** `/backend` (Spring Boot API), `/frontend` (Angular SPA).
 - **Backend:** Java 17/21, Spring Boot 4.x, Spring Data JPA, Spring Security + JWT, Lombok.
   - **Base Package:** `es.construformas.api`
-  - **Database:** MySQL/PostgreSQL (Managed via Hibernate `ddl-auto: update` in local development).
+  - **Database:** MariaDB (Managed via Hibernate `ddl-auto: validate` and Flyway migrations).
 - **Frontend:** Angular (Latest stable), Mobile-First SPA, TailwindCSS. Utilizing **Angular Signals** for reactive state management.
 
 ## Core Business Logic & Constraints (V1 Scope)
