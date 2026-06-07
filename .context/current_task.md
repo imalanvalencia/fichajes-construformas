@@ -22,7 +22,7 @@ Setting up the basic Spring Boot V1 backend architecture and verifying local dat
 - [x] Translate all code to English (class names, fields, table names).
 - [x] Fix Flyway compatibility with MariaDB 12.x (added flyway-mysql).
 - [x] Drop old Spanish tables, re-run migrations with English names.
-- [ ] Add global exception handler (`@ControllerAdvice`).
+- [x] Add global exception handler (`@ControllerAdvice`).
 - [ ] Configure CORS for frontend integration.
 - [ ] Add Swagger/OpenAPI documentation.
 
