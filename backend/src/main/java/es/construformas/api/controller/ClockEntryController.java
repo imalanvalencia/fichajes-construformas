@@ -2,9 +2,11 @@ package es.construformas.api.controller;
 
 import es.construformas.api.dto.ClockEntryDTO;
 import es.construformas.api.model.ClockEntry;
+import es.construformas.api.model.ClockType;
 import es.construformas.api.model.User;
 import es.construformas.api.model.Project;
 import es.construformas.api.service.ClockEntryService;
+import es.construformas.api.service.ClockCorrectionService;
 import es.construformas.api.service.UserService;
 import es.construformas.api.service.ProjectService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -24,13 +26,16 @@ import java.util.List;
 public class ClockEntryController {
 
     private final ClockEntryService clockEntryService;
+    private final ClockCorrectionService correctionService;
     private final UserService userService;
     private final ProjectService projectService;
 
     public ClockEntryController(ClockEntryService clockEntryService,
+                                ClockCorrectionService correctionService,
                                 UserService userService,
                                 ProjectService projectService) {
         this.clockEntryService = clockEntryService;
+        this.correctionService = correctionService;
         this.userService = userService;
         this.projectService = projectService;
     }
@@ -46,6 +51,15 @@ public class ClockEntryController {
         if (user == null || project == null) {
             return ResponseEntity.badRequest()
                     .body("User or project not found");
+        }
+
+        if (dto.getClockType() == ClockType.ENTRY) {
+            boolean hasMissing = correctionService.hasMissingClockOut(
+                    dto.getUserId(), LocalDateTime.now().toLocalDate());
+            if (hasMissing) {
+                return ResponseEntity.badRequest()
+                        .body("You have a missing clock-out. Please submit a correction request first.");
+            }
         }
 
         ClockEntry clockEntry = ClockEntry.builder()
