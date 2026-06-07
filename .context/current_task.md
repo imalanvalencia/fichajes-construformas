@@ -31,9 +31,28 @@ Setting up the basic Spring Boot V1 backend architecture and verifying local dat
 - [x] Add Haversine distance validation for clock-in location.
 - [x] Create missing clock-out flow (manual correction request).
 
+## Frontend Architecture (Angular 22 + Tailwind v4)
+
+- [x] Initialize Angular 22 project with Tailwind CSS v4.
+- [x] Create folder structure: `core/` (services, interceptors, guards), `shared/`, `features/`.
+- [x] Create `AuthService` with Angular Signals for reactive state management.
+- [x] Create `AuthInterceptor` to attach Bearer token to HTTP requests.
+- [x] Create `AuthGuard` to protect dashboard routes.
+- [x] Create `LoginComponent` with template-driven form (email + password).
+- [x] Create `DashboardComponent` placeholder with user info and logout.
+- [x] Configure `app.config.ts` with `provideHttpClient(withInterceptors(...))`.
+- [x] Configure `app.routes.ts` with lazy-loaded routes and auth guard.
+- [ ] Apply DESIGN.md theme tokens to Tailwind (colors, typography, spacing).
+- [ ] Create shared UI components (buttons, inputs, cards) following Structural Precision.
+- [ ] Add proxy configuration for backend API calls in development.
+- [ ] Implement real-time clock-in/clock-out feature.
+- [ ] Add project selection and geolocation validation.
+
 ## Blockers / Notes
 
 - Flyway migrations created: V1 (usuarios), V2 (obras), V3 (fichajes).
 - `ddl-auto` changed from `update` to `validate` — Flyway now owns schema management.
 - `baseline-on-migrate: false` set because this is a fresh DB with no prior data.
 - Repositories go in `backend/src/main/java/es/construformas/api/repository/`.
+- Backend API: `POST /api/auth/login` with `{email, password}` → `{token, email, role}`.
+- Frontend uses lazy-loaded standalone components with Angular Signals.

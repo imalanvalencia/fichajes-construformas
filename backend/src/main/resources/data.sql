@@ -1,5 +1,5 @@
 -- Initial admin user for Construformas
--- Only runs if users table is empty
+-- Uses ON DUPLICATE KEY to update password if user already exists
 INSERT INTO users (name, email, password, role, active, created_at)
-SELECT 'Admin', 'admin@construformas.com', '$2a$10$dummy_hash_for_initial_setup', 'ADMIN', true, NOW()
-WHERE NOT EXISTS (SELECT 1 FROM users WHERE email = 'admin@construformas.com');
+VALUES ('Admin', 'admin@construformas.com', '$2a$10$7qw5O/RSzPmjih484PMelu9LEWUfo4nyh/c8Ksk/lRTsWXIXr0fDq', 'ADMIN', true, NOW())
+ON DUPLICATE KEY UPDATE password = '$2a$10$7qw5O/RSzPmjih484PMelu9LEWUfo4nyh/c8Ksk/lRTsWXIXr0fDq';
