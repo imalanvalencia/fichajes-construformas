@@ -23,3 +23,8 @@ spring:
     url: jdbc:mariadb://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:construformas_db}
     user: ${DB_USER:root}
     password: ${DB_PASSWORD:}
+
+  sql:
+    init:
+      mode: always
+      continue-on-error: false

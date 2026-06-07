@@ -13,9 +13,16 @@ Setting up the basic Spring Boot V1 backend architecture and verifying local dat
 - [x] Create `Usuario`, `Obra`, and `Fichaje` JPA entities.
 - [x] Run the application to verify Hibernate auto-creates the tables.
 - [x] Configure Flyway for database migrations (V1-V3 scripts, pom.xml dependencies, ddl-auto: validate).
+- [x] Create JPA Repositories: `UsuarioRepository`, `ObraRepository`, `FichajeRepository`.
+- [x] Add custom query methods (e.g., `findByEmail`, `findByObraId`).
+- [x] Create a `data.sql` seed script for initial admin user.
+- [ ] Create Service layer: `UsuarioService`, `ObraService`, `FichajeService`.
+- [ ] Add DTOs for request/response (e.g., `UsuarioDTO`, `FichajeDTO`).
+- [ ] Create REST controllers: `UsuarioController`, `ObraController`, `FichajeController`.
 
 ## Blockers / Notes
 
 - Flyway migrations created: V1 (usuarios), V2 (obras), V3 (fichajes).
 - `ddl-auto` changed from `update` to `validate` — Flyway now owns schema management.
 - `baseline-on-migrate: false` set because this is a fresh DB with no prior data.
+- Repositories go in `backend/src/main/java/es/construformas/api/repository/`.
