@@ -1,26 +1,26 @@
-<section class="min-h-screen flex items-center justify-center bg-[#E1E5E7]">
+<section class="min-h-screen flex items-center justify-center bg-cement-grey">
   <div class="w-full max-w-sm px-6">
-    <h1 class="font-[Poppins] text-[24px] font-bold text-[#1C1C1D] mb-8">CONSTRUFORMAS</h1>
+    <h1 class="font-poppins text-2xl font-bold text-nero mb-8">CONSTRUFORMAS</h1>
 
     <form (ngSubmit)="onSubmit()" class="flex flex-col gap-6">
       <div>
-        <label class="block font-[JetBrains_Mono] text-[12px] tracking-[0.05em] text-[#ACB4B6] mb-1">EMAIL</label>
+        <label class="block font-mono text-xs tracking-widest text-steel-grey mb-1">EMAIL</label>
         <input type="email" [(ngModel)]="email" name="email" required
-          class="w-full bg-transparent border-b border-[#1C1C1D] py-2 text-[16px] font-[Poppins] text-[#1C1C1D] outline-none focus:border-[#E22D2D]" />
+          class="w-full bg-transparent border-b border-nero py-2 text-base font-poppins text-nero outline-none focus:border-construction-red" />
       </div>
 
       <div>
-        <label class="block font-[JetBrains_Mono] text-[12px] tracking-[0.05em] text-[#ACB4B6] mb-1">PASSWORD</label>
+        <label class="block font-mono text-xs tracking-widest text-steel-grey mb-1">PASSWORD</label>
         <input type="password" [(ngModel)]="password" name="password" required
-          class="w-full bg-transparent border-b border-[#1C1C1D] py-2 text-[16px] font-[Poppins] text-[#1C1C1D] outline-none focus:border-[#E22D2D]" />
+          class="w-full bg-transparent border-b border-nero py-2 text-base font-poppins text-nero outline-none focus:border-construction-red" />
       </div>
 
       @if (errorMsg()) {
-        <p class="text-[14px] font-[Poppins] text-[#ba1a1a]">{{ errorMsg() }}</p>
+        <p class="text-sm font-poppins text-error">{{ errorMsg() }}</p>
       }
 
       <button type="submit" [disabled]="loading()"
-        class="mt-4 bg-[#1C1C1D] text-white font-[Poppins] font-bold py-3 px-6 text-[16px] hover:bg-[#E22D2D] disabled:opacity-50 cursor-pointer">
+        class="mt-4 bg-nero text-on-primary font-poppins font-bold py-3 px-6 text-base hover:bg-construction-red disabled:opacity-50 cursor-pointer">
         {{ loading() ? 'ENTRANDO...' : 'ACCEDER' }}
       </button>
     </form>

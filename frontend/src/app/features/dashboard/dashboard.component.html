@@ -1,20 +1,20 @@
-<section class="min-h-screen bg-[#E1E5E7] p-8">
-  <header class="flex items-center justify-between mb-12 border-b border-[#ACB4B6] pb-4">
-    <h1 class="font-[Poppins] text-[24px] font-bold text-[#1C1C1D]">CONSTRUFORMAS</h1>
+<section class="min-h-screen bg-cement-grey p-8">
+  <header class="flex items-center justify-between mb-12 border-b border-steel-grey pb-4">
+    <h1 class="font-poppins text-2xl font-bold text-nero">CONSTRUFORMAS</h1>
     <button (click)="logout()"
-      class="font-[JetBrains_Mono] text-[12px] tracking-[0.05em] text-[#ACB4B6] hover:text-[#E22D2D] cursor-pointer">
+      class="font-mono text-xs tracking-widest text-steel-grey hover:text-construction-red cursor-pointer">
       CERRAR SESION
     </button>
   </header>
 
   <div class="max-w-5xl">
-    <p class="font-[JetBrains_Mono] text-[12px] tracking-[0.05em] text-[#ACB4B6] mb-2">OPERATOR</p>
-    <h2 class="font-[Poppins] text-[40px] font-bold text-[#1C1C1D] leading-tight">
+    <p class="font-mono text-xs tracking-widest text-steel-grey mb-2">OPERATOR</p>
+    <h2 class="font-poppins text-4xl font-bold text-nero leading-tight">
       {{ user()?.email ?? '—' }}
     </h2>
-    <div class="mt-8 border border-[#ACB4B6] p-6">
-      <p class="font-[JetBrains_Mono] text-[12px] tracking-[0.05em] text-[#ACB4B6]">STATUS</p>
-      <p class="font-[Poppins] text-[18px] text-[#1C1C1D] mt-1">Sesion activa</p>
+    <div class="mt-8 border border-steel-grey p-6">
+      <p class="font-mono text-xs tracking-widest text-steel-grey">STATUS</p>
+      <p class="font-poppins text-lg text-nero mt-1">Sesion activa</p>
     </div>
   </div>
 </section>

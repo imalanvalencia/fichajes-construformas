@@ -1,3 +1,29 @@
-/* You can add global styles to this file, and also import other style files */
-
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;700;800&family=JetBrains+Mono:wght@500&display=swap');
 @import 'tailwindcss';
+
+@theme {
+  --color-nero: #1c1c1d;
+  --color-construction-red: #e22d2d;
+  --color-cement-grey: #e1e5e7;
+  --color-steel-grey: #acb4b6;
+  --color-surface: #f6fafc;
+  --color-surface-dim: #d6dbdd;
+  --color-surface-lowest: #ffffff;
+  --color-surface-low: #f0f4f6;
+  --color-surface-mid: #eaeef0;
+  --color-surface-high: #e5e9eb;
+  --color-surface-highest: #dfe3e5;
+  --color-on-surface: #181c1e;
+  --color-on-surface-variant: #46474a;
+  --color-primary: #010101;
+  --color-on-primary: #ffffff;
+  --color-secondary: #bb0416;
+  --color-error: #ba1a1a;
+  --color-outline: #76777b;
+  --color-outline-variant: #c6c6ca;
+  --font-poppins: 'Poppins', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+*, *::before, *::after { border-radius: 0 !important; box-shadow: none !important; }
+body { font-family: var(--font-poppins); color: var(--color-on-surface); background: var(--color-cement-grey); -webkit-font-smoothing: antialiased; }
