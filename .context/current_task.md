@@ -16,7 +16,7 @@ Setting up the basic Spring Boot V1 backend architecture and verifying local dat
 - [x] Create JPA Repositories: `UsuarioRepository`, `ObraRepository`, `FichajeRepository`.
 - [x] Add custom query methods (e.g., `findByEmail`, `findByObraId`).
 - [x] Create a `data.sql` seed script for initial admin user.
-- [ ] Create Service layer: `UsuarioService`, `ObraService`, `FichajeService`.
+- [x] Create Service layer: `UsuarioService`, `ObraService`, `FichajeService`.
 - [ ] Add DTOs for request/response (e.g., `UsuarioDTO`, `FichajeDTO`).
 - [ ] Create REST controllers: `UsuarioController`, `ObraController`, `FichajeController`.
 
