@@ -5,41 +5,38 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "usuarios")
+@Table(name = "projects")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Usuario {
+public class Project {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(nullable = false)
-    private String nombre;
-
-    @Column(nullable = false, unique = true)
-    private String email;
-
-    @Column(unique = true)
-    private String telefono;
-
-    @Column(unique = true)
-    private String nie;
+    private String name;
 
     @Column(nullable = false)
-    private String password;
+    private String address;
 
-    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private RolUsuario rol;
+    private Double latitude;
+
+    @Column(nullable = false)
+    private Double longitude;
 
     @Builder.Default
     @Column(nullable = false)
-    private boolean activo = true;
+    private Integer allowedRadiusMeters = 50;
 
     @Builder.Default
     @Column(nullable = false)
-    private LocalDateTime fechaCreacion = LocalDateTime.now();
+    private boolean active = true;
+
+    @Builder.Default
+    @Column(nullable = false)
+    private LocalDateTime createdAt = LocalDateTime.now();
 }

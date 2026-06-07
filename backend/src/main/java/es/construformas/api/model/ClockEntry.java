@@ -5,38 +5,38 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "fichajes")
+@Table(name = "clock_entries")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Fichaje {
+public class ClockEntry {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "usuario_id", nullable = false)
-    private Usuario usuario;
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "obra_id", nullable = false)
-    private Obra obra;
+    @JoinColumn(name = "project_id", nullable = false)
+    private Project project;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private TipoFichaje tipoFichaje;
+    private ClockType clockType;
 
     @Column(nullable = false)
-    private Double latitudUsuario;
+    private Double userLatitude;
 
     @Column(nullable = false)
-    private Double longitudUsuario;
+    private Double userLongitude;
 
     @Builder.Default
     @Column(nullable = false)
-    private LocalDateTime fechaHora = LocalDateTime.now();
+    private LocalDateTime timestamp = LocalDateTime.now();
 
-    private String observaciones;
+    private String notes;
 }

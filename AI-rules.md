@@ -17,7 +17,7 @@ This is an enterprise management and clocking web application (MVP v1) for a ren
 
 ## Core Business Logic & Constraints (V1 Scope)
 
-1. **Role Model:** Only two roles exist in V1: `ADMIN` and `OPERARIO`. (Keep architecture open for `ENCARGADO` in V2, but do not implement it yet).
+1. **Role Model:** Only two roles exist in V1: `ADMIN` and `OPERATOR`. (Keep architecture open for `SUPERVISOR` in V2, but do not implement it yet).
 2. **Clocking System (Fichajes):**
    - Workers scan a physical QR code at the construction site.
    - **Privacy Guardrail:** Continuous GPS tracking is strictly ILLEGAL. Location (`latitude`, `longitude`) MUST only be captured at the exact millisecond the user clocks in or out.
@@ -29,7 +29,7 @@ This is an enterprise management and clocking web application (MVP v1) for a ren
 
 ## Token-Saving & Efficiency Instructions for AI Agents
 
-- **Do not hallucinate features:** Stick strictly to the V1 scope (`ADMIN` and `OPERARIO`). Do not write code for task management, shifts, or automatic payroll calculations yet.
+- **Do not hallucinate features:** Stick strictly to the V1 scope (`ADMIN` and `OPERATOR`). Do not write code for task management, shifts, or automatic payroll calculations yet.
 - **Code Style:** Always provide clean, production-ready code. Use standard enterprise architecture patterns (Controller-Service-Repository for backend).
 - **Configuration:** Write all properties, configuration keys, and code-level setup in English.
 - **Be Concise:** Do not output long explanations of how Spring Boot or Angular works unless explicitly requested. Provide the code blocks directly with minimal, high-impact comments.

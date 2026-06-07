@@ -3,8 +3,8 @@ package es.construformas.api.model;
 /**
  * Clock-in event types for Construformas v1.
  */
-public enum TipoFichaje {
+public enum ClockType {
 
-    ENTRADA,
-    SALIDA
+    ENTRY,
+    EXIT
 }

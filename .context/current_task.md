@@ -13,12 +13,18 @@ Setting up the basic Spring Boot V1 backend architecture and verifying local dat
 - [x] Create `Usuario`, `Obra`, and `Fichaje` JPA entities.
 - [x] Run the application to verify Hibernate auto-creates the tables.
 - [x] Configure Flyway for database migrations (V1-V3 scripts, pom.xml dependencies, ddl-auto: validate).
-- [x] Create JPA Repositories: `UsuarioRepository`, `ObraRepository`, `FichajeRepository`.
-- [x] Add custom query methods (e.g., `findByEmail`, `findByObraId`).
+- [x] Create JPA Repositories: `UserRepository`, `ProjectRepository`, `ClockEntryRepository`.
+- [x] Add custom query methods (e.g., `findByEmail`, `findByProjectId`).
 - [x] Create a `data.sql` seed script for initial admin user.
-- [x] Create Service layer: `UsuarioService`, `ObraService`, `FichajeService`.
-- [ ] Add DTOs for request/response (e.g., `UsuarioDTO`, `FichajeDTO`).
-- [ ] Create REST controllers: `UsuarioController`, `ObraController`, `FichajeController`.
+- [x] Create Service layer: `UserService`, `ProjectService`, `ClockEntryService`.
+- [x] Add DTOs for request/response (e.g., `UserDTO`, `ClockEntryDTO`).
+- [x] Create REST controllers: `UserController`, `ProjectController`, `ClockEntryController`.
+- [x] Translate all code to English (class names, fields, table names).
+- [x] Fix Flyway compatibility with MariaDB 12.x (added flyway-mysql).
+- [x] Drop old Spanish tables, re-run migrations with English names.
+- [ ] Add global exception handler (`@ControllerAdvice`).
+- [ ] Configure CORS for frontend integration.
+- [ ] Add Swagger/OpenAPI documentation.
 
 ## Blockers / Notes
 
