@@ -1,5 +1,6 @@
 package es.construformas.api.config;
 
+import es.construformas.api.security.CustomUserDetailsService;
 import es.construformas.api.security.JwtAuthFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,9 +18,12 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
+    private final CustomUserDetailsService userDetailsService;
 
-    public SecurityConfig(JwtAuthFilter jwtAuthFilter) {
+    public SecurityConfig(JwtAuthFilter jwtAuthFilter,
+                          CustomUserDetailsService userDetailsService) {
         this.jwtAuthFilter = jwtAuthFilter;
+        this.userDetailsService = userDetailsService;
     }
 
     @Bean
@@ -28,9 +32,16 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .userDetailsService(userDetailsService)
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**").permitAll()
-                .requestMatchers("/swagger-ui/**", "/api-docs/**").permitAll()
+                .requestMatchers(
+                    "/swagger-ui.html",
+                    "/swagger-ui/**",
+                    "/v3/api-docs/**",
+                    "/api-docs/**",
+                    "/webjars/**"
+                ).permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/**").permitAll()
                 .anyRequest().authenticated()
             )
