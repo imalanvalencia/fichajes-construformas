@@ -2,12 +2,13 @@ package es.construformas.api.controller;
 
 import es.construformas.api.dto.ClockEntryDTO;
 import es.construformas.api.model.ClockEntry;
-import es.construformas.api.model.ClockType;
 import es.construformas.api.model.User;
 import es.construformas.api.model.Project;
 import es.construformas.api.service.ClockEntryService;
 import es.construformas.api.service.UserService;
 import es.construformas.api.service.ProjectService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -19,6 +20,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/clock-entries")
+@Tag(name = "Clock Entries", description = "Clock-in/out management endpoints")
 public class ClockEntryController {
 
     private final ClockEntryService clockEntryService;
@@ -34,6 +36,7 @@ public class ClockEntryController {
     }
 
     @PostMapping
+    @Operation(summary = "Register a new clock-in/out entry")
     public ResponseEntity<?> register(@Valid @RequestBody ClockEntryDTO dto) {
         User user = userService.findById(dto.getUserId())
                 .orElse(null);
@@ -59,6 +62,7 @@ public class ClockEntryController {
     }
 
     @GetMapping("/user/{userId}")
+    @Operation(summary = "Get clock entries for a user within date range")
     public ResponseEntity<List<ClockEntry>> findByUser(
             @PathVariable Long userId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
@@ -70,6 +74,7 @@ public class ClockEntryController {
     }
 
     @GetMapping("/project/{projectId}")
+    @Operation(summary = "Get clock entries for a project within date range")
     public ResponseEntity<List<ClockEntry>> findByProject(
             @PathVariable Long projectId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
@@ -81,6 +86,7 @@ public class ClockEntryController {
     }
 
     @DeleteMapping("/{id}")
+    @Operation(summary = "Delete a clock entry")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         try {
             clockEntryService.delete(id);

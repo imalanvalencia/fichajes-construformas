@@ -24,7 +24,10 @@ Setting up the basic Spring Boot V1 backend architecture and verifying local dat
 - [x] Drop old Spanish tables, re-run migrations with English names.
 - [x] Add global exception handler (`@ControllerAdvice`).
 - [x] Configure CORS for frontend integration.
-- [ ] Add Swagger/OpenAPI documentation.
+- [x] Add Swagger/OpenAPI documentation.
+- [ ] Add Spring Security with JWT authentication.
+- [ ] Create auth endpoints: `/auth/login`, `/auth/register`.
+- [ ] Add password hashing with BCrypt.
 
 ## Blockers / Notes
 

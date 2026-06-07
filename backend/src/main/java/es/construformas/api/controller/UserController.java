@@ -4,6 +4,10 @@ import es.construformas.api.dto.UserDTO;
 import es.construformas.api.model.UserRole;
 import es.construformas.api.model.User;
 import es.construformas.api.service.UserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,6 +17,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/users")
+@Tag(name = "Users", description = "User management endpoints")
 public class UserController {
 
     private final UserService userService;
@@ -22,6 +27,10 @@ public class UserController {
     }
 
     @PostMapping
+    @Operation(summary = "Create a new user", responses = {
+            @ApiResponse(responseCode = "201", description = "User created"),
+            @ApiResponse(responseCode = "400", description = "Validation error")
+    })
     public ResponseEntity<User> create(@Valid @RequestBody UserDTO dto) {
         User user = User.builder()
                 .name(dto.getName())
@@ -37,6 +46,7 @@ public class UserController {
     }
 
     @GetMapping("/{id}")
+    @Operation(summary = "Get user by ID")
     public ResponseEntity<User> findById(@PathVariable Long id) {
         return userService.findById(id)
                 .map(ResponseEntity::ok)
@@ -44,16 +54,19 @@ public class UserController {
     }
 
     @GetMapping
+    @Operation(summary = "Get all users")
     public ResponseEntity<List<User>> findAll() {
         return ResponseEntity.ok(userService.findAll());
     }
 
     @GetMapping("/role/{role}")
+    @Operation(summary = "Get users by role")
     public ResponseEntity<List<User>> findByRole(@PathVariable UserRole role) {
         return ResponseEntity.ok(userService.findByRole(role));
     }
 
     @PutMapping("/{id}")
+    @Operation(summary = "Update an existing user")
     public ResponseEntity<User> update(
             @PathVariable Long id, @Valid @RequestBody UserDTO dto) {
         try {
@@ -72,6 +85,7 @@ public class UserController {
     }
 
     @DeleteMapping("/{id}")
+    @Operation(summary = "Delete a user")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         try {
             userService.delete(id);

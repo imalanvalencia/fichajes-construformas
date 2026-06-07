@@ -3,6 +3,8 @@ package es.construformas.api.controller;
 import es.construformas.api.dto.ProjectDTO;
 import es.construformas.api.model.Project;
 import es.construformas.api.service.ProjectService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -12,6 +14,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/projects")
+@Tag(name = "Projects", description = "Construction project management endpoints")
 public class ProjectController {
 
     private final ProjectService projectService;
@@ -21,6 +24,7 @@ public class ProjectController {
     }
 
     @PostMapping
+    @Operation(summary = "Create a new project")
     public ResponseEntity<Project> create(@Valid @RequestBody ProjectDTO dto) {
         Project project = Project.builder()
                 .name(dto.getName())
@@ -38,6 +42,7 @@ public class ProjectController {
     }
 
     @GetMapping("/{id}")
+    @Operation(summary = "Get project by ID")
     public ResponseEntity<Project> findById(@PathVariable Long id) {
         return projectService.findById(id)
                 .map(ResponseEntity::ok)
@@ -45,17 +50,20 @@ public class ProjectController {
     }
 
     @GetMapping
+    @Operation(summary = "Get all projects")
     public ResponseEntity<List<Project>> findAll() {
         return ResponseEntity.ok(projectService.findAll());
     }
 
     @GetMapping("/search")
+    @Operation(summary = "Search projects by name")
     public ResponseEntity<List<Project>> findByName(
             @RequestParam String name) {
         return ResponseEntity.ok(projectService.findByName(name));
     }
 
     @PutMapping("/{id}")
+    @Operation(summary = "Update an existing project")
     public ResponseEntity<Project> update(
             @PathVariable Long id, @Valid @RequestBody ProjectDTO dto) {
         try {
@@ -75,6 +83,7 @@ public class ProjectController {
     }
 
     @DeleteMapping("/{id}")
+    @Operation(summary = "Delete a project")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         try {
             projectService.delete(id);
