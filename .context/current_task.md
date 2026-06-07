@@ -25,9 +25,11 @@ Setting up the basic Spring Boot V1 backend architecture and verifying local dat
 - [x] Add global exception handler (`@ControllerAdvice`).
 - [x] Configure CORS for frontend integration.
 - [x] Add Swagger/OpenAPI documentation.
-- [ ] Add Spring Security with JWT authentication.
-- [ ] Create auth endpoints: `/auth/login`, `/auth/register`.
-- [ ] Add password hashing with BCrypt.
+- [x] Add Spring Security with JWT authentication.
+- [x] Create auth endpoints: `/auth/login`, `/auth/register`.
+- [x] Add password hashing with BCrypt.
+- [ ] Add Haversine distance validation for clock-in location.
+- [ ] Create missing clock-out flow (manual correction request).
 
 ## Blockers / Notes
 

@@ -36,3 +36,7 @@ springdoc:
     path: /swagger-ui.html
     tags-sorter: alpha
     operations-sorter: alpha
+
+jwt:
+  secret: ${JWT_SECRET:construformas-secret-key-that-is-long-enough-for-hs256-algorithm}
+  expiration: 86400000
