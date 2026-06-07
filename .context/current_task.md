@@ -43,7 +43,7 @@ Setting up the basic Spring Boot V1 backend architecture and verifying local dat
 - [x] Configure `app.config.ts` with `provideHttpClient(withInterceptors(...))`.
 - [x] Configure `app.routes.ts` with lazy-loaded routes and auth guard.
 - [x] Apply DESIGN.md theme tokens to Tailwind (colors, typography, spacing).
-- [ ] Create shared UI components (buttons, inputs, cards) following Structural Precision.
+- [x] Create shared UI components (buttons, inputs, cards) following Structural Precision.
 - [x] Add proxy configuration for backend API calls in development.
 - [ ] Implement real-time clock-in/clock-out feature.
 - [ ] Add project selection and geolocation validation.
