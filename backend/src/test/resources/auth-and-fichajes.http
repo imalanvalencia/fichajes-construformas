@@ -1,0 +1,261 @@
+### ==========================================
+### Construformas API - Auth & Fichajes Tests
+### ==========================================
+### Ejecutar en orden. Separador ### = request independiente.
+### Variables capturadas se usan en requests posteriores.
+
+@baseUrl = http://localhost:8080
+
+### ==========================================
+### 1. AUTH - Register admin real
+### ==========================================
+### El seed tiene dummy hash, así que registramos uno nuevo.
+
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+  "name": "Admin Test",
+  "email": "admin.test@construformas.com",
+  "password": "admin123",
+  "phone": "600000000",
+  "nie": "12345678A"
+}
+
+> {% client.global.set("admin_token", response.body.token); %}
+
+### ==========================================
+### 2. AUTH - Register operator
+### ==========================================
+
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+  "name": "Operario Test",
+  "email": "operario@construformas.com",
+  "password": "operario123",
+  "phone": "611111111",
+  "nie": "87654321B"
+}
+
+> {% client.global.set("operator_token", response.body.token); %}
+
+### ==========================================
+### 3. AUTH - Login admin (verify)
+### ==========================================
+
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin.test@construformas.com",
+  "password": "admin123"
+}
+
+### ==========================================
+### 4. PROJECTS - Create project (Barcelona, 100m radius)
+### ==========================================
+
+POST {{baseUrl}}/api/projects
+Content-Type: application/json
+Authorization: Bearer {{admin_token}}
+
+{
+  "name": "Obra Barcelona",
+  "address": "Carrer de Test 123, Barcelona",
+  "latitude": 41.3874,
+  "longitude": 2.1686,
+  "allowedRadiusMeters": 100
+}
+
+> {% client.global.set("project_id", response.body.id); %}
+
+### ==========================================
+### 5. USERS - Get all users (verify registration)
+### ==========================================
+
+GET {{baseUrl}}/api/users
+Authorization: Bearer {{admin_token}}
+
+> {% client.global.set("user_id", response.body[1].id); %}
+
+### ==========================================
+### 6. CLOCK-IN - ENTRY (dentro del radio ~50m)
+### ==========================================
+
+POST {{baseUrl}}/api/clock-entries
+Content-Type: application/json
+Authorization: Bearer {{operator_token}}
+
+{
+  "userId": {{user_id}},
+  "projectId": {{project_id}},
+  "clockType": "ENTRY",
+  "latitude": 41.3875,
+  "longitude": 2.1687,
+  "notes": "Entrada a la obra"
+}
+
+> {% client.global.set("entry_id", response.body.id); %}
+
+### ==========================================
+### 7. CLOCK-IN - ENTRY fuera del radio (debe fallar 400)
+### ==========================================
+
+POST {{baseUrl}}/api/clock-entries
+Content-Type: application/json
+Authorization: Bearer {{operator_token}}
+
+{
+  "userId": {{user_id}},
+  "projectId": {{project_id}},
+  "clockType": "ENTRY",
+  "latitude": 41.4000,
+  "longitude": 2.2000,
+  "notes": "Fuera del radio - debe fallar"
+}
+
+### ==========================================
+### 8. CLOCK-OUT - EXIT (dentro del radio)
+### ==========================================
+
+POST {{baseUrl}}/api/clock-entries
+Content-Type: application/json
+Authorization: Bearer {{operator_token}}
+
+{
+  "userId": {{user_id}},
+  "projectId": {{project_id}},
+  "clockType": "EXIT",
+  "latitude": 41.3876,
+  "longitude": 2.1685,
+  "notes": "Salida de la obra"
+}
+
+### ==========================================
+### 9. GET - Fichajes por usuario
+### ==========================================
+
+GET {{baseUrl}}/api/clock-entries/user/{{user_id}}?start=2026-06-07T00:00:00&end=2026-06-07T23:59:59
+Authorization: Bearer {{admin_token}}
+
+### ==========================================
+### 10. GET - Fichajes por proyecto
+### ==========================================
+
+GET {{baseUrl}}/api/clock-entries/project/{{project_id}}?start=2026-06-07T00:00:00&end=2026-06-07T23:59:59
+Authorization: Bearer {{admin_token}}
+
+### ==========================================
+### 11. CORRECTIONS - Solicitar corrección
+### ==========================================
+
+POST {{baseUrl}}/api/clock-corrections
+Content-Type: application/json
+Authorization: Bearer {{operator_token}}
+
+{
+  "userId": {{user_id}},
+  "projectId": {{project_id}},
+  "correctionDate": "2026-06-06",
+  "originalClockType": "ENTRY",
+  "correctedTime": "2026-06-06T08:00:00",
+  "reason": "Olvidé fichar la entrada ayer"
+}
+
+> {% client.global.set("correction_id", response.body.id); %}
+
+### ==========================================
+### 12. CORRECTIONS - Ver pendientes (admin)
+### ==========================================
+
+GET {{baseUrl}}/api/clock-corrections/pending
+Authorization: Bearer {{admin_token}}
+
+### ==========================================
+### 13. CORRECTIONS - Ver por usuario
+### ==========================================
+
+GET {{baseUrl}}/api/clock-corrections/user/{{user_id}}
+Authorization: Bearer {{operator_token}}
+
+### ==========================================
+### 14. CORRECTIONS - Aprobar
+### ==========================================
+
+PUT {{baseUrl}}/api/clock-corrections/{{correction_id}}/approve?reviewerId=1
+Authorization: Bearer {{admin_token}}
+
+### ==========================================
+### 15. USERS - Get by ID
+### ==========================================
+
+GET {{baseUrl}}/api/users/{{user_id}}
+Authorization: Bearer {{admin_token}}
+
+### ==========================================
+### 16. USERS - Get by role
+### ==========================================
+
+GET {{baseUrl}}/api/users/role/OPERATOR
+Authorization: Bearer {{admin_token}}
+
+### ==========================================
+### 17. PROJECTS - Get all
+### ==========================================
+
+GET {{baseUrl}}/api/projects
+
+### ==========================================
+### 18. PROJECTS - Get by ID
+### ==========================================
+
+GET {{baseUrl}}/api/projects/{{project_id}}
+
+### ==========================================
+### 19. PROJECTS - Search by name
+### ==========================================
+
+GET {{baseUrl}}/api/projects/search?name=Barcelona
+
+### ==========================================
+### 20. AUTH - Login wrong password (401)
+### ==========================================
+
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin.test@construformas.com",
+  "password": "wrong_password"
+}
+
+### ==========================================
+### 21. CLOCK-IN - Sin token (403)
+### ==========================================
+
+POST {{baseUrl}}/api/clock-entries
+Content-Type: application/json
+
+{
+  "userId": 1,
+  "projectId": 1,
+  "clockType": "ENTRY",
+  "latitude": 41.3875,
+  "longitude": 2.1687
+}
+
+### ==========================================
+### 22. DELETE - Borrar usuario
+### ==========================================
+
+DELETE {{baseUrl}}/api/users/{{user_id}}
+Authorization: Bearer {{admin_token}}
+
+### ==========================================
+### 23. DELETE - Borrar proyecto
+### ==========================================
+
+DELETE {{baseUrl}}/api/projects/{{project_id}}
+Authorization: Bearer {{admin_token}}
