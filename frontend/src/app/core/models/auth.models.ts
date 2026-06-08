@@ -11,7 +11,13 @@ export interface AuthResponse {
 }
 
 export interface User {
+  id: number;
   userId: number;
+  name: string;
   email: string;
-  role: string;
+  phone?: string;
+  nie?: string;
+  role: 'ADMIN' | 'OPERATOR';
+  active: boolean;
+  createdAt?: string;
 }

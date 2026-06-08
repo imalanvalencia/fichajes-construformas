@@ -1,0 +1,4 @@
+Panel de administración — Gestionar usuarios y obras (CRUD)
+Solicitud de corrección — Formulario para reportar fichajes olvidados
+Página de perfil — Datos del trabajador, cambio de contraseña
+Reportes/Exportación — Descargar fichajes en CSV/PDF

@@ -16,7 +16,14 @@ export class AuthService {
   login(req: LoginRequest): Observable<AuthResponse> {
     return this.http.post<AuthResponse>('/api/auth/login', req)
       .pipe(tap(res => {
-        this.userSignal.set({ userId: res.userId, email: res.email, role: res.role });
+        this.userSignal.set({
+          id: res.userId,
+          userId: res.userId,
+          name: '',
+          email: res.email,
+          role: res.role as 'ADMIN' | 'OPERATOR',
+          active: true,
+        });
         localStorage.setItem(STORAGE_KEY, JSON.stringify(res));
       }));
   }
@@ -40,6 +47,13 @@ export class AuthService {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
     const res = JSON.parse(raw) as AuthResponse;
-    return { userId: res.userId, email: res.email, role: res.role };
+    return {
+      id: res.userId,
+      userId: res.userId,
+      name: '',
+      email: res.email,
+      role: res.role as 'ADMIN' | 'OPERATOR',
+      active: true,
+    };
   }
 }

@@ -1,6 +1,14 @@
 <section class="min-h-screen bg-cement-grey p-8">
   <header class="flex items-center justify-between mb-12 border-b border-steel-grey pb-4">
-    <h1 class="font-poppins text-2xl font-bold text-nero">CONSTRUFORMAS</h1>
+    <div class="flex items-center gap-8">
+      <h1 class="font-poppins text-2xl font-bold text-nero">CONSTRUFORMAS</h1>
+      @if (user()?.role === 'ADMIN') {
+        <a routerLink="/admin"
+          class="font-mono text-xs tracking-widest text-construction-red hover:text-nero">
+          ADMIN
+        </a>
+      }
+    </div>
     <button (click)="logout()"
       class="font-mono text-xs tracking-widest text-steel-grey hover:text-construction-red cursor-pointer">
       CERRAR SESION
