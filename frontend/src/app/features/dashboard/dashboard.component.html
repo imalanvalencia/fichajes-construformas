@@ -17,7 +17,9 @@
 
   <div class="max-w-5xl">
     <div class="mb-8">
-      <p class="font-mono text-xs tracking-widest text-steel-grey mb-2">OPERATOR</p>
+      <p class="font-mono text-xs tracking-widest text-steel-grey mb-2">
+        {{ user()?.role === 'ADMIN' ? 'ADMINISTRADOR' : 'OPERADOR' }}
+      </p>
       <h2 class="font-poppins text-4xl font-bold text-nero leading-tight">
         {{ user()?.email ?? '—' }}
       </h2>
@@ -31,7 +33,10 @@
         </div>
         <app-clock-entry />
       </div>
-      <app-clock-history />
+      <div class="space-y-8">
+        <app-clock-history />
+        <app-correction-form />
+      </div>
     </div>
   </div>
 </section>

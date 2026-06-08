@@ -7,37 +7,69 @@
 -- Admin users
 INSERT INTO users (name, email, password, role, active, created_at)
 VALUES ('Alan Admin', 'alan@construformas.com', '$2a$10$7qw5O/RSzPmjih484PMelu9LEWUfo4nyh/c8Ksk/lRTsWXIXr0fDq', 'ADMIN', true, NOW())
-ON DUPLICATE KEY UPDATE name = VALUES(name);
+ON DUPLICATE KEY UPDATE
+  name = VALUES(name),
+  password = VALUES(password),
+  role = 'ADMIN',
+  active = true;
 
 INSERT INTO users (name, email, password, role, active, created_at)
 VALUES ('Maria Admin', 'maria@construformas.com', '$2a$10$7qw5O/RSzPmjih484PMelu9LEWUfo4nyh/c8Ksk/lRTsWXIXr0fDq', 'ADMIN', true, NOW())
-ON DUPLICATE KEY UPDATE name = VALUES(name);
+ON DUPLICATE KEY UPDATE
+  name = VALUES(name),
+  password = VALUES(password),
+  role = 'ADMIN',
+  active = true;
 
 -- Operator users
 INSERT INTO users (name, email, password, role, active, created_at)
 VALUES ('Juan Perez', 'juan@construformas.com', '$2a$10$7qw5O/RSzPmjih484PMelu9LEWUfo4nyh/c8Ksk/lRTsWXIXr0fDq', 'OPERATOR', true, NOW())
-ON DUPLICATE KEY UPDATE name = VALUES(name);
+ON DUPLICATE KEY UPDATE
+  name = VALUES(name),
+  password = VALUES(password),
+  role = 'OPERATOR',
+  active = true;
 
 INSERT INTO users (name, email, password, role, active, created_at)
 VALUES ('Carlos Rodriguez', 'carlos@construformas.com', '$2a$10$7qw5O/RSzPmjih484PMelu9LEWUfo4nyh/c8Ksk/lRTsWXIXr0fDq', 'OPERATOR', true, NOW())
-ON DUPLICATE KEY UPDATE name = VALUES(name);
+ON DUPLICATE KEY UPDATE
+  name = VALUES(name),
+  password = VALUES(password),
+  role = 'OPERATOR',
+  active = true;
 
 INSERT INTO users (name, email, password, role, active, created_at)
 VALUES ('Ana Garcia', 'ana@construformas.com', '$2a$10$7qw5O/RSzPmjih484PMelu9LEWUfo4nyh/c8Ksk/lRTsWXIXr0fDq', 'OPERATOR', true, NOW())
-ON DUPLICATE KEY UPDATE name = VALUES(name);
+ON DUPLICATE KEY UPDATE
+  name = VALUES(name),
+  password = VALUES(password),
+  role = 'OPERATOR',
+  active = true;
 
 INSERT INTO users (name, email, password, role, active, created_at)
 VALUES ('Pedro Martinez', 'pedro@construformas.com', '$2a$10$7qw5O/RSzPmjih484PMelu9LEWUfo4nyh/c8Ksk/lRTsWXIXr0fDq', 'OPERATOR', true, NOW())
-ON DUPLICATE KEY UPDATE name = VALUES(name);
+ON DUPLICATE KEY UPDATE
+  name = VALUES(name),
+  password = VALUES(password),
+  role = 'OPERATOR',
+  active = true;
 
 INSERT INTO users (name, email, password, role, active, created_at)
 VALUES ('Laura Sanchez', 'laura@construformas.com', '$2a$10$7qw5O/RSzPmjih484PMelu9LEWUfo4nyh/c8Ksk/lRTsWXIXr0fDq', 'OPERATOR', true, NOW())
-ON DUPLICATE KEY UPDATE name = VALUES(name);
+ON DUPLICATE KEY UPDATE
+  name = VALUES(name),
+  password = VALUES(password),
+  role = 'OPERATOR',
+  active = true;
 
 -- Inactive user (for testing deactivation)
 INSERT INTO users (name, email, password, role, active, created_at)
 VALUES ('Roberto Inactivo', 'roberto@construformas.com', '$2a$10$7qw5O/RSzPmjih484PMelu9LEWUfo4nyh/c8Ksk/lRTsWXIXr0fDq', 'OPERATOR', false, NOW())
-ON DUPLICATE KEY UPDATE name = VALUES(name), active = false;
+ON DUPLICATE KEY UPDATE
+  name = VALUES(name),
+  password = VALUES(password),
+  role = 'OPERATOR',
+  active = false;
 
 -- ============================================
 -- TEST PROJECTS (Madrid area coordinates)

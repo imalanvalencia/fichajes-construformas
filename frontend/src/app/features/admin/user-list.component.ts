@@ -1,6 +1,7 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { AdminService, User } from '../../core/services/admin.service';
+import { AdminService } from '../../core/services/admin.service';
+import { User } from '../../core/models/auth.models';
 
 @Component({
   selector: 'app-user-list',

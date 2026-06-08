@@ -47,6 +47,12 @@ export const routes: Routes = [
           import('./features/admin/project-form.component')
             .then(m => m.ProjectFormComponent),
       },
+      {
+        path: 'corrections',
+        loadComponent: () =>
+          import('./features/admin/correction-list.component')
+            .then(m => m.CorrectionListComponent),
+      },
       { path: '', redirectTo: 'users', pathMatch: 'full' },
     ],
   },

@@ -1,11 +1,11 @@
 import { Component, inject } from '@angular/core';
-import { Router, RouterOutlet } from '@angular/router';
+import { Router, RouterOutlet, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 
 @Component({
   selector: 'app-admin-layout',
   standalone: true,
-  imports: [RouterOutlet],
+  imports: [RouterOutlet, RouterLink],
   template: `
     <section class="min-h-screen bg-cement-grey p-8">
       <header class="flex items-center justify-between mb-12 border-b border-steel-grey pb-4">
@@ -21,6 +21,10 @@ import { AuthService } from '../../core/services/auth.service';
           <a routerLink="/admin/projects"
             class="font-mono text-xs tracking-widest text-steel-grey hover:text-nero">
             OBRAS
+          </a>
+          <a routerLink="/admin/corrections"
+            class="font-mono text-xs tracking-widest text-steel-grey hover:text-nero">
+            CORRECCIONES
           </a>
           <a routerLink="/dashboard"
             class="font-mono text-xs tracking-widest text-steel-grey hover:text-nero">

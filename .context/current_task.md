@@ -47,6 +47,12 @@ Implement core clock-in/out features for construction workers.
 - [x] User management (list, create, edit, deactivate)
 - [x] Project management (list, create, edit)
 
+### Correction Requests
+- [x] CorrectionRequestService (HTTP client)
+- [x] CorrectionFormComponent (request correction)
+- [x] CorrectionListComponent (pending corrections for admin)
+- [x] Integrate in dashboard and admin panel
+
 ## Blockers / Notes
 
 - Flyway migrations created: V1 (usuarios), V2 (obras), V3 (fichajes), V4 (clock_corrections).
