@@ -14,6 +14,10 @@
         class="font-mono text-xs tracking-widest text-steel-grey hover:text-nero cursor-pointer">
         {{ showProfile() ? 'VOLVER' : 'MI PERFIL' }}
       </button>
+      <button (click)="toggleReport()"
+        class="font-mono text-xs tracking-widest text-steel-grey hover:text-nero cursor-pointer">
+        {{ showReport() ? 'VOLVER' : 'REPORTES' }}
+      </button>
       <button (click)="logout()"
         class="font-mono text-xs tracking-widest text-steel-grey hover:text-construction-red cursor-pointer">
         CERRAR SESION
@@ -23,6 +27,10 @@
 
   @if (showProfile()) {
     <app-profile />
+  } @else if (showReport()) {
+    <div class="max-w-5xl">
+      <app-report />
+    </div>
   } @else {
     <div class="max-w-5xl">
       <div class="mb-8">

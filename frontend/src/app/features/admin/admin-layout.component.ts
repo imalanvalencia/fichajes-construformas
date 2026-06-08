@@ -26,6 +26,10 @@ import { AuthService } from '../../core/services/auth.service';
             class="font-mono text-xs tracking-widest text-steel-grey hover:text-nero">
             CORRECCIONES
           </a>
+          <a routerLink="/admin/reports"
+            class="font-mono text-xs tracking-widest text-steel-grey hover:text-nero">
+            REPORTES
+          </a>
           <a routerLink="/dashboard"
             class="font-mono text-xs tracking-widest text-steel-grey hover:text-nero">
             FICHAR
