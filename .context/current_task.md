@@ -50,7 +50,7 @@ Setting up the basic Spring Boot V1 backend architecture and verifying local dat
   - [x] Create clock.models.ts (Project, ClockEntryRequest, ClockEntry) and ClockEntryService.
   - [x] Create ClockEntryComponent with project selector, geolocation, and clock-in/out button.
 - [ ] Add project selection and geolocation validation.
-- [ ] Add clock entry history for current day.
+- [x] Add clock entry history for current day.
 
 ## Blockers / Notes
 

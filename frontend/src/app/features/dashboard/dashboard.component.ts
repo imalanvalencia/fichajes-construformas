@@ -2,11 +2,12 @@ import { Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { ClockEntryComponent } from './clock-entry.component';
+import { ClockHistoryComponent } from './clock-history.component';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [ClockEntryComponent],
+  imports: [ClockEntryComponent, ClockHistoryComponent],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.css',
 })
