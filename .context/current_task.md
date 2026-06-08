@@ -46,6 +46,9 @@ Setting up the basic Spring Boot V1 backend architecture and verifying local dat
 - [x] Create shared UI components (buttons, inputs, cards) following Structural Precision.
 - [x] Add proxy configuration for backend API calls in development.
 - [ ] Implement real-time clock-in/clock-out feature.
+  - [x] Add userId to AuthResponse (backend + frontend models + AuthService).
+  - [x] Create clock.models.ts (Project, ClockEntryRequest, ClockEntry) and ClockEntryService.
+  - [x] Create ClockEntryComponent with project selector, geolocation, and clock-in/out button.
 - [ ] Add project selection and geolocation validation.
 
 ## Blockers / Notes

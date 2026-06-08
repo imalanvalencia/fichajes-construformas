@@ -16,7 +16,7 @@ export class AuthService {
   login(req: LoginRequest): Observable<AuthResponse> {
     return this.http.post<AuthResponse>('/api/auth/login', req)
       .pipe(tap(res => {
-        this.userSignal.set({ email: res.email, role: res.role });
+        this.userSignal.set({ userId: res.userId, email: res.email, role: res.role });
         localStorage.setItem(STORAGE_KEY, JSON.stringify(res));
       }));
   }
@@ -31,10 +31,15 @@ export class AuthService {
     return raw ? (JSON.parse(raw) as AuthResponse).token : null;
   }
 
+  getUserId(): number | null {
+    const user = this.userSignal();
+    return user ? user.userId : null;
+  }
+
   private loadStored(): User | null {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
     const res = JSON.parse(raw) as AuthResponse;
-    return { email: res.email, role: res.role };
+    return { userId: res.userId, email: res.email, role: res.role };
   }
 }
