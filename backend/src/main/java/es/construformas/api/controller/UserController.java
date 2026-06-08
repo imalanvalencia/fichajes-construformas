@@ -1,6 +1,7 @@
 package es.construformas.api.controller;
 
 import es.construformas.api.dto.UserDTO;
+import es.construformas.api.dto.ChangePasswordRequest;
 import es.construformas.api.model.UserRole;
 import es.construformas.api.model.User;
 import es.construformas.api.service.UserService;
@@ -92,6 +93,19 @@ public class UserController {
             return ResponseEntity.noContent().build();
         } catch (IllegalArgumentException e) {
             return ResponseEntity.notFound().build();
+        }
+    }
+
+    @PutMapping("/{id}/change-password")
+    @Operation(summary = "Change user password")
+    public ResponseEntity<?> changePassword(
+            @PathVariable Long id,
+            @Valid @RequestBody ChangePasswordRequest request) {
+        try {
+            userService.changePassword(id, request.getCurrentPassword(), request.getNewPassword());
+            return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 }

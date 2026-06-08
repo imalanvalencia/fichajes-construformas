@@ -9,34 +9,44 @@
         </a>
       }
     </div>
-    <button (click)="logout()"
-      class="font-mono text-xs tracking-widest text-steel-grey hover:text-construction-red cursor-pointer">
-      CERRAR SESION
-    </button>
+    <nav class="flex items-center gap-6">
+      <button (click)="toggleProfile()"
+        class="font-mono text-xs tracking-widest text-steel-grey hover:text-nero cursor-pointer">
+        {{ showProfile() ? 'VOLVER' : 'MI PERFIL' }}
+      </button>
+      <button (click)="logout()"
+        class="font-mono text-xs tracking-widest text-steel-grey hover:text-construction-red cursor-pointer">
+        CERRAR SESION
+      </button>
+    </nav>
   </header>
 
-  <div class="max-w-5xl">
-    <div class="mb-8">
-      <p class="font-mono text-xs tracking-widest text-steel-grey mb-2">
-        {{ user()?.role === 'ADMIN' ? 'ADMINISTRADOR' : 'OPERADOR' }}
-      </p>
-      <h2 class="font-poppins text-4xl font-bold text-nero leading-tight">
-        {{ user()?.email ?? '—' }}
-      </h2>
-    </div>
+  @if (showProfile()) {
+    <app-profile />
+  } @else {
+    <div class="max-w-5xl">
+      <div class="mb-8">
+        <p class="font-mono text-xs tracking-widest text-steel-grey mb-2">
+          {{ user()?.role === 'ADMIN' ? 'ADMINISTRADOR' : 'OPERADOR' }}
+        </p>
+        <h2 class="font-poppins text-4xl font-bold text-nero leading-tight">
+          {{ user()?.email ?? '—' }}
+        </h2>
+      </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-      <div class="space-y-8">
-        <div class="border border-steel-grey p-6">
-          <p class="font-mono text-xs tracking-widest text-steel-grey">STATUS</p>
-          <p class="font-poppins text-lg text-nero mt-1">Sesion activa</p>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div class="space-y-8">
+          <div class="border border-steel-grey p-6">
+            <p class="font-mono text-xs tracking-widest text-steel-grey">STATUS</p>
+            <p class="font-poppins text-lg text-nero mt-1">Sesion activa</p>
+          </div>
+          <app-clock-entry />
         </div>
-        <app-clock-entry />
-      </div>
-      <div class="space-y-8">
-        <app-clock-history />
-        <app-correction-form />
+        <div class="space-y-8">
+          <app-clock-history />
+          <app-correction-form />
+        </div>
       </div>
     </div>
-  </div>
+  }
 </section>

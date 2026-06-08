@@ -53,6 +53,12 @@ Implement core clock-in/out features for construction workers.
 - [x] CorrectionListComponent (pending corrections for admin)
 - [x] Integrate in dashboard and admin panel
 
+### User Profile
+- [x] Add password change endpoint (backend)
+- [x] ProfileService (frontend)
+- [x] ProfileComponent (view/edit data + change password)
+- [x] Integrate in dashboard
+
 ## Blockers / Notes
 
 - Flyway migrations created: V1 (usuarios), V2 (obras), V3 (fichajes), V4 (clock_corrections).
