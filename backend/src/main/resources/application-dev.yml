@@ -1,0 +1,27 @@
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+  sql:
+    init:
+      mode: always
+      data-locations: classpath:data.sql,classpath:data-dev.sql
+
+  flyway:
+    enabled: false
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+jwt:
+  secret: dev-secret-key-for-testing-only-12345678901234567890
+  expiration: 86400000
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true

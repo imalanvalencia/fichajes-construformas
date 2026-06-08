@@ -49,9 +49,16 @@ Implement core clock-in/out features for construction workers.
 
 ## Blockers / Notes
 
-- Flyway migrations created: V1 (usuarios), V2 (obras), V3 (fichajes).
+- Flyway migrations created: V1 (usuarios), V2 (obras), V3 (fichajes), V4 (clock_corrections).
 - `ddl-auto` changed from `update` to `validate` — Flyway now owns schema management.
 - `baseline-on-migrate: false` set because this is a fresh DB with no prior data.
 - Repositories go in `backend/src/main/java/es/construformas/api/repository/`.
-- Backend API: `POST /api/auth/login` with `{email, password}` → `{token, email, role}`.
+- Backend API: `POST /api/auth/login` with `{email, password}` → `{token, userId, email, role}`.
 - Frontend uses lazy-loaded standalone components with Angular Signals.
+
+### Dev Profile
+- Run with: `SPRING_PROFILES_ACTIVE=dev` or `--spring.profiles.active=dev`
+- Dev profile disables Flyway, uses `ddl-auto: update`
+- `data-dev.sql` seeds test users and projects
+- All test users password: `admin123`
+- Test emails: `alan@construformas.com` (ADMIN), `juan@construformas.com` (OPERATOR)
