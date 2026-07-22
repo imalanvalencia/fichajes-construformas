@@ -1,7 +1,8 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ReportService } from '../../core/services/report.service';
-import { AdminService, User } from '../../core/services/admin.service';
+import { AdminService } from '../../core/services/admin.service';
+import { User } from '../../core/models/auth.models';
 import { ClockEntry } from '../../core/models/clock.models';
 
 @Component({
