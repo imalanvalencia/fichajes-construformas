@@ -1,7 +1,9 @@
 package es.construformas.api.service;
 
+import es.construformas.api.model.Role;
 import es.construformas.api.model.User;
 import es.construformas.api.model.UserRole;
+import es.construformas.api.repository.RoleRepository;
 import es.construformas.api.repository.UserRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -12,6 +14,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -23,13 +26,18 @@ import static org.mockito.Mockito.when;
 class UserServiceTest {
 
     @Mock private UserRepository userRepository;
+    @Mock private RoleRepository roleRepository;
+    @Mock private org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
     @InjectMocks private UserService userService;
 
     @Test
     @DisplayName("Create user should save and return")
     void shouldCreateUser() {
-        User user = User.builder().name("Test").email("test@test.com").role(UserRole.OPERATOR).build();
+        Role opRole = Role.builder().id(2L).name("OPERATOR").build();
+        User user = User.builder().name("Test").email("test@test.com").password("raw")
+                .roles(Set.of(opRole)).build();
         when(userRepository.existsByEmail("test@test.com")).thenReturn(false);
+        when(passwordEncoder.encode("raw")).thenReturn("encoded");
         when(userRepository.save(any(User.class))).thenAnswer(i -> {
             User u = i.getArgument(0);
             u.setId(1L);
@@ -40,6 +48,25 @@ class UserServiceTest {
 
         assertThat(result.getId()).isEqualTo(1L);
         assertThat(result.getEmail()).isEqualTo("test@test.com");
+    }
+
+    @Test
+    @DisplayName("Create user without roles should default to OPERATOR")
+    void shouldDefaultToOperatorRole() {
+        Role opRole = Role.builder().id(2L).name("OPERATOR").build();
+        when(userRepository.existsByEmail("test@test.com")).thenReturn(false);
+        when(roleRepository.findByName("OPERATOR")).thenReturn(Optional.of(opRole));
+        when(passwordEncoder.encode("raw")).thenReturn("encoded");
+        when(userRepository.save(any(User.class))).thenAnswer(i -> {
+            User u = i.getArgument(0);
+            u.setId(1L);
+            return u;
+        });
+
+        User user = User.builder().name("Test").email("test@test.com").password("raw").build();
+        User result = userService.create(user);
+
+        assertThat(result.getRoles()).containsExactly(opRole);
     }
 
     @Test

@@ -52,27 +52,27 @@ Chain strategy: pending
 
 ## Phase 3: Authorization on All Controllers
 
-- [ ] 3.1 Add `@PreAuthorize("hasRole('ADMIN')")` on UserController: create, getAll, getByRole, update, delete. Add `@PreAuthorize("hasAnyRole('ADMIN','OPERATOR')")` on getById with OPERATOR-scoping check in service
-- [ ] 3.2 Add `@PreAuthorize("hasRole('ADMIN')")` on ProjectController: create, update, delete. Add `@PreAuthorize("hasAnyRole('ADMIN','OPERATOR')")` on getById, getAll, getByClient, getFinancialSummary
-- [ ] 3.3 Add `@PreAuthorize("hasRole('ADMIN')")` on BudgetController: create, createNewVersion, approve, addItem, addDiscount, delete. Add `@PreAuthorize("hasAnyRole('ADMIN','OPERATOR')")` on getById, getByProject, getItems
-- [ ] 3.4 Add `@PreAuthorize("hasRole('ADMIN')")` on ClientController: create, update, delete. Add `@PreAuthorize("hasAnyRole('ADMIN','OPERATOR')")` on getById, getAll, search
-- [ ] 3.5 Add `@PreAuthorize("hasRole('ADMIN')")` on SupplierController: create, update, delete. Add `@PreAuthorize("hasAnyRole('ADMIN','OPERATOR')")` on getById, getAll, search
-- [ ] 3.6 Add `@PreAuthorize("hasRole('ADMIN')")` on InvoiceController: create, update, delete, issue, createRectifying. Add `@PreAuthorize("hasAnyRole('ADMIN','OPERATOR')")` on getById, getByProject, addItem
-- [ ] 3.7 Add `@PreAuthorize("hasRole('ADMIN')")` on SupplierInvoiceController: create, updateStatus. Add `@PreAuthorize("hasAnyRole('ADMIN','OPERATOR')")` on getById, getBySupplier, getByProject
-- [ ] 3.8 Add `@PreAuthorize("hasAnyRole('ADMIN','OPERATOR')")` on PaymentController: create, getById, getByProject, getPaymentMethods
-- [ ] 3.9 Add `@PreAuthorize("hasAnyRole('ADMIN','OPERATOR')")` on ClockEntryController: register, getById, getByUser, delete. ByUser requires OPERATOR-scoping
-- [ ] 3.10 Add `@PreAuthorize("hasAnyRole('ADMIN','OPERATOR')")` on ClockCorrectionController: requestCorrection, getPending, getByUser. Add `@PreAuthorize("hasRole('ADMIN')")` on approve, reject
-- [ ] 3.11 RED: Write `AuthorizationIntegrationTest` — @WebMvcTest with mock ADMIN/OPERATOR users. Test: OPERATOR gets 403 on /api/users (getAll), 200 on /api/clock-entries/user/{ownId}. Unauthenticated GET returns 401. Test: `mvn test -Dtest=AuthorizationIntegrationTest`
+- [x] 3.1 Add `@PreAuthorize("hasRole('ADMIN')")` on UserController: create, getAll, getByRole, update, delete. Add `@PreAuthorize("hasAnyRole('ADMIN','OPERATOR')")` on getById with OPERATOR-scoping check in service
+- [x] 3.2 Add `@PreAuthorize("hasRole('ADMIN')")` on ProjectController: create, update, delete. Add `@PreAuthorize("hasAnyRole('ADMIN','OPERATOR')")` on getById, getAll, getByClient, getFinancialSummary
+- [x] 3.3 Add `@PreAuthorize("hasRole('ADMIN')")` on BudgetController: create, createNewVersion, approve, addItem, addDiscount, delete. Add `@PreAuthorize("hasAnyRole('ADMIN','OPERATOR')")` on getById, getByProject, getItems
+- [x] 3.4 Add `@PreAuthorize("hasRole('ADMIN')")` on ClientController: create, update, delete. Add `@PreAuthorize("hasAnyRole('ADMIN','OPERATOR')")` on getById, getAll, search
+- [x] 3.5 Add `@PreAuthorize("hasRole('ADMIN')")` on SupplierController: create, update, delete. Add `@PreAuthorize("hasAnyRole('ADMIN','OPERATOR')")` on getById, getAll, search
+- [x] 3.6 Add `@PreAuthorize("hasRole('ADMIN')")` on InvoiceController: create, update, delete, issue, createRectifying. Add `@PreAuthorize("hasAnyRole('ADMIN','OPERATOR')")` on getById, getByProject, addItem
+- [x] 3.7 Add `@PreAuthorize("hasRole('ADMIN')")` on SupplierInvoiceController: create, updateStatus. Add `@PreAuthorize("hasAnyRole('ADMIN','OPERATOR')")` on getById, getBySupplier, getByProject
+- [x] 3.8 Add `@PreAuthorize("hasAnyRole('ADMIN','OPERATOR')")` on PaymentController: create, getById, getByProject, getPaymentMethods
+- [x] 3.9 Add `@PreAuthorize("hasAnyRole('ADMIN','OPERATOR')")` on ClockEntryController: register, getById, getByUser, delete. ByUser requires OPERATOR-scoping
+- [x] 3.10 Add `@PreAuthorize("hasAnyRole('ADMIN','OPERATOR')")` on ClockCorrectionController: requestCorrection, getPending, getByUser. Add `@PreAuthorize("hasRole('ADMIN')")` on approve, reject
+- [x] 3.11 RED: Write `AuthorizationIntegrationTest` — @WebMvcTest with mock ADMIN/OPERATOR users. Test: OPERATOR gets 403 on /api/users (getAll), 200 on /api/clock-entries/user/{ownId}. Unauthenticated GET returns 401. Test: `mvn test -Dtest=AuthorizationIntegrationTest`
 
 ## Phase 4: User Management & Auth Endpoints
 
-- [ ] 4.1 Modify `AuthService.java` — Remove `register()` method. Update `login()` to: support email OR nie lookup, generate multi-role JWT, create + save RefreshToken, return AuthResponse with accessToken + refreshToken + roles. Add `refresh(String refreshToken)` method: find token, validate expiry/not revoked, revoke old, issue new pair. Add `logout(String refreshToken)` method: find and revoke token
-- [ ] 4.2 Modify `AuthController.java` — Remove `/register` endpoint. Add `@PostMapping("/refresh")` calling authService.refresh(). Add `@PostMapping("/logout")` calling authService.logout()
-- [ ] 4.3 Modify `UserService.java` — Add `assignRoles(Long userId, List<String> roleNames)` method. Add `getAvailability(Long userId)` and `updateAvailability(Long userId, UserAvailability availability, Long projectId)` methods. Add OPERATOR-scoping: `findByUserIdForOperator(Long userId, Long currentUserId)` — returns user only if ids match
-- [ ] 4.4 Modify `UserController.java` — Update create to accept roles field. Add `@GetMapping("/{id}/availability")` and `@PutMapping("/{id}/availability")` endpoints. Remove getByRole (deprecated after many-to-many migration)
-- [ ] 4.5 Update existing `UserControllerTest` — Adapt for removed register, new roles field, availability endpoints. Test: `mvn test -Dtest=UserControllerTest`
-- [ ] 4.6 Update existing `AuthControllerTest` — Remove register test, add refresh/logout tests, adapt for new AuthResponse shape. Test: `mvn test -Dtest=AuthControllerTest`
-- [ ] 4.7 RED: Write `AuthServiceTest` — Test login returns token pair, refresh rotates tokens, logout revokes token. Test: `mvn test -Dtest=AuthServiceTest`
+- [x] 4.1 Modify `AuthService.java` — Remove `register()` method. Update `login()` to: support email OR nie lookup, generate multi-role JWT, create + save RefreshToken, return AuthResponse with accessToken + refreshToken + roles. Add `refresh(String refreshToken)` method: find token, validate expiry/not revoked, revoke old, issue new pair. Add `logout(String refreshToken)` method: find and revoke token
+- [x] 4.2 Modify `AuthController.java` — Remove `/register` endpoint. Add `@PostMapping("/refresh")` calling authService.refresh(). Add `@PostMapping("/logout")` calling authService.logout()
+- [x] 4.3 Modify `UserService.java` — Add `assignRoles(Long userId, List<String> roleNames)` method. Add `getAvailability(Long userId)` and `updateAvailability(Long userId, UserAvailability availability, Long projectId)` methods. Add OPERATOR-scoping: `findByUserIdForOperator(Long userId, Long currentUserId)` — returns user only if ids match
+- [x] 4.4 Modify `UserController.java` — Update create to accept roles field. Add `@GetMapping("/{id}/availability")` and `@PutMapping("/{id}/availability")` endpoints. Remove getByRole (deprecated after many-to-many migration)
+- [x] 4.5 Update existing `UserControllerTest` — Adapt for removed register, new roles field, availability endpoints. Test: `mvn test -Dtest=UserControllerTest`
+- [x] 4.6 Update existing `AuthControllerTest` — Remove register test, add refresh/logout tests, adapt for new AuthResponse shape. Test: `mvn test -Dtest=AuthControllerTest`
+- [x] 4.7 RED: Write `AuthServiceTest` — Test login returns token pair, refresh rotates tokens, logout revokes token. Test: `mvn test -Dtest=AuthServiceTest`
 
 ## Phase 5: Refresh Token Cleanup
 

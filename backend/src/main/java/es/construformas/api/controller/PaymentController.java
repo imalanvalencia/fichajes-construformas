@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,21 +19,25 @@ public class PaymentController {
     private final PaymentService paymentService;
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Payment> create(@Valid @RequestBody Payment payment) {
         return ResponseEntity.status(HttpStatus.CREATED).body(paymentService.create(payment));
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','OPERATOR')")
     public ResponseEntity<Payment> getById(@PathVariable Long id) {
         return ResponseEntity.ok(paymentService.findById(id));
     }
 
     @GetMapping("/project/{projectId}")
+    @PreAuthorize("hasAnyRole('ADMIN','OPERATOR')")
     public ResponseEntity<List<Payment>> getByProject(@PathVariable Long projectId) {
         return ResponseEntity.ok(paymentService.findByProject(projectId));
     }
 
     @GetMapping("/methods")
+    @PreAuthorize("hasAnyRole('ADMIN','OPERATOR')")
     public ResponseEntity<List<PaymentMethod>> getPaymentMethods() {
         return ResponseEntity.ok(paymentService.getPaymentMethods());
     }

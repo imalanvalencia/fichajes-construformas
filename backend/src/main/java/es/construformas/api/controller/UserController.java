@@ -1,12 +1,14 @@
 package es.construformas.api.controller;
 
 import es.construformas.api.model.User;
+import es.construformas.api.model.UserAvailability;
 import es.construformas.api.model.UserRole;
 import es.construformas.api.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,33 +20,53 @@ public class UserController {
     private final UserService userService;
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<User> create(@Valid @RequestBody User user) {
         return ResponseEntity.status(HttpStatus.CREATED).body(userService.create(user));
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','OPERATOR')")
     public ResponseEntity<User> getById(@PathVariable Long id) {
         return ResponseEntity.ok(userService.findById(id));
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<User>> getAll() {
         return ResponseEntity.ok(userService.findAll());
     }
 
     @GetMapping("/role/{role}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<User>> getByRole(@PathVariable UserRole role) {
         return ResponseEntity.ok(userService.findByRole(role));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<User> update(@PathVariable Long id, @RequestBody User user) {
         return ResponseEntity.ok(userService.update(id, user));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         userService.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{id}/availability")
+    @PreAuthorize("hasAnyRole('ADMIN','OPERATOR')")
+    public ResponseEntity<UserAvailability> getAvailability(@PathVariable Long id) {
+        return ResponseEntity.ok(userService.getAvailability(id));
+    }
+
+    @PutMapping("/{id}/availability")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<UserAvailability> updateAvailability(
+            @PathVariable Long id,
+            @RequestBody UserAvailability availability) {
+        return ResponseEntity.ok(userService.updateAvailability(id, availability));
     }
 }

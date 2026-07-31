@@ -1,6 +1,7 @@
 package es.construformas.api.controller;
 
 import es.construformas.api.model.User;
+import es.construformas.api.model.UserAvailability;
 import es.construformas.api.model.UserRole;
 import es.construformas.api.service.UserService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -124,5 +125,28 @@ class UserControllerTest {
                 .andExpect(status().isNoContent());
 
         verify(userService).delete(1L);
+    }
+
+    @Test
+    @DisplayName("GET /api/users/{id}/availability should return availability")
+    void getAvailabilityShouldReturn() throws Exception {
+        when(userService.getAvailability(1L)).thenReturn(UserAvailability.ON_SITE);
+
+        mockMvc.perform(get("/api/users/1/availability"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").value("ON_SITE"));
+    }
+
+    @Test
+    @DisplayName("PUT /api/users/{id}/availability should update availability")
+    void updateAvailabilityShouldReturn() throws Exception {
+        when(userService.updateAvailability(eq(1L), any(UserAvailability.class)))
+                .thenReturn(UserAvailability.UNAVAILABLE);
+
+        mockMvc.perform(put("/api/users/1/availability")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("\"UNAVAILABLE\""))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").value("UNAVAILABLE"));
     }
 }
