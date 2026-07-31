@@ -11,7 +11,6 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 public class ClockEntry {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -38,5 +37,6 @@ public class ClockEntry {
     @Column(nullable = false)
     private LocalDateTime timestamp = LocalDateTime.now();
 
+    @Column(columnDefinition = "TEXT")
     private String notes;
 }

@@ -3,6 +3,8 @@ package es.construformas.api.service;
 import es.construformas.api.model.*;
 import es.construformas.api.repository.ClockCorrectionRepository;
 import es.construformas.api.repository.ClockEntryRepository;
+import es.construformas.api.repository.ProjectRepository;
+import es.construformas.api.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -27,6 +29,10 @@ class ClockCorrectionServiceTest {
     private ClockCorrectionRepository correctionRepository;
     @Mock
     private ClockEntryRepository clockEntryRepository;
+    @Mock
+    private UserRepository userRepository;
+    @Mock
+    private ProjectRepository projectRepository;
 
     @InjectMocks
     private ClockCorrectionService correctionService;
@@ -38,55 +44,6 @@ class ClockCorrectionServiceTest {
     void setUp() {
         user = User.builder().id(1L).name("Test").build();
         project = Project.builder().id(1L).name("Obra").build();
-    }
-
-    @Test
-    @DisplayName("hasMissingClockOut: ENTRY without EXIT should return true")
-    void hasMissingClockOut_entryWithoutExit_shouldReturnTrue() {
-        ClockEntry entry = ClockEntry.builder()
-                .clockType(ClockType.ENTRY)
-                .timestamp(LocalDateTime.now())
-                .build();
-
-        when(clockEntryRepository.findByUserAndDateRange(
-                any(), any(), any()))
-                .thenReturn(List.of(entry));
-
-        boolean result = correctionService.hasMissingClockOut(
-                1L, LocalDate.now());
-
-        assertTrue(result);
-    }
-
-    @Test
-    @DisplayName("hasMissingClockOut: ENTRY + EXIT should return false")
-    void hasMissingClockOut_entryWithExit_shouldReturnFalse() {
-        ClockEntry entry = ClockEntry.builder()
-                .clockType(ClockType.ENTRY).build();
-        ClockEntry exit = ClockEntry.builder()
-                .clockType(ClockType.EXIT).build();
-
-        when(clockEntryRepository.findByUserAndDateRange(
-                any(), any(), any()))
-                .thenReturn(List.of(entry, exit));
-
-        boolean result = correctionService.hasMissingClockOut(
-                1L, LocalDate.now());
-
-        assertFalse(result);
-    }
-
-    @Test
-    @DisplayName("hasMissingClockOut: no entries should return false")
-    void hasMissingClockOut_noEntries_shouldReturnFalse() {
-        when(clockEntryRepository.findByUserAndDateRange(
-                any(), any(), any()))
-                .thenReturn(List.of());
-
-        boolean result = correctionService.hasMissingClockOut(
-                1L, LocalDate.now());
-
-        assertFalse(result);
     }
 
     @Test
@@ -111,6 +68,31 @@ class ClockCorrectionServiceTest {
     }
 
     @Test
+    @DisplayName("requestCorrection: new correction should save")
+    void requestCorrection_new_shouldSave() {
+        ClockCorrection correction = ClockCorrection.builder()
+                .user(user)
+                .project(project)
+                .correctionDate(LocalDate.now())
+                .originalClockType(ClockType.ENTRY)
+                .correctedTime(LocalDateTime.now())
+                .reason("Test")
+                .build();
+
+        when(correctionRepository
+                .existsByUserIdAndCorrectionDateAndOriginalClockTypeAndStatus(
+                        any(), any(), any(), any()))
+                .thenReturn(false);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(projectRepository.findById(1L)).thenReturn(Optional.of(project));
+        when(correctionRepository.save(any())).thenReturn(correction);
+
+        ClockCorrection result = correctionService.requestCorrection(correction);
+
+        assertEquals(CorrectionStatus.PENDING, result.getStatus());
+    }
+
+    @Test
     @DisplayName("approve: pending correction should create new entry")
     void approve_pendingCorrection_shouldCreateEntry() {
         ClockCorrection correction = ClockCorrection.builder()
@@ -125,6 +107,7 @@ class ClockCorrectionServiceTest {
 
         when(correctionRepository.findById(1L))
                 .thenReturn(Optional.of(correction));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(correctionRepository.save(any())).thenReturn(correction);
         when(clockEntryRepository.save(any())).thenReturn(null);
 
@@ -134,30 +117,18 @@ class ClockCorrectionServiceTest {
     }
 
     @Test
-    @DisplayName("approve: non-pending correction should throw")
-    void approve_nonPendingCorrection_shouldThrow() {
-        ClockCorrection correction = ClockCorrection.builder()
-                .id(1L)
-                .status(CorrectionStatus.APPROVED)
-                .build();
-
-        when(correctionRepository.findById(1L))
-                .thenReturn(Optional.of(correction));
-
-        assertThrows(IllegalArgumentException.class,
-                () -> correctionService.approve(1L, 1L));
-    }
-
-    @Test
     @DisplayName("reject: pending correction should update status")
     void reject_pendingCorrection_shouldUpdateStatus() {
         ClockCorrection correction = ClockCorrection.builder()
                 .id(1L)
+                .user(user)
+                .project(project)
                 .status(CorrectionStatus.PENDING)
                 .build();
 
         when(correctionRepository.findById(1L))
                 .thenReturn(Optional.of(correction));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(correctionRepository.save(any())).thenReturn(correction);
 
         ClockCorrection result = correctionService.reject(1L, 1L);

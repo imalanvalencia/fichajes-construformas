@@ -1,16 +1,17 @@
 services:
   db:
-    image: mariadb:11
-    container_name: fichajes-db
+    image: postgres:16-alpine
+    container_name: erp-db
     environment:
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-construformas}
-      MYSQL_DATABASE: ${DB_NAME:-construformas_db}
+      POSTGRES_DB: ${DB_NAME:-construformas_db}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-construformas}
     ports:
-      - "${DB_PORT:-3306}:3306"
+      - "${DB_PORT:-5432}:5432"
     volumes:
-      - mariadb_data:/var/lib/mysql
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-construformas_db}"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -20,31 +21,31 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: fichajes-backend
+    container_name: erp-backend
     depends_on:
       db:
         condition: service_healthy
     environment:
       DB_HOST: db
-      DB_PORT: 3306
+      DB_PORT: 5432
       DB_NAME: ${DB_NAME:-construformas_db}
-      DB_USER: root
+      DB_USER: ${DB_USER:-postgres}
       DB_PASSWORD: ${DB_PASSWORD:-construformas}
       JWT_SECRET: ${JWT_SECRET:-construformas-secret-key-that-is-long-enough-for-hs256-algorithm}
     ports:
-      - "8080:8080"
+      - "${BACKEND_PORT:-8081}:8080"
     restart: unless-stopped
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: fichajes-frontend
+    container_name: erp-frontend
     depends_on:
       - backend
     ports:
-      - "80:80"
+      - "${FRONTEND_PORT:-4200}:80"
     restart: unless-stopped
 
 volumes:
-  mariadb_data:
+  postgres_data:

@@ -3,107 +3,93 @@ package es.construformas.api.service;
 import es.construformas.api.model.*;
 import es.construformas.api.repository.ClockCorrectionRepository;
 import es.construformas.api.repository.ClockEntryRepository;
+import es.construformas.api.repository.ProjectRepository;
+import es.construformas.api.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 @Transactional
 public class ClockCorrectionService {
 
-    private final ClockCorrectionRepository correctionRepository;
+    private final ClockCorrectionRepository clockCorrectionRepository;
     private final ClockEntryRepository clockEntryRepository;
-
-    public ClockCorrectionService(ClockCorrectionRepository correctionRepository,
-                                  ClockEntryRepository clockEntryRepository) {
-        this.correctionRepository = correctionRepository;
-        this.clockEntryRepository = clockEntryRepository;
-    }
+    private final UserRepository userRepository;
+    private final ProjectRepository projectRepository;
 
     public ClockCorrection requestCorrection(ClockCorrection correction) {
-        boolean hasPending = correctionRepository
-                .existsByUserIdAndCorrectionDateAndOriginalClockTypeAndStatus(
-                        correction.getUser().getId(),
-                        correction.getCorrectionDate(),
-                        correction.getOriginalClockType(),
-                        CorrectionStatus.PENDING);
-
-        if (hasPending) {
-            throw new IllegalArgumentException(
-                    "You already have a pending correction for this date and type");
+        boolean exists = clockCorrectionRepository.existsByUserIdAndCorrectionDateAndOriginalClockTypeAndStatus(
+                correction.getUser().getId(),
+                correction.getCorrectionDate(),
+                correction.getOriginalClockType(),
+                CorrectionStatus.PENDING
+        );
+        if (exists) {
+            throw new IllegalArgumentException("A pending correction already exists for this user, date, and type");
         }
 
-        return correctionRepository.save(correction);
+        User user = userRepository.findById(correction.getUser().getId())
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        Project project = projectRepository.findById(correction.getProject().getId())
+                .orElseThrow(() -> new IllegalArgumentException("Project not found"));
+
+        correction.setUser(user);
+        correction.setProject(project);
+        if (correction.getStatus() == null) correction.setStatus(CorrectionStatus.PENDING);
+
+        return clockCorrectionRepository.save(correction);
     }
 
-    @Transactional(readOnly = true)
-    public List<ClockCorrection> findByUser(Long userId) {
-        return correctionRepository.findByUserIdAndStatus(
-                userId, CorrectionStatus.PENDING);
+    public ClockCorrection findById(Long id) {
+        return clockCorrectionRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Clock correction not found"));
     }
 
-    @Transactional(readOnly = true)
     public List<ClockCorrection> findPending() {
-        return correctionRepository.findByStatus(CorrectionStatus.PENDING);
+        return clockCorrectionRepository.findByStatus(CorrectionStatus.PENDING);
+    }
+
+    public List<ClockCorrection> findByUser(Long userId) {
+        return clockCorrectionRepository.findByUserIdAndStatus(userId, CorrectionStatus.PENDING);
     }
 
     public ClockCorrection approve(Long correctionId, Long reviewerId) {
-        ClockCorrection correction = correctionRepository.findById(correctionId)
-                .orElseThrow(() ->
-                        new IllegalArgumentException("Correction not found: " + correctionId));
-
-        if (correction.getStatus() != CorrectionStatus.PENDING) {
-            throw new IllegalArgumentException("Correction is not pending");
-        }
+        ClockCorrection correction = findById(correctionId);
+        User reviewer = userRepository.findById(reviewerId)
+                .orElseThrow(() -> new IllegalArgumentException("Reviewer not found"));
 
         correction.setStatus(CorrectionStatus.APPROVED);
+        correction.setReviewedBy(reviewer);
         correction.setReviewedAt(LocalDateTime.now());
 
-        ClockEntry newEntry = ClockEntry.builder()
+        ClockEntry correctedEntry = ClockEntry.builder()
                 .user(correction.getUser())
                 .project(correction.getProject())
                 .clockType(correction.getOriginalClockType())
+                .userLatitude(0.0)
+                .userLongitude(0.0)
                 .timestamp(correction.getCorrectedTime())
-                .notes("Approved correction: " + correction.getReason())
+                .notes("Corrected via correction request #" + correction.getId())
                 .build();
+        clockEntryRepository.save(correctedEntry);
 
-        clockEntryRepository.save(newEntry);
-
-        return correctionRepository.save(correction);
+        return clockCorrectionRepository.save(correction);
     }
 
     public ClockCorrection reject(Long correctionId, Long reviewerId) {
-        ClockCorrection correction = correctionRepository.findById(correctionId)
-                .orElseThrow(() ->
-                        new IllegalArgumentException("Correction not found: " + correctionId));
-
-        if (correction.getStatus() != CorrectionStatus.PENDING) {
-            throw new IllegalArgumentException("Correction is not pending");
-        }
+        ClockCorrection correction = findById(correctionId);
+        User reviewer = userRepository.findById(reviewerId)
+                .orElseThrow(() -> new IllegalArgumentException("Reviewer not found"));
 
         correction.setStatus(CorrectionStatus.REJECTED);
+        correction.setReviewedBy(reviewer);
         correction.setReviewedAt(LocalDateTime.now());
 
-        return correctionRepository.save(correction);
-    }
-
-    @Transactional(readOnly = true)
-    public boolean hasMissingClockOut(Long userId, LocalDate date) {
-        List<ClockEntry> entries = clockEntryRepository
-                .findByUserAndDateRange(userId,
-                        date.atStartOfDay(),
-                        date.plusDays(1).atStartOfDay());
-
-        long entriesCount = entries.stream()
-                .filter(e -> e.getClockType() == ClockType.ENTRY)
-                .count();
-        long exitsCount = entries.stream()
-                .filter(e -> e.getClockType() == ClockType.EXIT)
-                .count();
-
-        return entriesCount > exitsCount;
+        return clockCorrectionRepository.save(correction);
     }
 }

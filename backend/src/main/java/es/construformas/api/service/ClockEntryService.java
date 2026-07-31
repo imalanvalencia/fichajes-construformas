@@ -1,10 +1,13 @@
 package es.construformas.api.service;
 
 import es.construformas.api.model.ClockEntry;
-import es.construformas.api.model.ClockType;
 import es.construformas.api.model.Project;
+import es.construformas.api.model.User;
 import es.construformas.api.repository.ClockEntryRepository;
+import es.construformas.api.repository.ProjectRepository;
+import es.construformas.api.repository.UserRepository;
 import es.construformas.api.util.HaversineUtil;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,56 +15,48 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 @Transactional
 public class ClockEntryService {
 
     private final ClockEntryRepository clockEntryRepository;
+    private final UserRepository userRepository;
+    private final ProjectRepository projectRepository;
 
-    public ClockEntryService(ClockEntryRepository clockEntryRepository) {
-        this.clockEntryRepository = clockEntryRepository;
-    }
+    public ClockEntry register(ClockEntry entry) {
+        User user = userRepository.findById(entry.getUser().getId())
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        Project project = projectRepository.findById(entry.getProject().getId())
+                .orElseThrow(() -> new IllegalArgumentException("Project not found"));
 
-    public ClockEntry register(ClockEntry clockEntry) {
-        Project project = clockEntry.getProject();
-
-        boolean withinRadius = HaversineUtil.isWithinRadius(
-                clockEntry.getUserLatitude(),
-                clockEntry.getUserLongitude(),
-                project.getLatitude(),
-                project.getLongitude(),
-                project.getAllowedRadiusMeters());
-
-        if (!withinRadius) {
-            throw new IllegalArgumentException(
-                    "User is outside the allowed radius (" +
-                    project.getAllowedRadiusMeters() + "m) from project: " +
-                    project.getName());
+        if (!HaversineUtil.isWithinRadius(
+                entry.getUserLatitude(), entry.getUserLongitude(),
+                project.getLatitude(), project.getLongitude(),
+                project.getAllowedRadiusMeters())) {
+            throw new IllegalArgumentException("User is outside the allowed radius for this project");
         }
 
-        return clockEntryRepository.save(clockEntry);
+        entry.setUser(user);
+        entry.setProject(project);
+        if (entry.getTimestamp() == null) entry.setTimestamp(LocalDateTime.now());
+
+        return clockEntryRepository.save(entry);
     }
 
-    @Transactional(readOnly = true)
-    public List<ClockEntry> findByUserAndDateRange(
-            Long userId, LocalDateTime start, LocalDateTime end) {
-        return clockEntryRepository.findByUserAndDateRange(userId, start, end);
+    public ClockEntry findById(Long id) {
+        return clockEntryRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Clock entry not found"));
     }
 
-    @Transactional(readOnly = true)
-    public List<ClockEntry> findByProjectAndDateRange(
-            Long projectId, LocalDateTime start, LocalDateTime end) {
-        return clockEntryRepository.findByProjectAndDateRange(projectId, start, end);
+    public List<ClockEntry> findByUserAndDateRange(Long userId, LocalDateTime start, LocalDateTime end) {
+        return clockEntryRepository.findByUserIdAndTimestampBetween(userId, start, end);
     }
 
-    @Transactional(readOnly = true)
-    public List<ClockEntry> findByType(Long userId, ClockType type) {
-        return clockEntryRepository.findByUserIdAndClockType(userId, type);
+    public List<ClockEntry> findByProjectAndDateRange(Long projectId, LocalDateTime start, LocalDateTime end) {
+        return clockEntryRepository.findByProjectIdAndTimestampBetween(projectId, start, end);
     }
 
     public void delete(Long id) {
-        if (!clockEntryRepository.existsById(id)) {
-            throw new IllegalArgumentException("Clock entry not found: " + id);
-        }
         clockEntryRepository.deleteById(id);
     }
 }

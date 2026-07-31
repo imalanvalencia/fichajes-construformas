@@ -3,72 +3,52 @@ package es.construformas.api.service;
 import es.construformas.api.model.User;
 import es.construformas.api.model.UserRole;
 import es.construformas.api.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 @Transactional
 public class UserService {
 
     private final UserRepository userRepository;
 
-    public UserService(UserRepository userRepository) {
-        this.userRepository = userRepository;
-    }
-
     public User create(User user) {
         if (userRepository.existsByEmail(user.getEmail())) {
-            throw new IllegalArgumentException("Email already registered: " + user.getEmail());
+            throw new IllegalArgumentException("Email already exists");
         }
         if (user.getNie() != null && userRepository.existsByNie(user.getNie())) {
-            throw new IllegalArgumentException("NIE already registered: " + user.getNie());
+            throw new IllegalArgumentException("NIE already exists");
         }
         return userRepository.save(user);
     }
 
-    @Transactional(readOnly = true)
-    public Optional<User> findById(Long id) {
-        return userRepository.findById(id);
+    public User findById(Long id) {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
     }
 
-    @Transactional(readOnly = true)
-    public Optional<User> findByEmail(String email) {
-        return userRepository.findByEmail(email);
-    }
-
-    @Transactional(readOnly = true)
     public List<User> findAll() {
         return userRepository.findAll();
     }
 
-    @Transactional(readOnly = true)
     public List<User> findByRole(UserRole role) {
         return userRepository.findByRole(role);
     }
 
-    public User update(Long id, User data) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("User not found: " + id));
-
-        user.setName(data.getName());
-        if (data.getPhone() != null) {
-            user.setPhone(data.getPhone());
-        }
-        if (data.getNie() != null) {
-            user.setNie(data.getNie());
-        }
-        user.setActive(data.isActive());
-
-        return userRepository.save(user);
+    public User update(Long id, User updated) {
+        User existing = findById(id);
+        if (updated.getName() != null) existing.setName(updated.getName());
+        if (updated.getPhone() != null) existing.setPhone(updated.getPhone());
+        if (updated.getNie() != null) existing.setNie(updated.getNie());
+        existing.setActive(updated.isActive());
+        return userRepository.save(existing);
     }
 
     public void delete(Long id) {
-        if (!userRepository.existsById(id)) {
-            throw new IllegalArgumentException("User not found: " + id);
-        }
         userRepository.deleteById(id);
     }
 }

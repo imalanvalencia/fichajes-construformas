@@ -1,37 +1,34 @@
 package es.construformas.api.dto;
 
-import es.construformas.api.model.ClockType;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class ClockCorrectionDTO {
-
     private Long id;
-
-    @NotNull(message = "User ID is required")
+    @NotNull
     private Long userId;
-
-    @NotNull(message = "Project ID is required")
+    private String userName;
+    @NotNull
     private Long projectId;
-
+    private String projectName;
     private Long originalEntryId;
-
-    @NotNull(message = "Correction date is required")
     private LocalDate correctionDate;
-
-    @NotNull(message = "Original clock type is required")
-    private ClockType originalClockType;
-
-    @NotNull(message = "Corrected time is required")
+    private String originalClockType;
     private LocalDateTime correctedTime;
-
-    @NotBlank(message = "Reason is required")
+    @NotBlank
     private String reason;
-
     private String status;
+    private Long reviewedBy;
+    private LocalDateTime reviewedAt;
 }

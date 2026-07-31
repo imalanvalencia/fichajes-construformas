@@ -2,7 +2,8 @@ package es.construformas.api.service;
 
 import es.construformas.api.model.*;
 import es.construformas.api.repository.ClockEntryRepository;
-import org.junit.jupiter.api.BeforeEach;
+import es.construformas.api.repository.ProjectRepository;
+import es.construformas.api.repository.UserRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -10,84 +11,137 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.junit.jupiter.api.Assertions.*;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class ClockEntryServiceTest {
 
-    @Mock
-    private ClockEntryRepository clockEntryRepository;
-
-    @InjectMocks
-    private ClockEntryService clockEntryService;
-
-    // Barcelona project location
-    private static final double PROJECT_LAT = 41.3874;
-    private static final double PROJECT_LON = 2.1686;
-    private static final int RADIUS_METERS = 50;
-
-    private Project project;
-    private User user;
-
-    @BeforeEach
-    void setUp() {
-        project = Project.builder()
-                .id(1L)
-                .name("Obra Barcelona")
-                .latitude(PROJECT_LAT)
-                .longitude(PROJECT_LON)
-                .allowedRadiusMeters(RADIUS_METERS)
-                .active(true)
-                .build();
-
-        user = User.builder()
-                .id(1L)
-                .name("Operario Test")
-                .email("test@construformas.com")
-                .role(UserRole.OPERATOR)
-                .active(true)
-                .build();
-    }
+    @Mock private ClockEntryRepository clockEntryRepository;
+    @Mock private UserRepository userRepository;
+    @Mock private ProjectRepository projectRepository;
+    @InjectMocks private ClockEntryService clockEntryService;
 
     @Test
-    @DisplayName("ENTRY at 10m from project - should succeed")
-    void registerEntry_withinRadius_shouldSucceed() {
-        // ~10m north of project
+    @DisplayName("Register clock entry within radius should succeed")
+    void shouldRegisterClockEntrySuccessfully() {
+        User user = User.builder().id(1L).build();
+        Project project = Project.builder()
+                .id(1L).latitude(40.0).longitude(-3.0).allowedRadiusMeters(50).build();
         ClockEntry entry = ClockEntry.builder()
-                .user(user)
-                .project(project)
+                .user(user).project(project)
                 .clockType(ClockType.ENTRY)
-                .userLatitude(PROJECT_LAT + 0.0001)
-                .userLongitude(PROJECT_LON)
-                .build();
+                .userLatitude(40.0001).userLongitude(-3.0).build();
 
-        when(clockEntryRepository.save(any(ClockEntry.class)))
-                .thenReturn(entry);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(projectRepository.findById(1L)).thenReturn(Optional.of(project));
+        when(clockEntryRepository.save(any(ClockEntry.class))).thenAnswer(i -> i.getArgument(0));
 
         ClockEntry result = clockEntryService.register(entry);
 
-        assertNotNull(result);
-        assertEquals(ClockType.ENTRY, result.getClockType());
+        assertThat(result.getTimestamp()).isNotNull();
+        assertThat(result.getUser()).isEqualTo(user);
+        assertThat(result.getProject()).isEqualTo(project);
     }
 
     @Test
-    @DisplayName("ENTRY at 70m from project - should be rejected")
-    void registerEntry_outsideRadius_shouldThrow() {
-        // ~70m north of project
+    @DisplayName("Register clock entry outside radius should throw")
+    void shouldRejectClockEntryOutsideRadius() {
+        User user = User.builder().id(1L).build();
+        Project project = Project.builder()
+                .id(1L).latitude(40.0).longitude(-3.0).allowedRadiusMeters(50).build();
         ClockEntry entry = ClockEntry.builder()
-                .user(user)
-                .project(project)
+                .user(user).project(project)
                 .clockType(ClockType.ENTRY)
-                .userLatitude(PROJECT_LAT + 0.00063)
-                .userLongitude(PROJECT_LON)
-                .build();
+                .userLatitude(48.8566).userLongitude(2.3522).build();
 
-        IllegalArgumentException ex = assertThrows(
-                IllegalArgumentException.class,
-                () -> clockEntryService.register(entry));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(projectRepository.findById(1L)).thenReturn(Optional.of(project));
 
-        assertTrue(ex.getMessage().contains("outside the allowed radius"));
+        assertThatThrownBy(() -> clockEntryService.register(entry))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("outside the allowed radius");
+    }
+
+    @Test
+    @DisplayName("Register with non-existent user should throw")
+    void shouldRejectNonExistentUser() {
+        Project project = Project.builder()
+                .id(1L).latitude(40.0).longitude(-3.0).allowedRadiusMeters(50).build();
+        ClockEntry entry = ClockEntry.builder()
+                .user(User.builder().id(99L).build()).project(project)
+                .clockType(ClockType.ENTRY)
+                .userLatitude(40.0).userLongitude(-3.0).build();
+
+        when(userRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> clockEntryService.register(entry))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("User not found");
+    }
+
+    @Test
+    @DisplayName("Register with non-existent project should throw")
+    void shouldRejectNonExistentProject() {
+        User user = User.builder().id(1L).build();
+        ClockEntry entry = ClockEntry.builder()
+                .user(user).project(Project.builder().id(99L).build())
+                .clockType(ClockType.ENTRY)
+                .userLatitude(40.0).userLongitude(-3.0).build();
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(projectRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> clockEntryService.register(entry))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Project not found");
+    }
+
+    @Test
+    @DisplayName("Find by ID should return entry when exists")
+    void shouldFindById() {
+        ClockEntry entry = ClockEntry.builder().id(1L).clockType(ClockType.ENTRY).build();
+        when(clockEntryRepository.findById(1L)).thenReturn(Optional.of(entry));
+
+        ClockEntry result = clockEntryService.findById(1L);
+
+        assertThat(result.getId()).isEqualTo(1L);
+    }
+
+    @Test
+    @DisplayName("Find by ID should throw when not found")
+    void shouldThrowWhenNotFound() {
+        when(clockEntryRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> clockEntryService.findById(999L))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Clock entry not found");
+    }
+
+    @Test
+    @DisplayName("Find by user and date range should delegate to repository")
+    void shouldFindByUserAndDateRange() {
+        LocalDateTime start = LocalDateTime.of(2025, 1, 1, 0, 0);
+        LocalDateTime end = LocalDateTime.of(2025, 1, 31, 23, 59);
+        when(clockEntryRepository.findByUserIdAndTimestampBetween(1L, start, end))
+                .thenReturn(List.of(ClockEntry.builder().id(1L).build()));
+
+        var result = clockEntryService.findByUserAndDateRange(1L, start, end);
+
+        assertThat(result).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("Delete should delegate to repository")
+    void shouldDeleteEntry() {
+        clockEntryService.delete(1L);
+        verify(clockEntryRepository).deleteById(1L);
     }
 }

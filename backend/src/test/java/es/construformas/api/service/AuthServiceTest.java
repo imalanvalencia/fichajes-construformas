@@ -5,8 +5,8 @@ import es.construformas.api.dto.LoginRequest;
 import es.construformas.api.dto.RegisterRequest;
 import es.construformas.api.model.User;
 import es.construformas.api.model.UserRole;
+import es.construformas.api.repository.UserRepository;
 import es.construformas.api.security.JwtUtil;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -17,104 +17,90 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
 
-    @Mock
-    private UserService userService;
-    @Mock
-    private JwtUtil jwtUtil;
-    @Mock
-    private PasswordEncoder passwordEncoder;
-
-    @InjectMocks
-    private AuthService authService;
-
-    private User user;
-
-    @BeforeEach
-    void setUp() {
-        user = User.builder()
-                .id(1L)
-                .name("Test User")
-                .email("test@construformas.com")
-                .password("$2a$10$hashed_password")
-                .role(UserRole.OPERATOR)
-                .active(true)
-                .build();
-    }
+    @Mock private UserRepository userRepository;
+    @Mock private PasswordEncoder passwordEncoder;
+    @Mock private JwtUtil jwtUtil;
+    @InjectMocks private AuthService authService;
 
     @Test
     @DisplayName("Login with correct credentials should return token")
-    void login_correctCredentials_shouldReturnToken() {
-        LoginRequest request = new LoginRequest();
-        request.setEmail("test@construformas.com");
-        request.setPassword("password123");
+    void shouldLoginSuccessfully() {
+        User user = User.builder()
+                .id(1L).email("test@test.com").password("hashed")
+                .role(UserRole.ADMIN).name("Test").active(true).build();
 
-        when(userService.findByEmail("test@construformas.com"))
-                .thenReturn(Optional.of(user));
-        when(passwordEncoder.matches("password123", "$2a$10$hashed_password"))
-                .thenReturn(true);
-        when(jwtUtil.generateToken("test@construformas.com", "OPERATOR"))
-                .thenReturn("fake-jwt-token");
+        when(userRepository.findByEmail("test@test.com")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("password", "hashed")).thenReturn(true);
+        when(jwtUtil.generateToken("test@test.com", "ADMIN")).thenReturn("token123");
 
-        AuthResponse response = authService.login(request);
+        AuthResponse response = authService.login(new LoginRequest("test@test.com", "password"));
 
-        assertEquals("fake-jwt-token", response.getToken());
-        assertEquals("test@construformas.com", response.getEmail());
-    }
-
-    @Test
-    @DisplayName("Login with wrong email should throw")
-    void login_wrongEmail_shouldThrow() {
-        LoginRequest request = new LoginRequest();
-        request.setEmail("wrong@construformas.com");
-        request.setPassword("password123");
-
-        when(userService.findByEmail("wrong@construformas.com"))
-                .thenReturn(Optional.empty());
-
-        assertThrows(IllegalArgumentException.class,
-                () -> authService.login(request));
+        assertThat(response.getToken()).isEqualTo("token123");
+        assertThat(response.getEmail()).isEqualTo("test@test.com");
+        assertThat(response.getRole()).isEqualTo("ADMIN");
+        assertThat(response.getName()).isEqualTo("Test");
     }
 
     @Test
     @DisplayName("Login with wrong password should throw")
-    void login_wrongPassword_shouldThrow() {
-        LoginRequest request = new LoginRequest();
-        request.setEmail("test@construformas.com");
-        request.setPassword("wrongpassword");
+    void shouldRejectInvalidPassword() {
+        User user = User.builder()
+                .id(1L).email("test@test.com").password("hashed")
+                .role(UserRole.ADMIN).active(true).build();
 
-        when(userService.findByEmail("test@construformas.com"))
-                .thenReturn(Optional.of(user));
-        when(passwordEncoder.matches("wrongpassword", "$2a$10$hashed_password"))
-                .thenReturn(false);
+        when(userRepository.findByEmail("test@test.com")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("wrong", "hashed")).thenReturn(false);
 
-        assertThrows(IllegalArgumentException.class,
-                () -> authService.login(request));
+        assertThatThrownBy(() -> authService.login(new LoginRequest("test@test.com", "wrong")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Invalid credentials");
     }
 
     @Test
-    @DisplayName("Register new user should return token")
-    void register_newUser_shouldReturnToken() {
-        RegisterRequest request = new RegisterRequest();
-        request.setName("New User");
-        request.setEmail("new@construformas.com");
-        request.setPassword("pass123");
+    @DisplayName("Login with non-existent email should throw")
+    void shouldRejectNonExistentUser() {
+        when(userRepository.findByEmail("nobody@test.com")).thenReturn(Optional.empty());
 
-        when(passwordEncoder.encode("pass123"))
-                .thenReturn("$2a$10$encoded_password");
-        when(userService.create(any(User.class))).thenReturn(user);
-        when(jwtUtil.generateToken("test@construformas.com", "OPERATOR"))
-                .thenReturn("new-jwt-token");
+        assertThatThrownBy(() -> authService.login(new LoginRequest("nobody@test.com", "pass")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Invalid credentials");
+    }
 
+    @Test
+    @DisplayName("Register new user should save and return token")
+    void shouldRegisterNewUser() {
+        when(userRepository.existsByEmail("new@test.com")).thenReturn(false);
+        when(passwordEncoder.encode("password")).thenReturn("hashed");
+        when(jwtUtil.generateToken("new@test.com", "OPERATOR")).thenReturn("token456");
+
+        RegisterRequest request = new RegisterRequest("New User", "new@test.com", "password", "123456789", "12345678A");
         AuthResponse response = authService.register(request);
 
-        assertEquals("new-jwt-token", response.getToken());
+        assertThat(response.getToken()).isEqualTo("token456");
+        assertThat(response.getRole()).isEqualTo("OPERATOR");
+        assertThat(response.getEmail()).isEqualTo("new@test.com");
+        verify(userRepository).save(any(User.class));
+    }
+
+    @Test
+    @DisplayName("Register with existing email should throw")
+    void shouldRejectDuplicateEmail() {
+        when(userRepository.existsByEmail("dup@test.com")).thenReturn(true);
+
+        RegisterRequest request = new RegisterRequest("Dup", "dup@test.com", "password", null, null);
+
+        assertThatThrownBy(() -> authService.register(request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Email already registered");
     }
 }

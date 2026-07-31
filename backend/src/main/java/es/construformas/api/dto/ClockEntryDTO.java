@@ -1,30 +1,28 @@
 package es.construformas.api.dto;
 
-import es.construformas.api.model.ClockType;
 import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class ClockEntryDTO {
-
     private Long id;
-
-    @NotNull(message = "User ID is required")
+    @NotNull
     private Long userId;
-
-    @NotNull(message = "Project ID is required")
+    private String userName;
+    @NotNull
     private Long projectId;
-
-    @NotNull(message = "Clock type is required")
-    private ClockType clockType;
-
-    private LocalDateTime timestamp;
-
+    private String projectName;
+    private String clockType;
     private Double latitude;
-
     private Double longitude;
-
+    private LocalDateTime timestamp;
     private String notes;
 }
