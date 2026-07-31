@@ -1,0 +1,50 @@
+services:
+  db:
+    image: mariadb:11
+    container_name: fichajes-db
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-construformas}
+      MYSQL_DATABASE: ${DB_NAME:-construformas_db}
+    ports:
+      - "${DB_PORT:-3306}:3306"
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: fichajes-backend
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: ${DB_NAME:-construformas_db}
+      DB_USER: root
+      DB_PASSWORD: ${DB_PASSWORD:-construformas}
+      JWT_SECRET: ${JWT_SECRET:-construformas-secret-key-that-is-long-enough-for-hs256-algorithm}
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: fichajes-frontend
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+    restart: unless-stopped
+
+volumes:
+  mariadb_data:
