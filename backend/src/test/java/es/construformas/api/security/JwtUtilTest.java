@@ -4,6 +4,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class JwtUtilTest {
@@ -20,23 +22,46 @@ class JwtUtilTest {
     @Test
     @DisplayName("Generate token and extract email")
     void generateToken_shouldExtractEmail() {
-        String token = jwtUtil.generateToken("test@construformas.com", "ADMIN");
+        String token = jwtUtil.generateToken("test@construformas.com", List.of("ADMIN"));
 
         assertEquals("test@construformas.com", jwtUtil.extractEmail(token));
     }
 
     @Test
-    @DisplayName("Generate token and extract role")
-    void generateToken_shouldExtractRole() {
-        String token = jwtUtil.generateToken("test@construformas.com", "OPERATOR");
+    @DisplayName("Generate multi-role token and extract roles list")
+    void generateToken_shouldExtractRolesList() {
+        String token = jwtUtil.generateToken("test@construformas.com", List.of("ADMIN", "OPERATOR"));
 
-        assertEquals("OPERATOR", jwtUtil.extractRole(token));
+        List<String> roles = jwtUtil.extractRoles(token);
+        assertEquals(2, roles.size());
+        assertTrue(roles.contains("ADMIN"));
+        assertTrue(roles.contains("OPERATOR"));
+    }
+
+    @Test
+    @DisplayName("Single-role token extractRoles returns list of one")
+    void generateToken_singleRole_shouldExtractRolesList() {
+        String token = jwtUtil.generateToken("test@construformas.com", List.of("OPERATOR"));
+
+        List<String> roles = jwtUtil.extractRoles(token);
+        assertEquals(1, roles.size());
+        assertEquals("OPERATOR", roles.get(0));
+    }
+
+    @Test
+    @DisplayName("Backward compat: extractRole returns first role")
+    void extractRole_shouldReturnFirstRole() {
+        String token = jwtUtil.generateToken("test@construformas.com", List.of("ADMIN"));
+
+        @SuppressWarnings("deprecation")
+        String role = jwtUtil.extractRole(token);
+        assertEquals("ADMIN", role);
     }
 
     @Test
     @DisplayName("Valid token should validate")
     void validateToken_validToken_shouldReturnTrue() {
-        String token = jwtUtil.generateToken("test@construformas.com", "ADMIN");
+        String token = jwtUtil.generateToken("test@construformas.com", List.of("ADMIN"));
 
         assertTrue(jwtUtil.validateToken(token));
     }
@@ -45,7 +70,7 @@ class JwtUtilTest {
     @DisplayName("Expired token should not validate")
     void validateToken_expiredToken_shouldReturnFalse() {
         JwtUtil shortLived = new JwtUtil(SECRET, -1); // already expired
-        String token = shortLived.generateToken("test@construformas.com", "ADMIN");
+        String token = shortLived.generateToken("test@construformas.com", List.of("ADMIN"));
 
         assertFalse(jwtUtil.validateToken(token));
     }

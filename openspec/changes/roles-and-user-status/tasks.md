@@ -40,15 +40,15 @@ Chain strategy: pending
 
 ## Phase 2: Security Layer
 
-- [ ] 2.1 Modify `JwtUtil.java` — Change `generateToken(String email, String role)` to `generateToken(String email, List<String> roles)`. Change claim from `role` (single string) to `roles` (List). Add `public List<String> extractRoles(String token)`. Keep old `extractRole` as @Deprecated for backward compat
-- [ ] 2.2 RED: Update `JwtUtilTest` — Add test: generateToken with roles ["ADMIN","OPERATOR"] → extractRoles returns list. Test: `mvn test -Dtest=JwtUtilTest`
-- [ ] 2.3 Modify `JwtAuthFilter.java` — Replace `jwtUtil.extractRole(token)` with `jwtUtil.extractRoles(token)`. Create `List<SimpleGrantedAuthority>` by mapping each role to `"ROLE_" + role`. Set as authorities in UsernamePasswordAuthenticationToken
-- [ ] 2.4 RED: Write `JwtAuthFilterTest` — Mock JwtUtil, verify filter creates multiple authorities from roles list, sets SecurityContext. Test: `mvn test -Dtest=JwtAuthFilterTest`
-- [ ] 2.5 Modify `CustomUserDetailsService.java` — Replace `user.getRole().name()` with `user.getRoles().stream().map(r -> new SimpleGrantedAuthority("ROLE_" + r.getName())).toList()`
-- [ ] 2.6 Modify `SecurityConfig.java` — Add `@EnableMethodSecurity` annotation. Remove `.requestMatchers(HttpMethod.GET, "/api/**").permitAll()`. Keep only `/api/auth/login` and `/api/auth/refresh` as permitAll (need to adjust `/api/auth/**` to explicit paths)
-- [ ] 2.7 Modify `LoginRequest.java` — Change `@Email @NotBlank` on email to `@NotBlank` (accept email OR nie). Add `private String nie` field
-- [ ] 2.8 Modify `AuthResponse.java` — Replace `private String token` with `private String accessToken`. Add `private String refreshToken`. Replace `private String role` with `private List<String> roles`
-- [ ] 2.9 Create `RefreshRequest.java` DTO — `@Data` with `@NotBlank private String refreshToken`
+- [x] 2.1 Modify `JwtUtil.java` — Change `generateToken(String email, String role)` to `generateToken(String email, List<String> roles)`. Change claim from `role` (single string) to `roles` (List). Add `public List<String> extractRoles(String token)`. Keep old `extractRole` as @Deprecated for backward compat
+- [x] 2.2 RED: Update `JwtUtilTest` — Add test: generateToken with roles ["ADMIN","OPERATOR"] → extractRoles returns list. Test: `mvn test -Dtest=JwtUtilTest`
+- [x] 2.3 Modify `JwtAuthFilter.java` — Replace `jwtUtil.extractRole(token)` with `jwtUtil.extractRoles(token)`. Create `List<SimpleGrantedAuthority>` by mapping each role to `"ROLE_" + role`. Set as authorities in UsernamePasswordAuthenticationToken
+- [x] 2.4 RED: Write `JwtAuthFilterTest` — Mock JwtUtil, verify filter creates multiple authorities from roles list, sets SecurityContext. Test: `mvn test -Dtest=JwtAuthFilterTest`
+- [x] 2.5 Modify `CustomUserDetailsService.java` — Replace `user.getRole().name()` with `user.getRoles().stream().map(r -> new SimpleGrantedAuthority("ROLE_" + r.getName())).toList()`
+- [x] 2.6 Modify `SecurityConfig.java` — Add `@EnableMethodSecurity` annotation. Remove `.requestMatchers(HttpMethod.GET, "/api/**").permitAll()`. Keep only `/api/auth/login` and `/api/auth/refresh` as permitAll (need to adjust `/api/auth/**` to explicit paths)
+- [x] 2.7 Modify `LoginRequest.java` — Change `@Email @NotBlank` on email to `@NotBlank` (accept email OR nie). Add `private String nie` field
+- [x] 2.8 Modify `AuthResponse.java` — Replace `private String token` with `private String accessToken`. Add `private String refreshToken`. Replace `private String role` with `private List<String> roles`
+- [x] 2.9 Create `RefreshRequest.java` DTO — `@Data` with `@NotBlank private String refreshToken`
 
 ## Phase 3: Authorization on All Controllers
 
