@@ -1,0 +1,21 @@
+package es.construformas.api.dto;
+
+import jakarta.validation.constraints.NotBlank;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.math.BigDecimal;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class BudgetDiscountDTO {
+    private Long id;
+    @NotBlank
+    private String description;
+    private BigDecimal amount;
+    private BigDecimal percentage;
+}
