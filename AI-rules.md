@@ -17,7 +17,14 @@ This is an enterprise management and clocking web application (MVP v1) for a ren
 
 ## Core Business Logic & Constraints (V1 Scope)
 
-1. **Role Model:** Only two roles exist in V1: `ADMIN` and `OPERATOR`. (Keep architecture open for `SUPERVISOR` in V2, but do not implement it yet).
+1. **Role Model:** Two roles exist in V1: `ADMIN` and `OPERATOR` (stored in `roles` table, many-to-many via `user_roles`). `MANAGER` kept as dead code for V2.
+2. **Security Model:**
+   - `@EnableMethodSecurity` with `@PreAuthorize` on all endpoints
+   - `ADMIN`: full access to all endpoints
+   - `OPERATOR`: access to own data only (clock entries, corrections, profile)
+   - Registration: ADMIN-only via `POST /api/users`
+   - JWT: carries roles array claim
+   - Refresh tokens: 14-day expiry, rotation on refresh
 2. **Clocking System (Fichajes):**
    - Workers scan a physical QR code at the construction site.
    - **Privacy Guardrail:** Continuous GPS tracking is strictly ILLEGAL. Location (`latitude`, `longitude`) MUST only be captured at the exact millisecond the user clocks in or out.

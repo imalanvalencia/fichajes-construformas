@@ -44,16 +44,7 @@ public class JwtUtil {
         if (rolesObj instanceof List<?> list) {
             return list.stream().map(Object::toString).toList();
         }
-        // Backward compat: old single-role token
-        String singleRole = extractClaims(token).get("role", String.class);
-        return singleRole != null ? List.of(singleRole) : List.of();
-    }
-
-    /** @deprecated Use {@link #extractRoles(String)} instead. */
-    @Deprecated
-    public String extractRole(String token) {
-        List<String> roles = extractRoles(token);
-        return roles.isEmpty() ? null : roles.get(0);
+        return List.of();
     }
 
     public boolean validateToken(String token) {

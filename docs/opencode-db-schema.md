@@ -11,6 +11,11 @@ erDiagram
     project ||--o{ project_directory : "has directories"
     project ||--o{ workspace : "has workspaces"
 
+    role ||--o{ user_role : "assigned to users"
+    user_role }o--|| user : "references"
+
+    refresh_token }o--|| user : "belongs to"
+
     session ||--o{ message : "has messages"
     session ||--o{ session_message : "has session messages"
     session ||--o{ session_input : "has inputs"
@@ -65,6 +70,28 @@ erDiagram
         text extra
         text project_id FK
         integer time_used
+    }
+
+    %% ── Roles & Auth ──
+
+    role {
+        bigint id PK
+        varchar name "UNIQUE"
+        varchar description
+    }
+
+    user_role {
+        bigint user_id FK
+        bigint role_id FK
+    }
+
+    refresh_token {
+        bigint id PK
+        bigint user_id FK
+        text token "UNIQUE"
+        timestamp expiry
+        boolean revoked
+        timestamp created_at
     }
 
     %% ── Session Layer ──
@@ -245,6 +272,14 @@ erDiagram
 | `project` | Registered projects (repos). `worktree` = root path. |
 | `project_directory` | Multiple directories per project (monorepo support). |
 | `workspace` | Workspaces within a project (branch-based isolation). |
+
+### Roles & Auth
+
+| Table | Purpose |
+|-------|---------|
+| `role` | Role definitions (ADMIN, OPERATOR). |
+| `user_role` | Many-to-many junction table for users and roles. |
+| `refresh_token` | Refresh tokens with 14-day expiry and rotation support. |
 
 ### Sessions
 

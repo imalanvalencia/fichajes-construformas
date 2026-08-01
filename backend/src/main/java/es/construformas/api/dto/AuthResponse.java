@@ -17,13 +17,4 @@ public class AuthResponse {
     private String email;
     private List<String> roles;
     private String name;
-
-    /** @deprecated Use {@link #AuthResponse(String, String, String, List, String)} instead. */
-    @Deprecated
-    public AuthResponse(String token, String email, String role, String name) {
-        this.accessToken = token;
-        this.email = email;
-        this.roles = role != null ? List.of(role) : List.of();
-        this.name = name;
-    }
 }

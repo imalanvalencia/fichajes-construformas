@@ -49,16 +49,6 @@ class JwtUtilTest {
     }
 
     @Test
-    @DisplayName("Backward compat: extractRole returns first role")
-    void extractRole_shouldReturnFirstRole() {
-        String token = jwtUtil.generateToken("test@construformas.com", List.of("ADMIN"));
-
-        @SuppressWarnings("deprecation")
-        String role = jwtUtil.extractRole(token);
-        assertEquals("ADMIN", role);
-    }
-
-    @Test
     @DisplayName("Valid token should validate")
     void validateToken_validToken_shouldReturnTrue() {
         String token = jwtUtil.generateToken("test@construformas.com", List.of("ADMIN"));
