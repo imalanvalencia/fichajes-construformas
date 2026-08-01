@@ -1,0 +1,51 @@
+# SDD Configuration — fichajes-construformas
+# ERP for Construformas (renovation company)
+
+context: |
+  Monorepo: Spring Boot 4.0.6 backend + Angular 22 frontend.
+  Backend: Java 17, PostgreSQL 16, Flyway, Spring Security + JWT, Lombok, Maven.
+  Frontend: Angular 22, TailwindCSS 4.x, TypeScript 6, Vitest, Prettier.
+  Domain: Employee clock-in/out (fichajes), projects, budgets, invoices, suppliers, clients.
+
+strict_tdd: true
+
+testing:
+  backend:
+    runner: maven
+    framework: junit5
+    integration: h2-in-memory
+    test_profile: application-test.yml
+    layers:
+      unit: true
+      integration: true
+      e2e: false
+  frontend:
+    runner: vitest
+    framework: angular-testing-library
+    layers:
+      unit: true
+      integration: false
+      e2e: false
+
+phases:
+  proposal:
+    required: true
+    artifacts: [intent.md, scope.md]
+  spec:
+    required: true
+    artifacts: [spec.md]
+  design:
+    required: true
+    artifacts: [design.md]
+  tasks:
+    required: true
+    artifacts: [tasks.md]
+  apply:
+    required: true
+    artifacts: [implementation-log.md]
+  verify:
+    required: true
+    artifacts: [verification-report.md]
+  archive:
+    required: true
+    artifacts: [archive-summary.md]
