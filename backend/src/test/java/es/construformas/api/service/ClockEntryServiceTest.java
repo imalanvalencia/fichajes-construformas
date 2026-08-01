@@ -4,12 +4,17 @@ import es.construformas.api.model.*;
 import es.construformas.api.repository.ClockEntryRepository;
 import es.construformas.api.repository.ProjectRepository;
 import es.construformas.api.repository.UserRepository;
+import es.construformas.api.security.SecurityUtils;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -28,6 +33,11 @@ class ClockEntryServiceTest {
     @Mock private UserRepository userRepository;
     @Mock private ProjectRepository projectRepository;
     @InjectMocks private ClockEntryService clockEntryService;
+
+    @AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
+    }
 
     @Test
     @DisplayName("Register clock entry within radius should succeed")
@@ -130,7 +140,7 @@ class ClockEntryServiceTest {
     void shouldFindByUserAndDateRange() {
         LocalDateTime start = LocalDateTime.of(2025, 1, 1, 0, 0);
         LocalDateTime end = LocalDateTime.of(2025, 1, 31, 23, 59);
-        when(clockEntryRepository.findByUserIdAndTimestampBetween(1L, start, end))
+        when(clockEntryRepository.findByUserIdAndTimestampBetweenOrderByTimestampDesc(1L, start, end))
                 .thenReturn(List.of(ClockEntry.builder().id(1L).build()));
 
         var result = clockEntryService.findByUserAndDateRange(1L, start, end);

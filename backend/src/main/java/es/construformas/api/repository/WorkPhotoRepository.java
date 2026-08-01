@@ -10,6 +10,7 @@ import java.util.List;
 @Repository
 public interface WorkPhotoRepository extends JpaRepository<WorkPhoto, Long> {
     List<WorkPhoto> findByProjectId(Long projectId);
+    List<WorkPhoto> findByUploadedByIdOrderByPhotoDateDesc(Long userId);
     List<WorkPhoto> findByProjectIdAndPhaseId(Long projectId, Long phaseId);
     List<WorkPhoto> findByPhotoDateBetween(LocalDate start, LocalDate end);
 }

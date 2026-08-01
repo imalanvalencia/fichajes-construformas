@@ -2,6 +2,7 @@ package es.construformas.api.service;
 
 import es.construformas.api.model.*;
 import es.construformas.api.repository.*;
+import es.construformas.api.security.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,15 +39,34 @@ public class PaymentService {
     }
 
     public Payment findById(Long id) {
-        return paymentRepository.findById(id)
+        Payment payment = paymentRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Payment not found"));
+        if (SecurityUtils.hasRole("OPERATOR")) {
+            User user = SecurityUtils.getCurrentUser(userRepository);
+            if (!projectRepository.existsByProjectIdAndOperatorId(payment.getProject().getId(), user.getId())) {
+                throw new IllegalArgumentException("Access denied: not assigned to this project");
+            }
+        }
+        return payment;
     }
 
     public List<Payment> findByProject(Long projectId) {
+        if (SecurityUtils.hasRole("OPERATOR")) {
+            User user = SecurityUtils.getCurrentUser(userRepository);
+            if (!projectRepository.existsByProjectIdAndOperatorId(projectId, user.getId())) {
+                throw new IllegalArgumentException("Access denied: not assigned to this project");
+            }
+        }
         return paymentRepository.findByProjectId(projectId);
     }
 
     public List<Payment> findByClient(Long clientId) {
+        if (SecurityUtils.hasRole("OPERATOR")) {
+            User user = SecurityUtils.getCurrentUser(userRepository);
+            List<Project> operatorProjects = projectRepository.findByOperatorId(user.getId());
+            List<Long> projectIds = operatorProjects.stream().map(Project::getId).toList();
+            return paymentRepository.findByProjectIdIn(projectIds);
+        }
         return paymentRepository.findByClientId(clientId);
     }
 

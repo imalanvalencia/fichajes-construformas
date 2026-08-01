@@ -3,6 +3,7 @@ package es.construformas.api.service;
 import es.construformas.api.dto.ProjectFinancialSummaryDTO;
 import es.construformas.api.model.*;
 import es.construformas.api.repository.*;
+import es.construformas.api.security.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +22,7 @@ public class ProjectService {
     private final InvoiceRepository invoiceRepository;
     private final PaymentRepository paymentRepository;
     private final ClientRepository clientRepository;
+    private final UserRepository userRepository;
 
     public Project create(Project project) {
         if (project.getClient() == null || project.getClient().getId() == null) {
@@ -34,19 +36,44 @@ public class ProjectService {
     }
 
     public Project findById(Long id) {
-        return projectRepository.findById(id)
+        Project project = projectRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Project not found"));
+        if (SecurityUtils.hasRole("OPERATOR")) {
+            User user = SecurityUtils.getCurrentUser(userRepository);
+            if (!project.getOperators().contains(user)) {
+                throw new IllegalArgumentException("Access denied: not assigned to this project");
+            }
+        }
+        return project;
     }
 
     public List<Project> findAll() {
+        if (SecurityUtils.hasRole("OPERATOR")) {
+            User user = SecurityUtils.getCurrentUser(userRepository);
+            return projectRepository.findByOperatorId(user.getId());
+        }
         return projectRepository.findAll();
     }
 
     public List<Project> findByClient(Long clientId) {
+        if (SecurityUtils.hasRole("OPERATOR")) {
+            User user = SecurityUtils.getCurrentUser(userRepository);
+            List<Project> operatorProjects = projectRepository.findByOperatorId(user.getId());
+            return operatorProjects.stream()
+                    .filter(p -> p.getClient() != null && p.getClient().getId().equals(clientId))
+                    .toList();
+        }
         return projectRepository.findByClientId(clientId);
     }
 
     public List<Project> findByStatus(ProjectStatus status) {
+        if (SecurityUtils.hasRole("OPERATOR")) {
+            User user = SecurityUtils.getCurrentUser(userRepository);
+            List<Project> operatorProjects = projectRepository.findByOperatorId(user.getId());
+            return operatorProjects.stream()
+                    .filter(p -> p.getStatus() == status)
+                    .toList();
+        }
         return projectRepository.findByStatus(status);
     }
 

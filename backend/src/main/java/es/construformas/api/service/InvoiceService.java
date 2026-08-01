@@ -2,6 +2,7 @@ package es.construformas.api.service;
 
 import es.construformas.api.model.*;
 import es.construformas.api.repository.*;
+import es.construformas.api.security.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,15 +45,34 @@ public class InvoiceService {
     }
 
     public Invoice findById(Long id) {
-        return invoiceRepository.findById(id)
+        Invoice invoice = invoiceRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Invoice not found"));
+        if (SecurityUtils.hasRole("OPERATOR")) {
+            User user = SecurityUtils.getCurrentUser(userRepository);
+            if (!projectRepository.existsByProjectIdAndOperatorId(invoice.getProject().getId(), user.getId())) {
+                throw new IllegalArgumentException("Access denied: not assigned to this project");
+            }
+        }
+        return invoice;
     }
 
     public List<Invoice> findByProject(Long projectId) {
+        if (SecurityUtils.hasRole("OPERATOR")) {
+            User user = SecurityUtils.getCurrentUser(userRepository);
+            if (!projectRepository.existsByProjectIdAndOperatorId(projectId, user.getId())) {
+                throw new IllegalArgumentException("Access denied: not assigned to this project");
+            }
+        }
         return invoiceRepository.findByProjectId(projectId);
     }
 
     public List<Invoice> findByClient(Long clientId) {
+        if (SecurityUtils.hasRole("OPERATOR")) {
+            User user = SecurityUtils.getCurrentUser(userRepository);
+            List<Project> operatorProjects = projectRepository.findByOperatorId(user.getId());
+            List<Long> projectIds = operatorProjects.stream().map(Project::getId).toList();
+            return invoiceRepository.findByProjectIdIn(projectIds);
+        }
         return invoiceRepository.findByClientId(clientId);
     }
 

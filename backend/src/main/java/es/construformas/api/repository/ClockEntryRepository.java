@@ -14,6 +14,8 @@ import java.util.List;
 @Repository
 public interface ClockEntryRepository extends JpaRepository<ClockEntry, Long> {
     List<ClockEntry> findByUserIdAndTimestampBetween(Long userId, LocalDateTime start, LocalDateTime end);
+    List<ClockEntry> findByUserIdOrderByTimestampDesc(Long userId);
+    List<ClockEntry> findByUserIdAndTimestampBetweenOrderByTimestampDesc(Long userId, LocalDateTime start, LocalDateTime end);
     List<ClockEntry> findByProjectIdAndTimestampBetween(Long projectId, LocalDateTime start, LocalDateTime end);
     List<ClockEntry> findByUserIdAndClockType(Long userId, ClockType clockType);
 

@@ -5,6 +5,7 @@ import es.construformas.api.repository.ClockCorrectionRepository;
 import es.construformas.api.repository.ClockEntryRepository;
 import es.construformas.api.repository.ProjectRepository;
 import es.construformas.api.repository.UserRepository;
+import es.construformas.api.security.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -50,11 +51,25 @@ public class ClockCorrectionService {
                 .orElseThrow(() -> new IllegalArgumentException("Clock correction not found"));
     }
 
+    public List<ClockCorrection> findAll() {
+        if (SecurityUtils.hasRole("OPERATOR")) {
+            User user = SecurityUtils.getCurrentUser(userRepository);
+            return clockCorrectionRepository.findByUserIdOrderByCreatedAtDesc(user.getId());
+        }
+        return clockCorrectionRepository.findAll();
+    }
+
     public List<ClockCorrection> findPending() {
         return clockCorrectionRepository.findByStatus(CorrectionStatus.PENDING);
     }
 
     public List<ClockCorrection> findByUser(Long userId) {
+        if (SecurityUtils.hasRole("OPERATOR")) {
+            User user = SecurityUtils.getCurrentUser(userRepository);
+            if (!user.getId().equals(userId)) {
+                throw new IllegalArgumentException("Access denied: cannot view other users' corrections");
+            }
+        }
         return clockCorrectionRepository.findByUserIdAndStatus(userId, CorrectionStatus.PENDING);
     }
 

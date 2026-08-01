@@ -10,5 +10,6 @@ import java.util.Optional;
 @Repository
 public interface WorkProgressRepository extends JpaRepository<WorkProgress, Long> {
     List<WorkProgress> findByProjectIdOrderByProgressDateDesc(Long projectId);
+    List<WorkProgress> findByReportedByIdOrderByProgressDateDesc(Long userId);
     Optional<WorkProgress> findTopByProjectIdOrderByProgressDateDesc(Long projectId);
 }

@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "projects")
@@ -52,6 +54,15 @@ public class Project {
     @Builder.Default
     @Column(nullable = false)
     private boolean active = true;
+
+    @ManyToMany
+    @JoinTable(
+        name = "project_operators",
+        joinColumns = @JoinColumn(name = "project_id"),
+        inverseJoinColumns = @JoinColumn(name = "user_id")
+    )
+    @Builder.Default
+    private Set<User> operators = new HashSet<>();
 
     @Builder.Default
     @Column(nullable = false)

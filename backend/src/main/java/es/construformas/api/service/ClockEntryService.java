@@ -6,6 +6,7 @@ import es.construformas.api.model.User;
 import es.construformas.api.repository.ClockEntryRepository;
 import es.construformas.api.repository.ProjectRepository;
 import es.construformas.api.repository.UserRepository;
+import es.construformas.api.security.SecurityUtils;
 import es.construformas.api.util.HaversineUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -48,11 +49,31 @@ public class ClockEntryService {
                 .orElseThrow(() -> new IllegalArgumentException("Clock entry not found"));
     }
 
+    public List<ClockEntry> findAll() {
+        if (SecurityUtils.hasRole("OPERATOR")) {
+            User user = SecurityUtils.getCurrentUser(userRepository);
+            return clockEntryRepository.findByUserIdOrderByTimestampDesc(user.getId());
+        }
+        return clockEntryRepository.findAll();
+    }
+
     public List<ClockEntry> findByUserAndDateRange(Long userId, LocalDateTime start, LocalDateTime end) {
-        return clockEntryRepository.findByUserIdAndTimestampBetween(userId, start, end);
+        if (SecurityUtils.hasRole("OPERATOR")) {
+            User user = SecurityUtils.getCurrentUser(userRepository);
+            if (!user.getId().equals(userId)) {
+                throw new IllegalArgumentException("Access denied: cannot view other users' entries");
+            }
+        }
+        return clockEntryRepository.findByUserIdAndTimestampBetweenOrderByTimestampDesc(userId, start, end);
     }
 
     public List<ClockEntry> findByProjectAndDateRange(Long projectId, LocalDateTime start, LocalDateTime end) {
+        if (SecurityUtils.hasRole("OPERATOR")) {
+            User user = SecurityUtils.getCurrentUser(userRepository);
+            if (!projectRepository.existsByProjectIdAndOperatorId(projectId, user.getId())) {
+                throw new IllegalArgumentException("Access denied: not assigned to this project");
+            }
+        }
         return clockEntryRepository.findByProjectIdAndTimestampBetween(projectId, start, end);
     }
 

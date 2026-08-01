@@ -15,6 +15,7 @@ import java.util.Optional;
 public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
     List<Invoice> findByProjectId(Long projectId);
     List<Invoice> findByClientId(Long clientId);
+    List<Invoice> findByProjectIdIn(List<Long> projectIds);
     List<Invoice> findByStatus(InvoiceStatus status);
     Optional<Invoice> findByInvoiceNumber(String invoiceNumber);
     boolean existsByProjectIdAndStatus(Long projectId, InvoiceStatus status);

@@ -6,6 +6,7 @@ import es.construformas.api.model.WorkProgress;
 import es.construformas.api.repository.ProjectRepository;
 import es.construformas.api.repository.UserRepository;
 import es.construformas.api.repository.WorkProgressRepository;
+import es.construformas.api.security.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,10 +34,30 @@ public class WorkProgressService {
     }
 
     public List<WorkProgress> findByProject(Long projectId) {
+        if (SecurityUtils.hasRole("OPERATOR")) {
+            User user = SecurityUtils.getCurrentUser(userRepository);
+            if (!projectRepository.existsByProjectIdAndOperatorId(projectId, user.getId())) {
+                throw new IllegalArgumentException("Access denied: not assigned to this project");
+            }
+        }
         return workProgressRepository.findByProjectIdOrderByProgressDateDesc(projectId);
     }
 
+    public List<WorkProgress> findAll() {
+        if (SecurityUtils.hasRole("OPERATOR")) {
+            User user = SecurityUtils.getCurrentUser(userRepository);
+            return workProgressRepository.findByReportedByIdOrderByProgressDateDesc(user.getId());
+        }
+        return workProgressRepository.findAll();
+    }
+
     public Optional<WorkProgress> findLatest(Long projectId) {
+        if (SecurityUtils.hasRole("OPERATOR")) {
+            User user = SecurityUtils.getCurrentUser(userRepository);
+            if (!projectRepository.existsByProjectIdAndOperatorId(projectId, user.getId())) {
+                throw new IllegalArgumentException("Access denied: not assigned to this project");
+            }
+        }
         return workProgressRepository.findTopByProjectIdOrderByProgressDateDesc(projectId);
     }
 }

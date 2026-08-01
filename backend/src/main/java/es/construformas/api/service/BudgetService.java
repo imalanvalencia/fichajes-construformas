@@ -2,6 +2,7 @@ package es.construformas.api.service;
 
 import es.construformas.api.model.*;
 import es.construformas.api.repository.*;
+import es.construformas.api.security.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,11 +43,24 @@ public class BudgetService {
     }
 
     public Budget findById(Long id) {
-        return budgetRepository.findById(id)
+        Budget budget = budgetRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Budget not found"));
+        if (SecurityUtils.hasRole("OPERATOR")) {
+            User user = SecurityUtils.getCurrentUser(userRepository);
+            if (!projectRepository.existsByProjectIdAndOperatorId(budget.getProject().getId(), user.getId())) {
+                throw new IllegalArgumentException("Access denied: not assigned to this project");
+            }
+        }
+        return budget;
     }
 
     public List<Budget> findByProject(Long projectId) {
+        if (SecurityUtils.hasRole("OPERATOR")) {
+            User user = SecurityUtils.getCurrentUser(userRepository);
+            if (!projectRepository.existsByProjectIdAndOperatorId(projectId, user.getId())) {
+                throw new IllegalArgumentException("Access denied: not assigned to this project");
+            }
+        }
         return budgetRepository.findByProjectId(projectId);
     }
 

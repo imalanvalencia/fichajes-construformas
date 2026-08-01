@@ -9,6 +9,7 @@ import java.util.List;
 @Repository
 public interface ClientRepository extends JpaRepository<Client, Long> {
     List<Client> findByNameContainingIgnoreCase(String name);
+    List<Client> findByIdInAndNameContainingIgnoreCase(List<Long> ids, String name);
     List<Client> findByActive(boolean active);
     List<Client> findByCityIgnoreCase(String city);
 }

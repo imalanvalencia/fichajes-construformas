@@ -12,6 +12,7 @@ import java.util.List;
 @Repository
 public interface ClockCorrectionRepository extends JpaRepository<ClockCorrection, Long> {
     List<ClockCorrection> findByUserIdAndStatus(Long userId, CorrectionStatus status);
+    List<ClockCorrection> findByUserIdOrderByCreatedAtDesc(Long userId);
     List<ClockCorrection> findByStatus(CorrectionStatus status);
     boolean existsByUserIdAndCorrectionDateAndOriginalClockTypeAndStatus(Long userId, LocalDate date, ClockType type, CorrectionStatus status);
 }

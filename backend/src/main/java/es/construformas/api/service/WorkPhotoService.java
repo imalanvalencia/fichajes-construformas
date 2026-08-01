@@ -6,6 +6,7 @@ import es.construformas.api.model.WorkPhoto;
 import es.construformas.api.repository.ProjectRepository;
 import es.construformas.api.repository.UserRepository;
 import es.construformas.api.repository.WorkPhotoRepository;
+import es.construformas.api.security.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,7 +33,21 @@ public class WorkPhotoService {
     }
 
     public List<WorkPhoto> findByProject(Long projectId) {
+        if (SecurityUtils.hasRole("OPERATOR")) {
+            User user = SecurityUtils.getCurrentUser(userRepository);
+            if (!projectRepository.existsByProjectIdAndOperatorId(projectId, user.getId())) {
+                throw new IllegalArgumentException("Access denied: not assigned to this project");
+            }
+        }
         return workPhotoRepository.findByProjectId(projectId);
+    }
+
+    public List<WorkPhoto> findAll() {
+        if (SecurityUtils.hasRole("OPERATOR")) {
+            User user = SecurityUtils.getCurrentUser(userRepository);
+            return workPhotoRepository.findByUploadedByIdOrderByPhotoDateDesc(user.getId());
+        }
+        return workPhotoRepository.findAll();
     }
 
     public void delete(Long id) {
