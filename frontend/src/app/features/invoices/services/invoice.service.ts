@@ -33,6 +33,10 @@ export class InvoiceService {
     return this.http.post<Invoice>(`${this.API}/${id}/issue`, {});
   }
 
+  markAsPaid(id: number): Observable<Invoice> {
+    return this.http.post<Invoice>(`${this.API}/${id}/pay`, {});
+  }
+
   addItem(id: number, item: InvoiceItem): Observable<InvoiceItem> {
     return this.http.post<InvoiceItem>(`${this.API}/${id}/items`, item);
   }

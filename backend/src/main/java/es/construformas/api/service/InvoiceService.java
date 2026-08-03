@@ -117,6 +117,18 @@ public class InvoiceService {
         return invoiceRepository.save(invoice);
     }
 
+    public Invoice markAsPaid(Long id) {
+        Invoice invoice = findById(id);
+        if (invoice.getStatus() == InvoiceStatus.PAID) {
+            throw new IllegalStateException("Invoice is already paid");
+        }
+        if (invoice.getStatus() == InvoiceStatus.DRAFT) {
+            throw new IllegalStateException("Cannot mark a draft invoice as paid — issue it first");
+        }
+        invoice.setStatus(InvoiceStatus.PAID);
+        return invoiceRepository.save(invoice);
+    }
+
     public RectifyingInvoice createRectifying(Long originalInvoiceId, RectifyingInvoice rectifying, Long userId) {
         Invoice original = findById(originalInvoiceId);
         User creator = userRepository.findById(userId)

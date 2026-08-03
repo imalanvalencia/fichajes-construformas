@@ -49,6 +49,12 @@ public class InvoiceController {
         return ResponseEntity.ok(invoiceService.issue(id));
     }
 
+    @PostMapping("/{id}/pay")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Invoice> markAsPaid(@PathVariable Long id) {
+        return ResponseEntity.ok(invoiceService.markAsPaid(id));
+    }
+
     @PostMapping("/{id}/items")
     @PreAuthorize("hasAnyRole('ADMIN','OPERATOR')")
     public ResponseEntity<InvoiceItem> addItem(@PathVariable Long id, @RequestBody InvoiceItem item) {

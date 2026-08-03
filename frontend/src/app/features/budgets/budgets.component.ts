@@ -1,17 +1,20 @@
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { BudgetService } from './services/budget.service';
+import { ProjectService } from '../projects/services/project.service';
 import { Budget, BudgetItem, BudgetStatus } from './types/budget.types';
+import { Project } from '../projects/types/project.types';
 import { ButtonComponent } from '../../shared/components/button/button.component';
 import { InputComponent } from '../../shared/components/input/input.component';
 import { CardComponent } from '../../shared/components/card/card.component';
 import { BadgeComponent } from '../../shared/components/badge/badge.component';
 import { MetricCardComponent } from '../../shared/components/metric-card/metric-card.component';
+import { SelectOrCreateComponent } from '../../shared/components/select-or-create/select-or-create.component';
 
 @Component({
   selector: 'app-budgets',
   standalone: true,
-  imports: [FormsModule, ButtonComponent, InputComponent, CardComponent, BadgeComponent, MetricCardComponent],
+  imports: [FormsModule, ButtonComponent, InputComponent, CardComponent, BadgeComponent, MetricCardComponent, SelectOrCreateComponent],
   template: `
     <div class="space-y-6">
       <!-- Header -->
@@ -138,14 +141,15 @@ import { MetricCardComponent } from '../../shared/components/metric-card/metric-
           <div class="relative bg-white border border-steel w-full max-w-lg mx-4 p-6 space-y-4 max-h-[90vh] overflow-y-auto">
             <h2 class="text-lg font-bold text-nero">Nuevo Presupuesto</h2>
 
-            <div class="relative">
-              <label class="block font-mono text-xs font-medium text-steel mb-1">Proyecto ID *</label>
-              <input
-                type="number"
-                [(ngModel)]="newBudget.projectId"
-                class="w-full bg-transparent font-sans text-sm text-nero border-b border-steel outline-none py-2 px-0"
-              />
-            </div>
+            <app-select-or-create
+              label="Proyecto *"
+              [items]="projects"
+              [value]="newBudget.projectId ?? null"
+              placeholder="Seleccionar proyecto..."
+              [required]="true"
+              (valueChange)="newBudget.projectId = $event"
+              (create)="onCreateProject($event)"
+            />
 
             <div class="relative">
               <label class="block font-mono text-xs font-medium text-steel mb-1">Tipo *</label>
@@ -196,16 +200,23 @@ import { MetricCardComponent } from '../../shared/components/metric-card/metric-
 export class BudgetsComponent implements OnInit {
   budgets: Budget[] = [];
   budgetItems: BudgetItem[] = [];
+  projects: Project[] = [];
   selectedBudget: Budget | null = null;
   showCreateModal = false;
   showItemModal = false;
   newBudget: Partial<Budget> = this.emptyBudgetForm();
   newItem: Partial<BudgetItem> = this.emptyItemForm();
 
-  constructor(private budgetService: BudgetService) {}
+  constructor(
+    private budgetService: BudgetService,
+    private projectService: ProjectService,
+  ) {}
 
   ngOnInit(): void {
     this.loadBudgets();
+    this.projectService.getAll().subscribe({
+      next: (data) => (this.projects = data),
+    });
   }
 
   loadBudgets(): void {
@@ -281,6 +292,23 @@ export class BudgetsComponent implements OnInit {
     if (!confirm('¿Estás seguro de eliminar este presupuesto?')) return;
     this.budgetService.delete(id).subscribe({
       next: () => this.loadBudgets(),
+    });
+  }
+
+  onCreateProject(name: string): void {
+    this.projectService.create({
+      name,
+      clientId: 0,
+      address: '',
+      latitude: 0,
+      longitude: 0,
+      status: 'PLANNED',
+      active: true,
+    }).subscribe({
+      next: (created) => {
+        this.projects = [...this.projects, created];
+        this.newBudget.projectId = created.id!;
+      },
     });
   }
 

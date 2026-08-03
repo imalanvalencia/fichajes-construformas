@@ -1,16 +1,21 @@
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { PaymentService } from './services/payment.service';
+import { ClientService } from '../clients/services/client.service';
+import { ProjectService } from '../projects/services/project.service';
 import { Payment, PaymentMethod, PaymentType } from './types/payment.types';
+import { Client } from '../clients/types/client.types';
+import { Project } from '../projects/types/project.types';
 import { ButtonComponent } from '../../shared/components/button/button.component';
 import { InputComponent } from '../../shared/components/input/input.component';
 import { CardComponent } from '../../shared/components/card/card.component';
 import { MetricCardComponent } from '../../shared/components/metric-card/metric-card.component';
+import { SelectOrCreateComponent } from '../../shared/components/select-or-create/select-or-create.component';
 
 @Component({
   selector: 'app-payments',
   standalone: true,
-  imports: [FormsModule, ButtonComponent, InputComponent, CardComponent, MetricCardComponent],
+  imports: [FormsModule, ButtonComponent, InputComponent, CardComponent, MetricCardComponent, SelectOrCreateComponent],
   template: `
     <div class="space-y-6">
       <!-- Header -->
@@ -97,23 +102,25 @@ import { MetricCardComponent } from '../../shared/components/metric-card/metric-
           <div class="relative bg-white border border-steel w-full max-w-lg mx-4 p-6 space-y-4 max-h-[90vh] overflow-y-auto">
             <h2 class="text-lg font-bold text-nero">Nuevo Pago</h2>
 
-            <div class="relative">
-              <label class="block font-mono text-xs font-medium text-steel mb-1">Proyecto ID *</label>
-              <input
-                type="number"
-                [(ngModel)]="formData.projectId"
-                class="w-full bg-transparent font-sans text-sm text-nero border-b border-steel outline-none py-2 px-0"
-              />
-            </div>
+            <app-select-or-create
+              label="Proyecto *"
+              [items]="projects"
+              [value]="formData.projectId ?? null"
+              placeholder="Seleccionar proyecto..."
+              [required]="true"
+              (valueChange)="formData.projectId = $event"
+              (create)="onCreateProject($event)"
+            />
 
-            <div class="relative">
-              <label class="block font-mono text-xs font-medium text-steel mb-1">Cliente ID *</label>
-              <input
-                type="number"
-                [(ngModel)]="formData.clientId"
-                class="w-full bg-transparent font-sans text-sm text-nero border-b border-steel outline-none py-2 px-0"
-              />
-            </div>
+            <app-select-or-create
+              label="Cliente *"
+              [items]="clients"
+              [value]="formData.clientId ?? null"
+              placeholder="Seleccionar cliente..."
+              [required]="true"
+              (valueChange)="formData.clientId = $event"
+              (create)="onCreateClient($event)"
+            />
 
             <div class="relative">
               <label class="block font-mono text-xs font-medium text-steel mb-1">Método de Pago *</label>
@@ -159,14 +166,26 @@ import { MetricCardComponent } from '../../shared/components/metric-card/metric-
 export class PaymentsComponent implements OnInit {
   payments: Payment[] = [];
   paymentMethods: PaymentMethod[] = [];
+  clients: Client[] = [];
+  projects: Project[] = [];
   showModal = false;
   formData: Partial<Payment> = this.emptyForm();
 
-  constructor(private paymentService: PaymentService) {}
+  constructor(
+    private paymentService: PaymentService,
+    private clientService: ClientService,
+    private projectService: ProjectService,
+  ) {}
 
   ngOnInit(): void {
     this.loadPayments();
     this.loadMethods();
+    this.clientService.getAll().subscribe({
+      next: (data) => (this.clients = data),
+    });
+    this.projectService.getAll().subscribe({
+      next: (data) => (this.projects = data),
+    });
   }
 
   loadPayments(): void {
@@ -213,6 +232,32 @@ export class PaymentsComponent implements OnInit {
       next: () => {
         this.loadPayments();
         this.closeModal();
+      },
+    });
+  }
+
+  onCreateClient(name: string): void {
+    this.clientService.create({ name, email: '', active: true }).subscribe({
+      next: (created) => {
+        this.clients = [...this.clients, created];
+        this.formData.clientId = created.id!;
+      },
+    });
+  }
+
+  onCreateProject(name: string): void {
+    this.projectService.create({
+      name,
+      clientId: this.formData.clientId || 0,
+      address: '',
+      latitude: 0,
+      longitude: 0,
+      status: 'PLANNED',
+      active: true,
+    }).subscribe({
+      next: (created) => {
+        this.projects = [...this.projects, created];
+        this.formData.projectId = created.id!;
       },
     });
   }

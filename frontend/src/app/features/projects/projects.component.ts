@@ -9,11 +9,12 @@ import { InputComponent } from '../../shared/components/input/input.component';
 import { CardComponent } from '../../shared/components/card/card.component';
 import { BadgeComponent } from '../../shared/components/badge/badge.component';
 import { MetricCardComponent } from '../../shared/components/metric-card/metric-card.component';
+import { SelectOrCreateComponent } from '../../shared/components/select-or-create/select-or-create.component';
 
 @Component({
   selector: 'app-projects',
   standalone: true,
-  imports: [FormsModule, ButtonComponent, InputComponent, CardComponent, BadgeComponent, MetricCardComponent],
+  imports: [FormsModule, ButtonComponent, InputComponent, CardComponent, BadgeComponent, MetricCardComponent, SelectOrCreateComponent],
   template: `
     <div class="space-y-6">
       <!-- Header -->
@@ -101,15 +102,15 @@ import { MetricCardComponent } from '../../shared/components/metric-card/metric-
             <app-input label="Ciudad" [value]="formData.city ?? ''" (valueChange)="formData.city = $event" />
 
             <!-- Client selector -->
-            <div class="relative">
-              <label class="block font-mono text-xs font-medium text-steel mb-1">Cliente ID *</label>
-              <input
-                type="number"
-                [ngModel]="formData.clientId"
-                (ngModelChange)="formData.clientId = $event"
-                class="w-full bg-transparent font-sans text-sm text-nero border-b border-steel outline-none py-2 px-0"
-              />
-            </div>
+            <app-select-or-create
+              label="Cliente *"
+              [items]="clients"
+              [value]="formData.clientId ?? null"
+              placeholder="Seleccionar cliente..."
+              [required]="true"
+              (valueChange)="formData.clientId = $event"
+              (create)="onCreateClient($event)"
+            />
 
             <div class="grid grid-cols-2 gap-4">
               <app-input label="Latitud *" type="number" [value]="formData.latitude?.toString() ?? ''" (valueChange)="formData.latitude = +$event" />
@@ -241,6 +242,15 @@ export class ProjectsComponent implements OnInit {
       next: () => {
         this.loadProjects();
         this.financialSummary = null;
+      },
+    });
+  }
+
+  onCreateClient(name: string): void {
+    this.clientService.create({ name, email: '', active: true }).subscribe({
+      next: (created) => {
+        this.clients = [...this.clients, created];
+        this.formData.clientId = created.id!;
       },
     });
   }

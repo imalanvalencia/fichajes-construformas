@@ -1,17 +1,22 @@
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { InvoiceService } from './services/invoice.service';
+import { ClientService } from '../clients/services/client.service';
+import { ProjectService } from '../projects/services/project.service';
 import { Invoice, InvoiceItem, InvoiceStatus } from './types/invoice.types';
+import { Client } from '../clients/types/client.types';
+import { Project } from '../projects/types/project.types';
 import { ButtonComponent } from '../../shared/components/button/button.component';
 import { InputComponent } from '../../shared/components/input/input.component';
 import { CardComponent } from '../../shared/components/card/card.component';
 import { BadgeComponent } from '../../shared/components/badge/badge.component';
 import { MetricCardComponent } from '../../shared/components/metric-card/metric-card.component';
+import { SelectOrCreateComponent } from '../../shared/components/select-or-create/select-or-create.component';
 
 @Component({
   selector: 'app-invoices',
   standalone: true,
-  imports: [FormsModule, ButtonComponent, InputComponent, CardComponent, BadgeComponent, MetricCardComponent],
+  imports: [FormsModule, ButtonComponent, InputComponent, CardComponent, BadgeComponent, MetricCardComponent, SelectOrCreateComponent],
   template: `
     <div class="space-y-6">
       <!-- Header -->
@@ -97,23 +102,25 @@ import { MetricCardComponent } from '../../shared/components/metric-card/metric-
 
             <app-input label="Nº Factura *" [value]="formData.invoiceNumber ?? ''" (valueChange)="formData.invoiceNumber = $event" />
 
-            <div class="relative">
-              <label class="block font-mono text-xs font-medium text-steel mb-1">Proyecto ID *</label>
-              <input
-                type="number"
-                [(ngModel)]="formData.projectId"
-                class="w-full bg-transparent font-sans text-sm text-nero border-b border-steel outline-none py-2 px-0"
-              />
-            </div>
+            <app-select-or-create
+              label="Proyecto *"
+              [items]="projects"
+              [value]="formData.projectId ?? null"
+              placeholder="Seleccionar proyecto..."
+              [required]="true"
+              (valueChange)="formData.projectId = $event"
+              (create)="onCreateProject($event)"
+            />
 
-            <div class="relative">
-              <label class="block font-mono text-xs font-medium text-steel mb-1">Cliente ID *</label>
-              <input
-                type="number"
-                [(ngModel)]="formData.clientId"
-                class="w-full bg-transparent font-sans text-sm text-nero border-b border-steel outline-none py-2 px-0"
-              />
-            </div>
+            <app-select-or-create
+              label="Cliente *"
+              [items]="clients"
+              [value]="formData.clientId ?? null"
+              placeholder="Seleccionar cliente..."
+              [required]="true"
+              (valueChange)="formData.clientId = $event"
+              (create)="onCreateClient($event)"
+            />
 
             <div class="grid grid-cols-2 gap-4">
               <app-input label="Subtotal" type="number" [value]="formData.subtotal?.toString() ?? ''" (valueChange)="formData.subtotal = +$event" />
@@ -141,14 +148,26 @@ import { MetricCardComponent } from '../../shared/components/metric-card/metric-
 })
 export class InvoicesComponent implements OnInit {
   invoices: Invoice[] = [];
+  clients: Client[] = [];
+  projects: Project[] = [];
   showModal = false;
   editingInvoice: Invoice | null = null;
   formData: Partial<Invoice> = this.emptyForm();
 
-  constructor(private invoiceService: InvoiceService) {}
+  constructor(
+    private invoiceService: InvoiceService,
+    private clientService: ClientService,
+    private projectService: ProjectService,
+  ) {}
 
   ngOnInit(): void {
     this.loadInvoices();
+    this.clientService.getAll().subscribe({
+      next: (data) => (this.clients = data),
+    });
+    this.projectService.getAll().subscribe({
+      next: (data) => (this.projects = data),
+    });
   }
 
   loadInvoices(): void {
@@ -196,7 +215,7 @@ export class InvoicesComponent implements OnInit {
     const payload: Invoice = {
       invoiceNumber: this.formData.invoiceNumber!,
       projectId: this.formData.projectId!,
-      clientId: this.formData.clientId!,
+      clientId: this.formData.client  Id!,
       status: this.formData.status || 'DRAFT',
       subtotal: this.formData.subtotal ?? 0,
       taxRate: this.formData.taxRate ?? 21,
@@ -229,6 +248,32 @@ export class InvoicesComponent implements OnInit {
     if (!confirm('¿Estás seguro de eliminar esta factura?')) return;
     this.invoiceService.delete(id).subscribe({
       next: () => this.loadInvoices(),
+    });
+  }
+
+  onCreateClient(name: string): void {
+    this.clientService.create({ name, email: '', active: true }).subscribe({
+      next: (created) => {
+        this.clients = [...this.clients, created];
+        this.formData.clientId = created.id!;
+      },
+    });
+  }
+
+  onCreateProject(name: string): void {
+    this.projectService.create({
+      name,
+      clientId: this.formData.clientId || 0,
+      address: '',
+      latitude: 0,
+      longitude: 0,
+      status: 'PLANNED',
+      active: true,
+    }).subscribe({
+      next: (created) => {
+        this.projects = [...this.projects, created];
+        this.formData.projectId = created.id!;
+      },
     });
   }
 
