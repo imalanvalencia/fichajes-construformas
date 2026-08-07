@@ -1,5 +1,6 @@
 package es.construformas.api.service;
 
+import es.construformas.api.dto.BudgetRequest;
 import es.construformas.api.model.*;
 import es.construformas.api.repository.*;
 import org.junit.jupiter.api.DisplayName;
@@ -40,15 +41,15 @@ class BudgetServiceTest {
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(budgetRepository.save(any(Budget.class))).thenAnswer(i -> i.getArgument(0));
 
-        Budget budget = Budget.builder()
-                .project(project).createdBy(user)
-                .totalAmount(new BigDecimal("10000")).build();
-        Budget result = budgetService.create(budget);
+        BudgetRequest request = new BudgetRequest();
+        request.setProjectId(1L);
+        request.setCreatedById(1L);
+        request.setTotalAmount(new BigDecimal("10000"));
+        Budget result = budgetService.create(request);
 
         assertThat(result.getStatus()).isEqualTo(BudgetStatus.DRAFT);
         assertThat(result.getVersion()).isEqualTo(1);
         assertThat(result.getBudgetType()).isEqualTo(BudgetType.ORIGINAL);
-        verify(budgetRepository).save(budget);
     }
 
     @Test
@@ -56,12 +57,11 @@ class BudgetServiceTest {
     void shouldRejectCreateWithMissingProject() {
         when(projectRepository.findById(99L)).thenReturn(Optional.empty());
 
-        User user = User.builder().id(1L).build();
-        Budget budget = Budget.builder()
-                .project(Project.builder().id(99L).build())
-                .createdBy(user).build();
+        BudgetRequest request = new BudgetRequest();
+        request.setProjectId(99L);
+        request.setCreatedById(1L);
 
-        assertThatThrownBy(() -> budgetService.create(budget))
+        assertThatThrownBy(() -> budgetService.create(request))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Project not found");
     }

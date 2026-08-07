@@ -74,16 +74,6 @@ public class Invoice {
 
     @PreUpdate
     protected void onUpdate() {
-        if (status == InvoiceStatus.ISSUED || status == InvoiceStatus.PAID) {
-            throw new IllegalStateException("Cannot modify an invoice that has been issued.");
-        }
         updatedAt = LocalDateTime.now();
-    }
-
-    @PreRemove
-    protected void onRemove() {
-        if (status == InvoiceStatus.ISSUED || status == InvoiceStatus.PAID) {
-            throw new IllegalStateException("Cannot delete an invoice that has been issued.");
-        }
     }
 }

@@ -1,5 +1,6 @@
 package es.construformas.api.controller;
 
+import es.construformas.api.dto.BudgetRequest;
 import es.construformas.api.model.*;
 import es.construformas.api.service.BudgetService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -66,7 +67,7 @@ class BudgetControllerTest {
     @Test
     @DisplayName("POST /api/budgets should create and return budget")
     void createBudgetShouldReturn201() throws Exception {
-        when(budgetService.create(any(Budget.class))).thenReturn(sampleBudget());
+        when(budgetService.create(any(BudgetRequest.class))).thenReturn(sampleBudget());
 
         mockMvc.perform(post("/api/budgets")
                         .contentType(MediaType.APPLICATION_JSON)

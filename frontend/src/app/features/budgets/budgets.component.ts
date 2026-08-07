@@ -216,12 +216,14 @@ export class BudgetsComponent implements OnInit {
     this.loadBudgets();
     this.projectService.getAll().subscribe({
       next: (data) => (this.projects = data),
+      error: (err) => console.error('Failed to load projects', err),
     });
   }
 
   loadBudgets(): void {
     this.budgetService.getAll().subscribe({
       next: (data) => (this.budgets = data),
+      error: (err) => console.error('Failed to load budgets', err),
     });
   }
 
@@ -317,7 +319,7 @@ export class BudgetsComponent implements OnInit {
   }
 
   private emptyBudgetForm(): Partial<Budget> {
-    return { projectId: 0, budgetType: 'ORIGINAL', status: 'DRAFT', version: 1, totalAmount: 0, discountAmount: 0, finalAmount: 0 };
+    return { projectId: 0, budgetType: 'ORIGINAL', status: 'DRAFT', version: 1, totalAmount: 0, discountAmount: 0, finalAmount: 0, createdById: 1 };
   }
 
   private emptyItemForm(): Partial<BudgetItem> {

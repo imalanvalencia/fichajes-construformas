@@ -1,5 +1,6 @@
 package es.construformas.api.service;
 
+import es.construformas.api.dto.BudgetRequest;
 import es.construformas.api.model.*;
 import es.construformas.api.repository.*;
 import es.construformas.api.security.SecurityUtils;
@@ -8,7 +9,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 
 @Service
@@ -23,23 +27,65 @@ public class BudgetService {
     private final UserRepository userRepository;
     private final InvoiceRepository invoiceRepository;
 
-    public Budget create(Budget budget) {
-        Project project = projectRepository.findById(budget.getProject().getId())
+    public Budget create(BudgetRequest request) {
+        Project project = projectRepository.findById(request.getProjectId())
                 .orElseThrow(() -> new IllegalArgumentException("Project not found"));
-        User creator = userRepository.findById(budget.getCreatedBy().getId())
+        User creator = userRepository.findById(request.getCreatedById())
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-        budget.setProject(project);
-        budget.setCreatedBy(creator);
-        if (budget.getStatus() == null) budget.setStatus(BudgetStatus.DRAFT);
-        if (budget.getVersion() == null) budget.setVersion(1);
-        if (budget.getBudgetType() == null) budget.setBudgetType(BudgetType.ORIGINAL);
-        if (budget.getTotalAmount() == null) budget.setTotalAmount(BigDecimal.ZERO);
-        if (budget.getDiscountAmount() == null) budget.setDiscountAmount(BigDecimal.ZERO);
-        if (budget.getFinalAmount() == null)
+        BudgetType budgetType = request.getBudgetType() != null
+                ? BudgetType.valueOf(request.getBudgetType())
+                : BudgetType.ORIGINAL;
+
+        BudgetStatus status = request.getStatus() != null
+                ? BudgetStatus.valueOf(request.getStatus())
+                : BudgetStatus.DRAFT;
+
+        Budget budget = Budget.builder()
+                .project(project)
+                .createdBy(creator)
+                .budgetType(budgetType)
+                .status(status)
+                .totalAmount(request.getTotalAmount() != null ? request.getTotalAmount() : BigDecimal.ZERO)
+                .discountAmount(request.getDiscountAmount() != null ? request.getDiscountAmount() : BigDecimal.ZERO)
+                .finalAmount(request.getFinalAmount() != null ? request.getFinalAmount() : BigDecimal.ZERO)
+                .validUntil(parseDate(request.getValidUntil()))
+                .notes(request.getNotes())
+                .paymentTerms(request.getPaymentTerms())
+                .termsConditions(request.getTermsConditions())
+                .build();
+
+        if (budget.getFinalAmount().compareTo(BigDecimal.ZERO) == 0 && budget.getTotalAmount().compareTo(BigDecimal.ZERO) > 0) {
             budget.setFinalAmount(budget.getTotalAmount().subtract(budget.getDiscountAmount()));
+        }
+
+        if (request.getApprovedById() != null) {
+            User approver = userRepository.findById(request.getApprovedById())
+                    .orElseThrow(() -> new IllegalArgumentException("Approver user not found"));
+            budget.setApprovedBy(approver);
+            budget.setApprovedAt(LocalDateTime.now());
+        }
 
         return budgetRepository.save(budget);
+    }
+
+    private LocalDate parseDate(String dateStr) {
+        if (dateStr == null || dateStr.isBlank()) return null;
+        try {
+            return LocalDate.parse(dateStr, DateTimeFormatter.ISO_LOCAL_DATE);
+        } catch (DateTimeParseException e) {
+            throw new IllegalArgumentException("Invalid date format: " + dateStr + ". Expected yyyy-MM-dd");
+        }
+    }
+
+    public List<Budget> findAll() {
+        if (SecurityUtils.hasRole("OPERATOR")) {
+            User user = SecurityUtils.getCurrentUser(userRepository);
+            List<Project> operatorProjects = projectRepository.findByOperatorId(user.getId());
+            List<Long> projectIds = operatorProjects.stream().map(Project::getId).toList();
+            return budgetRepository.findByProjectIdIn(projectIds);
+        }
+        return budgetRepository.findAll();
     }
 
     public Budget findById(Long id) {

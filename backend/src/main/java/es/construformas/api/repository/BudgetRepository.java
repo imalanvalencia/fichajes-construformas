@@ -8,6 +8,7 @@ import java.util.Optional;
 
 public interface BudgetRepository extends JpaRepository<Budget, Long> {
     List<Budget> findByProjectId(Long projectId);
+    List<Budget> findByProjectIdIn(List<Long> projectIds);
     List<Budget> findByProjectIdAndStatus(Long projectId, BudgetStatus status);
     Optional<Budget> findTopByProjectIdAndStatusOrderByVersionDesc(Long projectId, BudgetStatus status);
     List<Budget> findByOriginalBudgetId(Long originalBudgetId);

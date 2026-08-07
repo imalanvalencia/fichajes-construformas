@@ -164,15 +164,18 @@ export class InvoicesComponent implements OnInit {
     this.loadInvoices();
     this.clientService.getAll().subscribe({
       next: (data) => (this.clients = data),
+      error: (err) => console.error('Failed to load clients', err),
     });
     this.projectService.getAll().subscribe({
       next: (data) => (this.projects = data),
+      error: (err) => console.error('Failed to load projects', err),
     });
   }
 
   loadInvoices(): void {
     this.invoiceService.getAll().subscribe({
       next: (data) => (this.invoices = data),
+      error: (err) => console.error('Failed to load invoices', err),
     });
   }
 
@@ -215,7 +218,7 @@ export class InvoicesComponent implements OnInit {
     const payload: Invoice = {
       invoiceNumber: this.formData.invoiceNumber!,
       projectId: this.formData.projectId!,
-      clientId: this.formData.client  Id!,
+      clientId: this.formData.clientId!,
       status: this.formData.status || 'DRAFT',
       subtotal: this.formData.subtotal ?? 0,
       taxRate: this.formData.taxRate ?? 21,

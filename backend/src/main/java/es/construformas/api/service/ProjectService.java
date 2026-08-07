@@ -1,6 +1,7 @@
 package es.construformas.api.service;
 
 import es.construformas.api.dto.ProjectFinancialSummaryDTO;
+import es.construformas.api.dto.ProjectRequest;
 import es.construformas.api.model.*;
 import es.construformas.api.repository.*;
 import es.construformas.api.security.SecurityUtils;
@@ -10,6 +11,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 
 @Service
@@ -24,15 +28,43 @@ public class ProjectService {
     private final ClientRepository clientRepository;
     private final UserRepository userRepository;
 
-    public Project create(Project project) {
-        if (project.getClient() == null || project.getClient().getId() == null) {
+    public Project create(ProjectRequest request) {
+        if (request.getClientId() == null) {
             throw new IllegalArgumentException("Client is required");
         }
-        Client client = clientRepository.findById(project.getClient().getId())
+        Client client = clientRepository.findById(request.getClientId())
                 .orElseThrow(() -> new IllegalArgumentException("Client not found"));
-        project.setClient(client);
-        if (project.getStatus() == null) project.setStatus(ProjectStatus.PLANNED);
+
+        ProjectStatus status = request.getStatus() != null
+                ? ProjectStatus.valueOf(request.getStatus())
+                : ProjectStatus.PLANNED;
+
+        Project project = Project.builder()
+                .client(client)
+                .name(request.getName())
+                .description(request.getDescription())
+                .address(request.getAddress())
+                .city(request.getCity())
+                .latitude(request.getLatitude())
+                .longitude(request.getLongitude())
+                .allowedRadiusMeters(request.getAllowedRadiusMeters() != null ? request.getAllowedRadiusMeters() : 50)
+                .startDate(parseDate(request.getStartDate()))
+                .estimatedEndDate(parseDate(request.getEstimatedEndDate()))
+                .actualEndDate(parseDate(request.getActualEndDate()))
+                .status(status)
+                .active(request.isActive())
+                .build();
+
         return projectRepository.save(project);
+    }
+
+    private LocalDate parseDate(String dateStr) {
+        if (dateStr == null || dateStr.isBlank()) return null;
+        try {
+            return LocalDate.parse(dateStr, DateTimeFormatter.ISO_LOCAL_DATE);
+        } catch (DateTimeParseException e) {
+            throw new IllegalArgumentException("Invalid date format: " + dateStr + ". Expected yyyy-MM-dd");
+        }
     }
 
     public Project findById(Long id) {
@@ -77,20 +109,28 @@ public class ProjectService {
         return projectRepository.findByStatus(status);
     }
 
-    public Project update(Long id, Project updated) {
+    public Project update(Long id, ProjectRequest request) {
         Project existing = findById(id);
-        existing.setName(updated.getName());
-        existing.setDescription(updated.getDescription());
-        existing.setAddress(updated.getAddress());
-        existing.setCity(updated.getCity());
-        if (updated.getLatitude() != null) existing.setLatitude(updated.getLatitude());
-        if (updated.getLongitude() != null) existing.setLongitude(updated.getLongitude());
-        if (updated.getAllowedRadiusMeters() != null) existing.setAllowedRadiusMeters(updated.getAllowedRadiusMeters());
-        if (updated.getStartDate() != null) existing.setStartDate(updated.getStartDate());
-        if (updated.getEstimatedEndDate() != null) existing.setEstimatedEndDate(updated.getEstimatedEndDate());
-        if (updated.getActualEndDate() != null) existing.setActualEndDate(updated.getActualEndDate());
-        if (updated.getStatus() != null) existing.setStatus(updated.getStatus());
-        existing.setActive(updated.isActive());
+
+        if (request.getClientId() != null) {
+            Client client = clientRepository.findById(request.getClientId())
+                    .orElseThrow(() -> new IllegalArgumentException("Client not found"));
+            existing.setClient(client);
+        }
+
+        existing.setName(request.getName());
+        existing.setDescription(request.getDescription());
+        existing.setAddress(request.getAddress());
+        existing.setCity(request.getCity());
+        if (request.getLatitude() != null) existing.setLatitude(request.getLatitude());
+        if (request.getLongitude() != null) existing.setLongitude(request.getLongitude());
+        if (request.getAllowedRadiusMeters() != null) existing.setAllowedRadiusMeters(request.getAllowedRadiusMeters());
+        if (request.getStartDate() != null) existing.setStartDate(parseDate(request.getStartDate()));
+        if (request.getEstimatedEndDate() != null) existing.setEstimatedEndDate(parseDate(request.getEstimatedEndDate()));
+        if (request.getActualEndDate() != null) existing.setActualEndDate(parseDate(request.getActualEndDate()));
+        if (request.getStatus() != null) existing.setStatus(ProjectStatus.valueOf(request.getStatus()));
+        existing.setActive(request.isActive());
+
         return projectRepository.save(existing);
     }
 

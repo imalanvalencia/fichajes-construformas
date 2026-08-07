@@ -1,6 +1,7 @@
 package es.construformas.api.controller;
 
 import es.construformas.api.dto.ProjectFinancialSummaryDTO;
+import es.construformas.api.dto.ProjectRequest;
 import es.construformas.api.model.Client;
 import es.construformas.api.model.Project;
 import es.construformas.api.model.ProjectStatus;
@@ -68,7 +69,7 @@ class ProjectControllerTest {
     @Test
     @DisplayName("POST /api/projects should create and return project")
     void createProjectShouldReturn201() throws Exception {
-        when(projectService.create(any(Project.class))).thenReturn(sampleProject());
+        when(projectService.create(any(ProjectRequest.class))).thenReturn(sampleProject());
 
         mockMvc.perform(post("/api/projects")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -139,7 +140,7 @@ class ProjectControllerTest {
     @DisplayName("PUT /api/projects/{id} should update project")
     void updateProjectShouldReturnUpdated() throws Exception {
         Project updated = Project.builder().name("Updated Project").active(true).build();
-        when(projectService.update(eq(1L), any(Project.class))).thenReturn(updated);
+        when(projectService.update(eq(1L), any(ProjectRequest.class))).thenReturn(updated);
 
         mockMvc.perform(put("/api/projects/1")
                         .contentType(MediaType.APPLICATION_JSON)

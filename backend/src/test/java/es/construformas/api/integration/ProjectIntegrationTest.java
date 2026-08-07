@@ -38,9 +38,14 @@ class ProjectIntegrationTest {
         Client client = clientRepository.save(Client.builder().name("Client").build());
 
         String projectJson = objectMapper.writeValueAsString(
-            Project.builder()
-                .client(client).name("New Project").address("Calle 1")
-                .latitude(40.0).longitude(-3.0).status(ProjectStatus.PLANNED).build());
+            new java.util.LinkedHashMap<>() {{
+                put("clientId", client.getId());
+                put("name", "New Project");
+                put("address", "Calle 1");
+                put("latitude", 40.0);
+                put("longitude", -3.0);
+                put("status", "PLANNED");
+            }});
 
         mockMvc.perform(post("/api/projects")
                 .contentType(MediaType.APPLICATION_JSON).content(projectJson))

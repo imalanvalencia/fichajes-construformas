@@ -1,5 +1,6 @@
 package es.construformas.api.controller;
 
+import es.construformas.api.dto.BudgetRequest;
 import es.construformas.api.model.Budget;
 import es.construformas.api.model.BudgetDiscount;
 import es.construformas.api.model.BudgetItem;
@@ -19,10 +20,16 @@ import java.util.List;
 public class BudgetController {
     private final BudgetService budgetService;
 
+    @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN','OPERATOR')")
+    public ResponseEntity<List<Budget>> getAll() {
+        return ResponseEntity.ok(budgetService.findAll());
+    }
+
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Budget> create(@Valid @RequestBody Budget budget) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(budgetService.create(budget));
+    public ResponseEntity<Budget> create(@Valid @RequestBody BudgetRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(budgetService.create(request));
     }
 
     @GetMapping("/{id}")
