@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { BudgetService } from './services/budget.service';
 import { ProjectService } from '../projects/services/project.service';
@@ -24,10 +24,10 @@ import { SelectOrCreateComponent } from '../../shared/components/select-or-creat
       </div>
 
       <!-- Summary -->
-      @if (budgets.length > 0) {
+      @if (budgets().length > 0) {
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <app-metric-card
-            [value]="budgets.length"
+            [value]="budgets().length"
             label="Total Presupuestos"
             color="#1C1C1D"
           />
@@ -64,7 +64,7 @@ import { SelectOrCreateComponent } from '../../shared/components/select-or-creat
               </tr>
             </thead>
             <tbody>
-              @for (budget of budgets; track budget.id) {
+              @for (budget of budgets(); track budget.id) {
                 <tr class="border-b border-steel/10 hover:bg-cement/50">
                   <td class="py-3 px-4 font-medium text-nero">{{ budget.projectName || '—' }}</td>
                   <td class="py-3 px-4 text-steel font-mono">v{{ budget.version }}</td>
@@ -114,7 +114,7 @@ import { SelectOrCreateComponent } from '../../shared/components/select-or-creat
                 </tr>
               </thead>
               <tbody>
-                @for (item of budgetItems; track item.id) {
+                @for (item of budgetItems(); track item.id) {
                   <tr class="border-b border-steel/10 hover:bg-cement/50">
                     <td class="py-3 px-4 text-steel">{{ item.zone || '—' }}</td>
                     <td class="py-3 px-4 font-medium text-nero">{{ item.description }}</td>
@@ -135,7 +135,7 @@ import { SelectOrCreateComponent } from '../../shared/components/select-or-creat
       }
 
       <!-- Create Budget Modal -->
-      @if (showCreateModal) {
+      @if (showCreateModal()) {
         <div class="fixed inset-0 z-50 flex items-center justify-center">
           <div class="absolute inset-0 bg-black/50" (click)="closeCreateModal()"></div>
           <div class="relative bg-white border border-steel w-full max-w-lg mx-4 p-6 space-y-4 max-h-[90vh] overflow-y-auto">
@@ -143,7 +143,7 @@ import { SelectOrCreateComponent } from '../../shared/components/select-or-creat
 
             <app-select-or-create
               label="Proyecto *"
-              [items]="projects"
+              [items]="projects()"
               [value]="newBudget.projectId ?? null"
               placeholder="Seleccionar proyecto..."
               [required]="true"
@@ -175,7 +175,7 @@ import { SelectOrCreateComponent } from '../../shared/components/select-or-creat
       }
 
       <!-- Add Item Modal -->
-      @if (showItemModal) {
+      @if (showItemModal()) {
         <div class="fixed inset-0 z-50 flex items-center justify-center">
           <div class="absolute inset-0 bg-black/50" (click)="closeItemModal()"></div>
           <div class="relative bg-white border border-steel w-full max-w-lg mx-4 p-6 space-y-4">
@@ -197,48 +197,50 @@ import { SelectOrCreateComponent } from '../../shared/components/select-or-creat
     </div>
   `
 })
-export class BudgetsComponent implements OnInit {
-  budgets: Budget[] = [];
-  budgetItems: BudgetItem[] = [];
-  projects: Project[] = [];
+export class BudgetsComponent {
+  budgets = signal<Budget[]>([]);
+  budgetItems = signal<BudgetItem[]>([]);
+  projects = signal<Project[]>([]);
   selectedBudget: Budget | null = null;
-  showCreateModal = false;
-  showItemModal = false;
+  showCreateModal = signal(false);
+  showItemModal = signal(false);
   newBudget: Partial<Budget> = this.emptyBudgetForm();
   newItem: Partial<BudgetItem> = this.emptyItemForm();
 
   constructor(
     private budgetService: BudgetService,
     private projectService: ProjectService,
-  ) {}
-
-  ngOnInit(): void {
+  ) {
     this.loadBudgets();
     this.projectService.getAll().subscribe({
-      next: (data) => (this.projects = data),
+      next: (data) => {
+        this.projects.set(data);
+      },
       error: (err) => console.error('Failed to load projects', err),
     });
   }
 
   loadBudgets(): void {
     this.budgetService.getAll().subscribe({
-      next: (data) => (this.budgets = data),
+      next: (data) => {
+        this.budgets.set(data);
+      },
       error: (err) => console.error('Failed to load budgets', err),
     });
   }
 
   getCountByStatus(status: BudgetStatus): number {
-    return this.budgets.filter((b) => b.status === status).length;
+    return this.budgets().filter((b) => b.status === status).length;
   }
 
   getTotalAmount(): number {
-    return this.budgets.reduce((sum, b) => sum + (b.finalAmount || 0), 0);
+    return this.budgets().reduce((sum, b) => sum + (b.finalAmount || 0), 0);
   }
 
   viewItems(budget: Budget): void {
     this.selectedBudget = budget;
     this.budgetService.getItems(budget.id!).subscribe({
-      next: (items) => (this.budgetItems = items),
+      next: (items) => (this.budgetItems.set(items)),
     });
   }
 
@@ -252,11 +254,11 @@ export class BudgetsComponent implements OnInit {
 
   openCreateModal(): void {
     this.newBudget = this.emptyBudgetForm();
-    this.showCreateModal = true;
+    this.showCreateModal.set(true);
   }
 
   closeCreateModal(): void {
-    this.showCreateModal = false;
+    this.showCreateModal.set(false);
     this.newBudget = this.emptyBudgetForm();
   }
 
@@ -272,11 +274,11 @@ export class BudgetsComponent implements OnInit {
 
   openAddItemModal(): void {
     this.newItem = this.emptyItemForm();
-    this.showItemModal = true;
+    this.showItemModal.set(true);
   }
 
   closeItemModal(): void {
-    this.showItemModal = false;
+    this.showItemModal.set(false);
     this.newItem = this.emptyItemForm();
   }
 
@@ -308,7 +310,7 @@ export class BudgetsComponent implements OnInit {
       active: true,
     }).subscribe({
       next: (created) => {
-        this.projects = [...this.projects, created];
+        this.projects.update(prev => [...prev, created]);
         this.newBudget.projectId = created.id!;
       },
     });

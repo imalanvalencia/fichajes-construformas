@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { UserService } from './services/user.service';
 import { User, UserRole, UserAvailability } from './types/user.types';
@@ -55,7 +55,7 @@ import { BadgeComponent } from '../../shared/components/badge/badge.component';
               </tr>
             </thead>
             <tbody>
-              @for (user of filteredUsers; track user.id) {
+              @for (user of filteredUsers(); track user.id) {
                 <tr class="border-b border-steel/10 hover:bg-cement/50">
                   <td class="py-3 px-4 font-medium text-nero">{{ user.name }}</td>
                   <td class="py-3 px-4 text-steel">{{ user.email }}</td>
@@ -84,7 +84,7 @@ import { BadgeComponent } from '../../shared/components/badge/badge.component';
       </app-card>
 
       <!-- Modal -->
-      @if (showModal) {
+      @if (showModal()) {
         <div class="fixed inset-0 z-50 flex items-center justify-center">
           <div class="absolute inset-0 bg-black/50" (click)="closeModal()"></div>
           <div class="relative bg-white border border-steel w-full max-w-lg mx-4 p-6 space-y-4 max-h-[90vh] overflow-y-auto">
@@ -135,25 +135,23 @@ import { BadgeComponent } from '../../shared/components/badge/badge.component';
     </div>
   `
 })
-export class UsersComponent implements OnInit {
-  users: User[] = [];
-  filteredUsers: User[] = [];
+export class UsersComponent {
+  users = signal<User[]>([]);
+  filteredUsers = signal<User[]>([]);
   filterRole = '';
-  showModal = false;
+  showModal = signal(false);
   editingUser: User | null = null;
   formData: Partial<User> = this.emptyForm();
 
-  constructor(private userService: UserService) {}
-
-  ngOnInit(): void {
+  constructor(private userService: UserService) {
     this.loadUsers();
   }
 
   loadUsers(): void {
     this.userService.getAll().subscribe({
       next: (data) => {
-        this.users = data;
-        this.filteredUsers = data;
+        this.users.set(data);
+        this.filteredUsers.set(data);
       },
     });
   }
@@ -161,10 +159,10 @@ export class UsersComponent implements OnInit {
   onFilterChange(): void {
     if (this.filterRole) {
       this.userService.getByRole(this.filterRole as UserRole).subscribe({
-        next: (data) => (this.filteredUsers = data),
+        next: (data) => (this.filteredUsers.set(data)),
       });
     } else {
-      this.filteredUsers = this.users;
+      this.filteredUsers.set(this.users());
     }
   }
 
@@ -180,17 +178,17 @@ export class UsersComponent implements OnInit {
   openCreateModal(): void {
     this.editingUser = null;
     this.formData = this.emptyForm();
-    this.showModal = true;
+    this.showModal.set(true);
   }
 
   openEditModal(user: User): void {
     this.editingUser = user;
     this.formData = { ...user, password: undefined };
-    this.showModal = true;
+    this.showModal.set(true);
   }
 
   closeModal(): void {
-    this.showModal = false;
+    this.showModal.set(false);
     this.editingUser = null;
     this.formData = this.emptyForm();
   }

@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ProjectService } from './services/project.service';
 import { ClientService } from '../clients/services/client.service';
@@ -63,7 +63,7 @@ import { SelectOrCreateComponent } from '../../shared/components/select-or-creat
               </tr>
             </thead>
             <tbody>
-              @for (project of projects; track project.id) {
+              @for (project of projects(); track project.id) {
                 <tr
                   class="border-b border-steel/10 hover:bg-cement/50 cursor-pointer"
                   (click)="selectProject(project)"
@@ -90,7 +90,7 @@ import { SelectOrCreateComponent } from '../../shared/components/select-or-creat
       </app-card>
 
       <!-- Modal -->
-      @if (showModal) {
+      @if (showModal()) {
         <div class="fixed inset-0 z-50 flex items-center justify-center">
           <div class="absolute inset-0 bg-black/50" (click)="closeModal()"></div>
           <div class="relative bg-white border border-steel w-full max-w-lg mx-4 p-6 space-y-4 max-h-[90vh] overflow-y-auto">
@@ -104,7 +104,7 @@ import { SelectOrCreateComponent } from '../../shared/components/select-or-creat
             <!-- Client selector -->
             <app-select-or-create
               label="Cliente *"
-              [items]="clients"
+              [items]="clients()"
               [value]="formData.clientId ?? null"
               placeholder="Seleccionar cliente..."
               [required]="true"
@@ -149,29 +149,31 @@ import { SelectOrCreateComponent } from '../../shared/components/select-or-creat
     </div>
   `
 })
-export class ProjectsComponent implements OnInit {
-  projects: Project[] = [];
-  clients: Client[] = [];
+export class ProjectsComponent {
+  projects = signal<Project[]>([]);
+  clients = signal<Client[]>([]);
   financialSummary: ProjectFinancialSummary | null = null;
-  showModal = false;
+  showModal = signal(false);
   editingProject: Project | null = null;
   formData: Partial<Project> = this.emptyForm();
 
   constructor(
     private projectService: ProjectService,
     private clientService: ClientService,
-  ) {}
-
-  ngOnInit(): void {
+  ) {
     this.loadProjects();
     this.clientService.getAll().subscribe({
-      next: (data) => (this.clients = data),
+      next: (data) => {
+        this.clients.set(data);
+      },
     });
   }
 
   loadProjects(): void {
     this.projectService.getAll().subscribe({
-      next: (data) => (this.projects = data),
+      next: (data) => {
+        this.projects.set(data);
+      },
     });
   }
 
@@ -186,17 +188,17 @@ export class ProjectsComponent implements OnInit {
   openCreateModal(): void {
     this.editingProject = null;
     this.formData = this.emptyForm();
-    this.showModal = true;
+    this.showModal.set(true);
   }
 
   openEditModal(project: Project): void {
     this.editingProject = project;
     this.formData = { ...project };
-    this.showModal = true;
+    this.showModal.set(true);
   }
 
   closeModal(): void {
-    this.showModal = false;
+    this.showModal.set(false);
     this.editingProject = null;
     this.formData = this.emptyForm();
   }
@@ -249,7 +251,7 @@ export class ProjectsComponent implements OnInit {
   onCreateClient(name: string): void {
     this.clientService.create({ name, email: '', active: true }).subscribe({
       next: (created) => {
-        this.clients = [...this.clients, created];
+        this.clients.update(prev => [...prev, created]);
         this.formData.clientId = created.id!;
       },
     });

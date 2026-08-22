@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ClientService } from './services/client.service';
 import { Client } from './types/client.types';
@@ -42,7 +42,7 @@ import { BadgeComponent } from '../../shared/components/badge/badge.component';
               </tr>
             </thead>
             <tbody>
-              @for (client of filteredClients; track client.id) {
+              @for (client of filteredClients(); track client.id) {
                 <tr class="border-b border-steel/10 hover:bg-cement/50">
                   <td class="py-3 px-4 font-medium text-nero">{{ client.name }}</td>
                   <td class="py-3 px-4 text-steel">{{ client.email || '—' }}</td>
@@ -66,7 +66,7 @@ import { BadgeComponent } from '../../shared/components/badge/badge.component';
       </app-card>
 
       <!-- Modal -->
-      @if (showModal) {
+      @if (showModal()) {
         <div class="fixed inset-0 z-50 flex items-center justify-center">
           <div class="absolute inset-0 bg-black/50" (click)="closeModal()"></div>
           <div class="relative bg-white border border-steel w-full max-w-lg mx-4 p-6 space-y-4">
@@ -92,25 +92,23 @@ import { BadgeComponent } from '../../shared/components/badge/badge.component';
     </div>
   `
 })
-export class ClientsComponent implements OnInit {
-  clients: Client[] = [];
-  filteredClients: Client[] = [];
+export class ClientsComponent {
+  clients = signal<Client[]>([]);
+  filteredClients = signal<Client[]>([]);
   searchTerm = '';
-  showModal = false;
+  showModal = signal(false);
   editingClient: Client | null = null;
   formData: Partial<Client> = this.emptyForm();
 
-  constructor(private clientService: ClientService) {}
-
-  ngOnInit(): void {
+  constructor(private clientService: ClientService) {
     this.loadClients();
   }
 
   loadClients(): void {
     this.clientService.getAll().subscribe({
       next: (data) => {
-        this.clients = data;
-        this.filteredClients = data;
+        this.clients.set(data);
+        this.filteredClients.set(data);
       },
     });
   }
@@ -119,27 +117,29 @@ export class ClientsComponent implements OnInit {
     this.searchTerm = term;
     if (term.trim()) {
       this.clientService.search(term).subscribe({
-        next: (data) => (this.filteredClients = data),
+        next: (data) => {
+          this.filteredClients.set(data);
+        },
       });
     } else {
-      this.filteredClients = this.clients;
+      this.filteredClients.set(this.clients());
     }
   }
 
   openCreateModal(): void {
     this.editingClient = null;
     this.formData = this.emptyForm();
-    this.showModal = true;
+    this.showModal.set(true);
   }
 
   openEditModal(client: Client): void {
     this.editingClient = client;
     this.formData = { ...client };
-    this.showModal = true;
+    this.showModal.set(true);
   }
 
   closeModal(): void {
-    this.showModal = false;
+    this.showModal.set(false);
     this.editingClient = null;
     this.formData = this.emptyForm();
   }

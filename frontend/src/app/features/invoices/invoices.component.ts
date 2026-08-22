@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { InvoiceService } from './services/invoice.service';
 import { ClientService } from '../clients/services/client.service';
@@ -26,10 +26,10 @@ import { SelectOrCreateComponent } from '../../shared/components/select-or-creat
       </div>
 
       <!-- Summary -->
-      @if (invoices.length > 0) {
+      @if (invoices().length > 0) {
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <app-metric-card
-            [value]="invoices.length"
+            [value]="invoices().length"
             label="Total Facturas"
             color="#1C1C1D"
           />
@@ -66,7 +66,7 @@ import { SelectOrCreateComponent } from '../../shared/components/select-or-creat
               </tr>
             </thead>
             <tbody>
-              @for (invoice of invoices; track invoice.id) {
+              @for (invoice of invoices(); track invoice.id) {
                 <tr class="border-b border-steel/10 hover:bg-cement/50">
                   <td class="py-3 px-4 font-mono text-sm text-nero">{{ invoice.invoiceNumber }}</td>
                   <td class="py-3 px-4 text-steel">{{ invoice.projectName || '—' }}</td>
@@ -94,7 +94,7 @@ import { SelectOrCreateComponent } from '../../shared/components/select-or-creat
       </app-card>
 
       <!-- Create/Edit Modal -->
-      @if (showModal) {
+      @if (showModal()) {
         <div class="fixed inset-0 z-50 flex items-center justify-center">
           <div class="absolute inset-0 bg-black/50" (click)="closeModal()"></div>
           <div class="relative bg-white border border-steel w-full max-w-lg mx-4 p-6 space-y-4 max-h-[90vh] overflow-y-auto">
@@ -104,7 +104,7 @@ import { SelectOrCreateComponent } from '../../shared/components/select-or-creat
 
             <app-select-or-create
               label="Proyecto *"
-              [items]="projects"
+              [items]="projects()"
               [value]="formData.projectId ?? null"
               placeholder="Seleccionar proyecto..."
               [required]="true"
@@ -114,7 +114,7 @@ import { SelectOrCreateComponent } from '../../shared/components/select-or-creat
 
             <app-select-or-create
               label="Cliente *"
-              [items]="clients"
+              [items]="clients()"
               [value]="formData.clientId ?? null"
               placeholder="Seleccionar cliente..."
               [required]="true"
@@ -146,11 +146,11 @@ import { SelectOrCreateComponent } from '../../shared/components/select-or-creat
     </div>
   `
 })
-export class InvoicesComponent implements OnInit {
-  invoices: Invoice[] = [];
-  clients: Client[] = [];
-  projects: Project[] = [];
-  showModal = false;
+export class InvoicesComponent {
+  invoices = signal<Invoice[]>([]);
+  clients = signal<Client[]>([]);
+  projects = signal<Project[]>([]);
+  showModal = signal(false);
   editingInvoice: Invoice | null = null;
   formData: Partial<Invoice> = this.emptyForm();
 
@@ -158,33 +158,37 @@ export class InvoicesComponent implements OnInit {
     private invoiceService: InvoiceService,
     private clientService: ClientService,
     private projectService: ProjectService,
-  ) {}
-
-  ngOnInit(): void {
+  ) {
     this.loadInvoices();
     this.clientService.getAll().subscribe({
-      next: (data) => (this.clients = data),
+      next: (data) => {
+        this.clients.set(data);
+      },
       error: (err) => console.error('Failed to load clients', err),
     });
     this.projectService.getAll().subscribe({
-      next: (data) => (this.projects = data),
+      next: (data) => {
+        this.projects.set(data);
+      },
       error: (err) => console.error('Failed to load projects', err),
     });
   }
 
   loadInvoices(): void {
     this.invoiceService.getAll().subscribe({
-      next: (data) => (this.invoices = data),
+      next: (data) => {
+        this.invoices.set(data);
+      },
       error: (err) => console.error('Failed to load invoices', err),
     });
   }
 
   getCountByStatus(status: InvoiceStatus): number {
-    return this.invoices.filter((i) => i.status === status).length;
+    return this.invoices().filter((i) => i.status === status).length;
   }
 
   getTotalInvoiced(): number {
-    return this.invoices.reduce((sum, i) => sum + (i.total || 0), 0);
+    return this.invoices().reduce((sum, i) => sum + (i.total || 0), 0);
   }
 
   issueInvoice(id: number): void {
@@ -197,17 +201,17 @@ export class InvoicesComponent implements OnInit {
   openCreateModal(): void {
     this.editingInvoice = null;
     this.formData = this.emptyForm();
-    this.showModal = true;
+    this.showModal.set(true);
   }
 
   openEditModal(invoice: Invoice): void {
     this.editingInvoice = invoice;
     this.formData = { ...invoice };
-    this.showModal = true;
+    this.showModal.set(true);
   }
 
   closeModal(): void {
-    this.showModal = false;
+    this.showModal.set(false);
     this.editingInvoice = null;
     this.formData = this.emptyForm();
   }
@@ -257,7 +261,7 @@ export class InvoicesComponent implements OnInit {
   onCreateClient(name: string): void {
     this.clientService.create({ name, email: '', active: true }).subscribe({
       next: (created) => {
-        this.clients = [...this.clients, created];
+        this.clients.update(prev => [...prev, created]);
         this.formData.clientId = created.id!;
       },
     });
@@ -274,7 +278,7 @@ export class InvoicesComponent implements OnInit {
       active: true,
     }).subscribe({
       next: (created) => {
-        this.projects = [...this.projects, created];
+        this.projects.update(prev => [...prev, created]);
         this.formData.projectId = created.id!;
       },
     });

@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { PaymentService } from './services/payment.service';
 import { ClientService } from '../clients/services/client.service';
@@ -25,10 +25,10 @@ import { SelectOrCreateComponent } from '../../shared/components/select-or-creat
       </div>
 
       <!-- Summary -->
-      @if (payments.length > 0) {
+      @if (payments().length > 0) {
         <div class="grid grid-cols-2 lg:grid-cols-3 gap-4">
           <app-metric-card
-            [value]="payments.length"
+            [value]="payments().length"
             label="Total Pagos"
             color="#1C1C1D"
           />
@@ -38,7 +38,7 @@ import { SelectOrCreateComponent } from '../../shared/components/select-or-creat
             color="#22C55E"
           />
           <app-metric-card
-            [value]="paymentMethods.length"
+            [value]="paymentMethods().length"
             label="Métodos de Pago"
             color="#3B82F6"
           />
@@ -46,11 +46,11 @@ import { SelectOrCreateComponent } from '../../shared/components/select-or-creat
       }
 
       <!-- Payment Methods -->
-      @if (paymentMethods.length > 0) {
+      @if (paymentMethods().length > 0) {
         <app-card>
           <h2 class="text-lg font-bold text-nero mb-4">Métodos de Pago</h2>
           <div class="flex flex-wrap gap-2">
-            @for (method of paymentMethods; track method.id) {
+            @for (method of paymentMethods(); track method.id) {
               <span class="font-mono text-xs font-medium px-3 py-1 border border-steel text-nero">
                 {{ method.name }}
               </span>
@@ -75,7 +75,7 @@ import { SelectOrCreateComponent } from '../../shared/components/select-or-creat
               </tr>
             </thead>
             <tbody>
-              @for (payment of payments; track payment.id) {
+              @for (payment of payments(); track payment.id) {
                 <tr class="border-b border-steel/10 hover:bg-cement/50">
                   <td class="py-3 px-4 text-steel">{{ payment.paymentDate }}</td>
                   <td class="py-3 px-4 font-medium text-nero">{{ payment.projectName || '—' }}</td>
@@ -96,7 +96,7 @@ import { SelectOrCreateComponent } from '../../shared/components/select-or-creat
       </app-card>
 
       <!-- Create Modal -->
-      @if (showModal) {
+      @if (showModal()) {
         <div class="fixed inset-0 z-50 flex items-center justify-center">
           <div class="absolute inset-0 bg-black/50" (click)="closeModal()"></div>
           <div class="relative bg-white border border-steel w-full max-w-lg mx-4 p-6 space-y-4 max-h-[90vh] overflow-y-auto">
@@ -104,7 +104,7 @@ import { SelectOrCreateComponent } from '../../shared/components/select-or-creat
 
             <app-select-or-create
               label="Proyecto *"
-              [items]="projects"
+              [items]="projects()"
               [value]="formData.projectId ?? null"
               placeholder="Seleccionar proyecto..."
               [required]="true"
@@ -114,7 +114,7 @@ import { SelectOrCreateComponent } from '../../shared/components/select-or-creat
 
             <app-select-or-create
               label="Cliente *"
-              [items]="clients"
+              [items]="clients()"
               [value]="formData.clientId ?? null"
               placeholder="Seleccionar cliente..."
               [required]="true"
@@ -128,7 +128,7 @@ import { SelectOrCreateComponent } from '../../shared/components/select-or-creat
                 [(ngModel)]="formData.paymentMethodId"
                 class="w-full bg-transparent font-sans text-sm text-nero border-b border-steel outline-none py-2 px-0"
               >
-                @for (method of paymentMethods; track method.id) {
+                @for (method of paymentMethods(); track method.id) {
                   <option [value]="method.id">{{ method.name }}</option>
                 }
               </select>
@@ -163,45 +163,51 @@ import { SelectOrCreateComponent } from '../../shared/components/select-or-creat
     </div>
   `
 })
-export class PaymentsComponent implements OnInit {
-  payments: Payment[] = [];
-  paymentMethods: PaymentMethod[] = [];
-  clients: Client[] = [];
-  projects: Project[] = [];
-  showModal = false;
+export class PaymentsComponent {
+  payments = signal<Payment[]>([]);
+  paymentMethods = signal<PaymentMethod[]>([]);
+  clients = signal<Client[]>([]);
+  projects = signal<Project[]>([]);
+  showModal = signal(false);
   formData: Partial<Payment> = this.emptyForm();
 
   constructor(
     private paymentService: PaymentService,
     private clientService: ClientService,
     private projectService: ProjectService,
-  ) {}
-
-  ngOnInit(): void {
+  ) {
     this.loadPayments();
     this.loadMethods();
     this.clientService.getAll().subscribe({
-      next: (data) => (this.clients = data),
+      next: (data) => {
+        this.clients.set(data);
+      },
     });
     this.projectService.getAll().subscribe({
-      next: (data) => (this.projects = data),
+      next: (data) => {
+        this.projects.set(data);
+      },
     });
   }
 
   loadPayments(): void {
     this.paymentService.getAll().subscribe({
-      next: (data) => (this.payments = data),
+      next: (data) => {
+        this.payments.set(data);
+      },
     });
   }
 
   loadMethods(): void {
     this.paymentService.getMethods().subscribe({
-      next: (data) => (this.paymentMethods = data),
+      next: (data) => {
+        this.paymentMethods.set(data);
+      },
     });
   }
 
   getTotalAmount(): number {
-    return this.payments.reduce((sum, p) => sum + (p.amount || 0), 0);
+    return this.payments().reduce((sum, p) => sum + (p.amount || 0), 0);
   }
 
   formatPaymentType(type: PaymentType): string {
@@ -217,11 +223,11 @@ export class PaymentsComponent implements OnInit {
 
   openCreateModal(): void {
     this.formData = this.emptyForm();
-    this.showModal = true;
+    this.showModal.set(true);
   }
 
   closeModal(): void {
-    this.showModal = false;
+    this.showModal.set(false);
     this.formData = this.emptyForm();
   }
 
@@ -239,7 +245,7 @@ export class PaymentsComponent implements OnInit {
   onCreateClient(name: string): void {
     this.clientService.create({ name, email: '', active: true }).subscribe({
       next: (created) => {
-        this.clients = [...this.clients, created];
+        this.clients.update(prev => [...prev, created]);
         this.formData.clientId = created.id!;
       },
     });
@@ -256,7 +262,7 @@ export class PaymentsComponent implements OnInit {
       active: true,
     }).subscribe({
       next: (created) => {
-        this.projects = [...this.projects, created];
+        this.projects.update(prev => [...prev, created]);
         this.formData.projectId = created.id!;
       },
     });

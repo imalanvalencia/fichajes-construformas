@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { SupplierService } from './services/supplier.service';
 import { Supplier } from './types/supplier.types';
@@ -44,7 +44,7 @@ import { BadgeComponent } from '../../shared/components/badge/badge.component';
               </tr>
             </thead>
             <tbody>
-              @for (supplier of filteredSuppliers; track supplier.id) {
+              @for (supplier of filteredSuppliers(); track supplier.id) {
                 <tr class="border-b border-steel/10 hover:bg-cement/50">
                   <td class="py-3 px-4 font-medium text-nero">{{ supplier.name }}</td>
                   <td class="py-3 px-4 text-steel">{{ supplier.contactName || '—' }}</td>
@@ -70,7 +70,7 @@ import { BadgeComponent } from '../../shared/components/badge/badge.component';
       </app-card>
 
       <!-- Modal -->
-      @if (showModal) {
+      @if (showModal()) {
         <div class="fixed inset-0 z-50 flex items-center justify-center">
           <div class="absolute inset-0 bg-black/50" (click)="closeModal()"></div>
           <div class="relative bg-white border border-steel w-full max-w-lg mx-4 p-6 space-y-4 max-h-[90vh] overflow-y-auto">
@@ -99,25 +99,23 @@ import { BadgeComponent } from '../../shared/components/badge/badge.component';
     </div>
   `
 })
-export class SuppliersComponent implements OnInit {
-  suppliers: Supplier[] = [];
-  filteredSuppliers: Supplier[] = [];
+export class SuppliersComponent {
+  suppliers = signal<Supplier[]>([]);
+  filteredSuppliers = signal<Supplier[]>([]);
   searchTerm = '';
-  showModal = false;
+  showModal = signal(false);
   editingSupplier: Supplier | null = null;
   formData: Partial<Supplier> = this.emptyForm();
 
-  constructor(private supplierService: SupplierService) {}
-
-  ngOnInit(): void {
+  constructor(private supplierService: SupplierService) {
     this.loadSuppliers();
   }
 
   loadSuppliers(): void {
     this.supplierService.getAll().subscribe({
       next: (data) => {
-        this.suppliers = data;
-        this.filteredSuppliers = data;
+        this.suppliers.set(data);
+        this.filteredSuppliers.set(data);
       },
     });
   }
@@ -126,27 +124,27 @@ export class SuppliersComponent implements OnInit {
     this.searchTerm = term;
     if (term.trim()) {
       this.supplierService.search(term).subscribe({
-        next: (data) => (this.filteredSuppliers = data),
+        next: (data) => (this.filteredSuppliers.set(data)),
       });
     } else {
-      this.filteredSuppliers = this.suppliers;
+      this.filteredSuppliers.set(this.suppliers());
     }
   }
 
   openCreateModal(): void {
     this.editingSupplier = null;
     this.formData = this.emptyForm();
-    this.showModal = true;
+    this.showModal.set(true);
   }
 
   openEditModal(supplier: Supplier): void {
     this.editingSupplier = supplier;
     this.formData = { ...supplier };
-    this.showModal = true;
+    this.showModal.set(true);
   }
 
   closeModal(): void {
-    this.showModal = false;
+    this.showModal.set(false);
     this.editingSupplier = null;
     this.formData = this.emptyForm();
   }
