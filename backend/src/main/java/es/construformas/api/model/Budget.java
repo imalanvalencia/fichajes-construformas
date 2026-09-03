@@ -21,6 +21,10 @@ public class Budget {
     @JoinColumn(name = "project_id", nullable = false)
     private Project project;
 
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "client _id", nullable = false)
+    private Client client;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "original_budget_id")
     private Budget originalBudget;
@@ -35,7 +39,7 @@ public class Budget {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private BudgetStatus status;
+    private BudgetStatus  status;
 
     @Builder.Default
     @Column(nullable = false, precision = 12, scale = 2)

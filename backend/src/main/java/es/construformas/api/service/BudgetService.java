@@ -187,6 +187,17 @@ public class BudgetService {
         return budgetItemRepository.findByBudgetIdOrderByOrderNum(budgetId);
     }
 
+    public void deleteItem(Long budgetId, Long itemId) {
+        Budget budget = findById(budgetId);
+        BudgetItem item = budgetItemRepository.findById(itemId)
+                .orElseThrow(() -> new IllegalArgumentException("Item not found"));
+        if (!item.getBudget().getId().equals(budget.getId())) {
+            throw new IllegalArgumentException("Item does not belong to this budget");
+        }
+        budgetItemRepository.deleteById(itemId);
+        recalculateTotals(budgetId);
+    }
+
     public BudgetDiscount addDiscount(Long budgetId, BudgetDiscount discount) {
         Budget budget = findById(budgetId);
         discount.setBudget(budget);
