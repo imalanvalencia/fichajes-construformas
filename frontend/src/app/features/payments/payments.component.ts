@@ -21,7 +21,7 @@ import { SelectOrCreateComponent } from '../../shared/components/select-or-creat
       <!-- Header -->
       <div class="flex items-center justify-between">
         <h1 class="text-2xl font-bold text-nero">Pagos</h1>
-        <app-button variant="primary" (click)="openCreateModal()">+ Nuevo Pago</app-button>
+        <app-button variant="filled" (click)="openCreateModal()">+ Nuevo Pago</app-button>
       </div>
 
       <!-- Summary -->
@@ -154,8 +154,8 @@ import { SelectOrCreateComponent } from '../../shared/components/select-or-creat
             <app-input label="Notas" [value]="formData.notes ?? ''" (valueChange)="formData.notes = $event" />
 
             <div class="flex justify-end gap-3 pt-2">
-              <app-button variant="secondary" (click)="closeModal()">Cancelar</app-button>
-              <app-button variant="primary" (click)="createPayment()">Crear</app-button>
+              <app-button variant="text" (click)="closeModal()">Cancelar</app-button>
+              <app-button variant="filled" (click)="createPayment()">Crear</app-button>
             </div>
           </div>
         </div>

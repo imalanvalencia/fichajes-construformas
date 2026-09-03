@@ -17,8 +17,8 @@ import { BadgeComponent } from '../../shared/components/badge/badge.component';
       <div class="flex items-center justify-between">
         <h1 class="text-2xl font-bold text-nero">Fichajes</h1>
         <div class="flex gap-2">
-          <app-button variant="primary" (click)="registerEntry()">Fichar Entrada</app-button>
-          <app-button variant="danger" (click)="registerExit()">Fichar Salida</app-button>
+          <app-button variant="filled" (click)="registerEntry()">Fichar Entrada</app-button>
+          <app-button variant="text" (click)="registerExit()">Fichar Salida</app-button>
         </div>
       </div>
 
@@ -37,7 +37,7 @@ import { BadgeComponent } from '../../shared/components/badge/badge.component';
           <app-input label="Fecha Fin" type="date" [value]="filterEnd" (valueChange)="filterEnd = $event" />
         </div>
         <div class="mt-4">
-          <app-button variant="secondary" (click)="loadByUser()">Buscar</app-button>
+          <app-button variant="text" (click)="loadByUser()">Buscar</app-button>
         </div>
       </app-card>
 
@@ -70,7 +70,7 @@ import { BadgeComponent } from '../../shared/components/badge/badge.component';
                   <td class="py-3 px-4 text-steel font-mono text-xs">{{ entry.userLongitude?.toFixed(6) }}</td>
                   <td class="py-3 px-4 text-steel">{{ entry.notes || '—' }}</td>
                   <td class="py-3 px-4 text-right">
-                    <app-button variant="danger" size="sm" (click)="deleteEntry(entry.id!)">Eliminar</app-button>
+                    <app-button variant="text" size="sm" (click)="deleteEntry(entry.id!)">Eliminar</app-button>
                   </td>
                 </tr>
               } @empty {
@@ -118,8 +118,8 @@ import { BadgeComponent } from '../../shared/components/badge/badge.component';
             <app-input label="Notas" [value]="newEntry.notes ?? ''" (valueChange)="newEntry.notes = $event" />
 
             <div class="flex justify-end gap-3 pt-2">
-              <app-button variant="secondary" (click)="closeModal()">Cancelar</app-button>
-              <app-button variant="primary" (click)="submitEntry()">Registrar</app-button>
+              <app-button variant="text" (click)="closeModal()">Cancelar</app-button>
+              <app-button variant="filled" (click)="submitEntry()">Registrar</app-button>
             </div>
           </div>
         </div>

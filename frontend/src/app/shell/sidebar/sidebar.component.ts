@@ -1,6 +1,8 @@
 import { Component, EventEmitter, Output } from '@angular/core';
-import { RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../auth/services/auth.service';
+import { MatIconModule } from '@angular/material/icon';
+import { ButtonComponent } from '../../shared/components/button/button.component';
+import { LinkComponent } from '../../shared/components/link/link.component';
 
 interface NavItem {
   icon: string;
@@ -12,57 +14,58 @@ interface NavItem {
 @Component({
   selector: 'app-sidebar',
   standalone: true,
-  imports: [RouterLink, RouterLinkActive],
+  imports: [MatIconModule, ButtonComponent, LinkComponent],
   template: `
-    <nav class="flex flex-col w-60 h-full bg-nero text-steel font-sans select-none">
+    <aside class="flex flex-col w-60 h-full bg-inverse-on-surface text-black font-sans select-none">
       <!-- Brand -->
-      <div class="flex items-center gap-3 px-5 h-16 border-b border-white/10 shrink-0">
-        <span class="text-xl font-bold text-white tracking-tight">ConstruFormas</span>
-      </div>
+      <section class="flex flex-col items-center gap-3 shrink-0 px-4 py-6">
+        <span class="text-xl font-bold text-black tracking-tight">ConstruFormas</span>
+        <app-button variant="filled" icon="add">
+          <ng-template #content>Nuevo Presupuesto</ng-template>
+        </app-button>
+        <app-button>
+          <ng-template #content>información</ng-template>
+        </app-button>
+      </section>
 
-      <!-- Navigation -->
-      <div class="flex-1 overflow-y-auto py-4">
-        @for (item of visibleNavItems; track item.route) {
-          <a
-            [routerLink]="item.route"
-            routerLinkActive="bg-white/10 text-construction-red border-l-[3px] border-construction-red"
-            [routerLinkActiveOptions]="{ exact: item.route === '/' }"
-            class="flex items-center gap-3 px-5 py-2.5 text-sm font-medium border-l-[3px] border-transparent transition-colors hover:text-white hover:bg-white/5"
-            (click)="toggle.emit()"
-          >
-            <span class="text-base">{{ item.icon }}</span>
-            <span>{{ item.label }}</span>
-          </a>
-        }
-      </div>
+      <nav class="flex-1">
+        <!-- Navigation -->
+        <div class="flex flex-col flex-1 overflow-y-auto py-4 gap-1">
+          @for (item of visibleNavItems; track item.route) {
+            <app-link route="{{ item.route }}" (click)="toggle.emit()">
+              <ng-template #content>
+                <mat-icon fontSet="material-icons-outlined">{{ item.icon }}</mat-icon>
+                {{ item.label }}
+              </ng-template>
+            </app-link>
+          }
+        </div>
+      </nav>
 
       <!-- Logout -->
-      <div class="border-t border-white/10 p-4 shrink-0">
-        <button
-          (click)="onLogout()"
-          class="flex items-center gap-3 w-full px-3 py-2 text-sm text-steel hover:text-white transition-colors"
-        >
-          <span class="text-base">🚪</span>
-          <span>Cerrar sesión</span>
-        </button>
+      <div class="border-t border-white/10 px-4 py-6 shrink-0">
+        <app-button icon="logout" variant="text" (click)="onLogout()">
+          <ng-template #content>
+            <span>Cerrar sesión</span>
+          </ng-template>
+        </app-button>
       </div>
-    </nav>
+    </aside>
   `,
-  styles: `:host { display: block; height: 100%; }`
 })
 export class SidebarComponent {
   @Output() toggle = new EventEmitter<void>();
 
   private allNavItems: NavItem[] = [
-    { icon: '🏠', label: 'Dashboard', route: '/' },
-    { icon: '👥', label: 'Clientes', route: '/clients' },
-    { icon: '📁', label: 'Proyectos', route: '/projects' },
-    { icon: '📄', label: 'Presupuestos', route: '/budgets' },
-    { icon: '🧾', label: 'Facturas', route: '/invoices' },
-    { icon: '🚚', label: 'Proveedores', route: '/suppliers' },
-    { icon: '💳', label: 'Pagos', route: '/payments' },
-    { icon: '⏱️', label: 'Fichajes', route: '/clock' },
-    { icon: '👤', label: 'Usuarios', route: '/users', adminOnly: true },
+    { icon: 'dashboard', label: 'Dashboard', route: '/' },
+    { icon: 'groups', label: 'Clientes', route: '/clients' },
+    { icon: 'gite', label: 'Proyectos', route: '/projects' },
+    { icon: 'assignment', label: 'Presupuestos', route: '/budgets' },
+    { icon: 'receipt_long', label: 'Facturas', route: '/invoices' },
+    // { icon: 'home', label: 'Proveedores', route: '/suppliers' },
+    // { icon: 'home', label: 'Pagos', route: '/payments' },
+    // { icon: 'home', label: 'Fichajes', route: '/clock' },
+    { icon: 'user', label: 'Usuarios', route: '/users', adminOnly: true },
   ];
 
   constructor(private authService: AuthService) {}
@@ -70,7 +73,7 @@ export class SidebarComponent {
   get visibleNavItems(): NavItem[] {
     const user = this.authService.getUser();
     const isAdmin = user?.roles?.includes('ROLE_ADMIN') ?? false;
-    return this.allNavItems.filter(item => !item.adminOnly || isAdmin);
+    return this.allNavItems.filter((item) => !item.adminOnly || isAdmin);
   }
 
   onLogout(): void {

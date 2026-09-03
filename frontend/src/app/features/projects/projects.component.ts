@@ -20,7 +20,7 @@ import { SelectOrCreateComponent } from '../../shared/components/select-or-creat
       <!-- Header -->
       <div class="flex items-center justify-between">
         <h1 class="text-2xl font-bold text-nero">Proyectos</h1>
-        <app-button variant="primary" (click)="openCreateModal()">+ Nuevo Proyecto</app-button>
+        <app-button variant="filled" (click)="openCreateModal()">+ Nuevo Proyecto</app-button>
       </div>
 
       <!-- Financial Summary -->
@@ -75,8 +75,8 @@ import { SelectOrCreateComponent } from '../../shared/components/select-or-creat
                   </td>
                   <td class="py-3 px-4 text-steel">{{ project.startDate || '—' }}</td>
                   <td class="py-3 px-4 text-right space-x-2">
-                    <app-button variant="secondary" size="sm" (click)="openEditModal(project); $event.stopPropagation()">Editar</app-button>
-                    <app-button variant="danger" size="sm" (click)="deleteProject(project.id!); $event.stopPropagation()">Eliminar</app-button>
+                    <app-button variant="text" size="sm" (click)="openEditModal(project); $event.stopPropagation()">Editar</app-button>
+                    <app-button variant="text" size="sm" (click)="deleteProject(project.id!); $event.stopPropagation()">Eliminar</app-button>
                   </td>
                 </tr>
               } @empty {
@@ -138,8 +138,8 @@ import { SelectOrCreateComponent } from '../../shared/components/select-or-creat
             </div>
 
             <div class="flex justify-end gap-3 pt-2">
-              <app-button variant="secondary" (click)="closeModal()">Cancelar</app-button>
-              <app-button variant="primary" (click)="saveProject()">
+              <app-button variant="text" (click)="closeModal()">Cancelar</app-button>
+              <app-button variant="filled" (click)="saveProject()">
                 {{ editingProject ? 'Actualizar' : 'Crear' }}
               </app-button>
             </div>

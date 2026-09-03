@@ -29,16 +29,24 @@ export class BudgetService {
     return this.http.post<Budget>(`${this.API}/${id}/new-version?userId=${userId}`, {});
   }
 
-  approve(id: number, userId: number): Observable<Budget> {
-    return this.http.post<Budget>(`${this.API}/${id}/approve?userId=${userId}`, {});
+  approve(id: number): Observable<Budget> {
+    return this.updateStatus(id, 'APPROVED');
   }
 
   addItem(id: number, item: BudgetItem): Observable<BudgetItem> {
     return this.http.post<BudgetItem>(`${this.API}/${id}/items`, item);
   }
 
+  updateStatus(id: number, status: string): Observable<Budget> {
+    return this.http.post<Budget>(`${this.API}/${id}/status?status=${status}`, {});
+  }
+
   getItems(id: number): Observable<BudgetItem[]> {
     return this.http.get<BudgetItem[]>(`${this.API}/${id}/items`);
+  }
+
+  deleteItem(budgetId: number, itemId: number): Observable<void> {
+    return this.http.delete<void>(`${this.API}/${budgetId}/items/${itemId}`);
   }
 
   delete(id: number): Observable<void> {

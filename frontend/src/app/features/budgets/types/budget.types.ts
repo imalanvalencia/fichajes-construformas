@@ -1,3 +1,5 @@
+import { Project } from "../../projects/types/project.types";
+
 export interface Budget {
   id?: number;
   projectId: number;
@@ -20,6 +22,7 @@ export interface Budget {
   approvedAt?: string;
   createdAt?: string;
   updatedAt?: string;
+  project?: Project;
 }
 
 export type BudgetStatus = 'DRAFT' | 'SENT' | 'APPROVED' | 'REJECTED' | 'EXPIRED' | 'SUPERSEDED';

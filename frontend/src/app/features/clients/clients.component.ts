@@ -16,7 +16,7 @@ import { BadgeComponent } from '../../shared/components/badge/badge.component';
       <!-- Header -->
       <div class="flex items-center justify-between">
         <h1 class="text-2xl font-bold text-nero">Clientes</h1>
-        <app-button variant="primary" (click)="openCreateModal()">+ Nuevo Cliente</app-button>
+        <app-button variant="filled" (click)="openCreateModal()">+ Nuevo Cliente</app-button>
       </div>
 
       <!-- Search -->
@@ -51,8 +51,8 @@ import { BadgeComponent } from '../../shared/components/badge/badge.component';
                     <app-badge [status]="client.active ? 'ACTIVE' : 'INACTIVE'" />
                   </td>
                   <td class="py-3 px-4 text-right space-x-2">
-                    <app-button variant="secondary" size="sm" (click)="openEditModal(client)">Editar</app-button>
-                    <app-button variant="danger" size="sm" (click)="deleteClient(client.id!)">Eliminar</app-button>
+                    <app-button variant="text" size="sm" (click)="openEditModal(client)">Editar</app-button>
+                    <app-button variant="text" size="sm" (click)="deleteClient(client.id!)">Eliminar</app-button>
                   </td>
                 </tr>
               } @empty {
@@ -81,8 +81,8 @@ import { BadgeComponent } from '../../shared/components/badge/badge.component';
             <app-input label="Notas" [value]="formData.notes ?? ''" (valueChange)="formData.notes = $event" />
 
             <div class="flex justify-end gap-3 pt-2">
-              <app-button variant="secondary" (click)="closeModal()">Cancelar</app-button>
-              <app-button variant="primary" (click)="saveClient()">
+              <app-button variant="text" (click)="closeModal()">Cancelar</app-button>
+              <app-button variant="filled" (click)="saveClient()">
                 {{ editingClient ? 'Actualizar' : 'Crear' }}
               </app-button>
             </div>
