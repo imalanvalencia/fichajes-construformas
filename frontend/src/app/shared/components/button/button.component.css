@@ -1,0 +1,76 @@
+@reference "../../../app.css";
+
+/* ============================================================
+   BUTTON STYLES — Tokens + Variantes
+   !important necesario para overridear estilos de Material
+   ============================================================ */
+
+:host {
+  --btn-bg: var(--color-primary);
+  --btn-color: var(--color-on-primary);
+  --btn-border-color: var(--color-outline);
+  --btn-border-radius: 0px;
+  display: inline-block;
+  font-family: var(--font-sans);
+}
+
+/* Base */
+.btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px;
+}
+
+/* Override Material border-radius */
+button {
+  border-radius: var(--btn-border-radius) !important;
+}
+
+/* Variantes */
+.btn-text {
+  background: transparent !important;
+  color: var(--btn-color) !important;
+  border: none !important;
+}
+
+.btn-filled {
+  background: var(--btn-bg) !important;
+  color: var(--btn-color) !important;
+}
+
+.btn-elevated {
+  background: var(--btn-bg) !important;
+  color: var(--btn-color) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08) !important;
+}
+
+.btn-outlined {
+  background: transparent !important;
+  color: var(--btn-bg) !important;
+  border: 1px solid var(--btn-border-color) !important;
+}
+
+.btn-tonal {
+  background: var(--color-secondary-container) !important;
+  color: var(--color-on-secondary-container) !important;
+}
+
+.btn-icon {
+  background: transparent !important;
+  padding: 8px !important;
+  color: var(--btn-bg) !important;
+}
+
+/* Sizes */
+.btn-sm {
+  min-width: 0 !important;
+  padding: 4px 12px !important;
+  font-size: 12px !important;
+}
+
+.btn-lg {
+  min-width: 0 !important;
+  padding: 12px 24px !important;
+  font-size: 16px !important;
+}

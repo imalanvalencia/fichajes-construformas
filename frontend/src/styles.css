@@ -1,24 +1,2 @@
 @import 'tailwindcss';
-
-@theme {
-  /* === Construformas Brand Colors === */
-  --color-primary: #1C1C1D;
-  --color-accent: #E22D2D;
-  --color-background: #E1E5E7;
-  --color-disabled: #ACB4B6;
-  --color-surface: #f6fafc;
-  --color-surface-white: #ffffff;
-
-  /* === Semantic Aliases === */
-  --color-nero: #1C1C1D;
-  --color-construction-red: #E22D2D;
-  --color-cement: #E1E5E7;
-  --color-steel: #ACB4B6;
-
-  /* === Shapes — Sharp corners enforced globally === */
-  --radius-default: 0px;
-
-  /* === Typography === */
-  --font-sans: 'Poppins', ui-sans-serif, system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
-}
+@import './app/app.css';

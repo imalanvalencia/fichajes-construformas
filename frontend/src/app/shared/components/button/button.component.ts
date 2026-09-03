@@ -1,43 +1,69 @@
-import { Component, Input } from '@angular/core';
+import { Component, ContentChild, input, TemplateRef } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
+import { MatIconModule } from '@angular/material/icon';
+import { MatButtonAppearance, MatButtonModule } from '@angular/material/button';
+
+export type ButtonVariant =
+  | 'text'
+  | 'filled'
+  | 'elevated'
+  | 'outlined'
+  | 'tonal'
+  | 'icon'
+  | 'fab'
+  | 'miniFab'
+  | 'fabExtended';
 
 @Component({
   selector: 'app-button',
-  standalone: true,
+  imports: [NgTemplateOutlet, MatIconModule, MatButtonModule],
   template: `
-    <button
-      [type]="type"
-      [disabled]="disabled"
-      [class]="buttonClasses"
-    >
-      <ng-content />
-    </button>
+    @if (isStandardVariant) {
+      <button [matButton]="matAppearance" [disabled]="disabled()" [class]="classes">
+        @if (icon()) { <mat-icon matPrefix [fontIcon]="icon()!" /> }
+        <ng-container [ngTemplateOutlet]="content" />
+      </button>
+    } @else if (variant() === 'icon') {
+      <button matIconButton [disabled]="disabled()" [class]="classes">
+        @if (icon()) { <mat-icon [fontIcon]="icon()!" /> }
+        <ng-container [ngTemplateOutlet]="content" />
+      </button>
+    } @else if (variant() === 'fab') {
+      <button matFab [disabled]="disabled()" [class]="classes">
+        @if (icon()) { <mat-icon [fontIcon]="icon()!" /> }
+        <ng-container [ngTemplateOutlet]="content" />
+      </button>
+    } @else if (variant() === 'miniFab') {
+      <button matMiniFab [disabled]="disabled()" [class]="classes">
+        @if (icon()) { <mat-icon [fontIcon]="icon()!" /> }
+        <ng-container [ngTemplateOutlet]="content" />
+      </button>
+    } @else if (variant() === 'fabExtended') {
+      <button matFab extended [disabled]="disabled()" [class]="classes">
+        @if (icon()) { <mat-icon [fontIcon]="icon()!" /> }
+        <ng-container [ngTemplateOutlet]="content" />
+      </button>
+    }
   `,
-  styles: `
-    :host { display: inline-block; }
-    button:hover { filter: brightness(0.85); }
-  `
+  styleUrls: ['./button.component.css'],
 })
 export class ButtonComponent {
-  @Input() variant: 'primary' | 'secondary' | 'danger' = 'primary';
-  @Input() size: 'sm' | 'md' | 'lg' = 'md';
-  @Input() disabled = false;
-  @Input() type: 'button' | 'submit' | 'reset' = 'button';
+  @ContentChild('content', { read: TemplateRef }) content!: TemplateRef<unknown>;
 
-  get buttonClasses(): string {
-    const base = 'font-sans font-medium tracking-tight cursor-pointer transition-none';
-    const sizeMap = {
-      sm: 'px-3 py-1.5 text-xs',
-      md: 'px-5 py-2.5 text-sm',
-      lg: 'px-7 py-3 text-base',
-    };
-    const variantMap = {
-      primary: 'bg-nero text-white border border-nero hover:bg-nero',
-      secondary: 'bg-white text-nero border border-steel hover:bg-cement',
-      danger: 'bg-accent text-white border border-accent hover:bg-accent',
-    };
-    const disabledStyle = this.disabled
-      ? 'bg-steel text-white border border-steel cursor-not-allowed hover:bg-steel'
-      : '';
-    return `${base} ${sizeMap[this.size]} ${disabledStyle || variantMap[this.variant]}`;
+  readonly icon = input<string | null>(null);
+  readonly variant = input<ButtonVariant>('filled');
+  readonly size = input<'sm' | 'md' | 'lg'>('md');
+  readonly disabled = input<boolean>(false);
+
+  get isStandardVariant(): boolean {
+    return ['text', 'filled', 'elevated', 'outlined', 'tonal'].includes(this.variant());
+  }
+
+  get matAppearance(): MatButtonAppearance {
+    return this.variant() as MatButtonAppearance;
+  }
+
+  get classes(): string {
+    return `btn btn-${this.variant()} btn-${this.size()}`;
   }
 }

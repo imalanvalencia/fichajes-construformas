@@ -1,15 +1,15 @@
-import { Component, Input } from '@angular/core';
+import { Component, input } from '@angular/core';
 
 @Component({
   selector: 'app-badge',
   standalone: true,
   template: `
-    <span [class]="badgeClasses">{{ status }}</span>
+    <span [class]="badgeClasses">{{ status() }}</span>
   `,
   styles: `:host { display: inline-block; }`
 })
 export class BadgeComponent {
-  @Input() status = '';
+  status = input('');
 
   get badgeClasses(): string {
     const base = 'font-mono text-[10px] font-medium uppercase px-2 py-0.5';
@@ -34,7 +34,7 @@ export class BadgeComponent {
       OPERATOR: 'bg-blue-100 text-blue-700',
       MANAGER: 'bg-orange-100 text-orange-700',
     };
-    const color = colorMap[this.status?.toUpperCase()] ?? 'bg-gray-100 text-gray-500';
+    const color = colorMap[this.status()?.toUpperCase()] ?? 'bg-gray-100 text-gray-500';
     return `${base} ${color}`;
   }
 }
