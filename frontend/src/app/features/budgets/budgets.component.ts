@@ -2,12 +2,12 @@ import { Component, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { BudgetService } from './services/budget.service';
 import { ProjectService } from '../projects/services/project.service';
-import { Budget, BudgetItem, BudgetStatus } from './types/budget.types';
+import { Budget, BudgetItem } from './types/budget.types';
 import { Project } from '../projects/types/project.types';
 import { ButtonComponent } from '@components/shared/button/button.component';
 import { BudgetsTableComponent } from '@components/budgets/budgets-table/budgets-table.component';
 import { BudgetSummaryComponent } from '@components/budgets/budget-summary/budget-summary.component';
-import { ItemsPanelComponent } from '@components/budgets/items-panel/items-panel.component';
+import { BudgetEditorComponent } from '@components/budgets/budget-editor/budget-editor.component';
 import { CreateBudgetModalComponent } from '@components/budgets/create-budget-modal/create-budget-modal.component';
 
 @Component({
@@ -18,7 +18,7 @@ import { CreateBudgetModalComponent } from '@components/budgets/create-budget-mo
     ButtonComponent,
     BudgetsTableComponent,
     BudgetSummaryComponent,
-    ItemsPanelComponent,
+    BudgetEditorComponent,
     CreateBudgetModalComponent,
   ],
   template: `
@@ -42,10 +42,12 @@ import { CreateBudgetModalComponent } from '@components/budgets/create-budget-mo
       />
 
       @if (selectedBudget) {
-        <app-items-panel
+        <app-budget-editor
           [budget]="selectedBudget"
           [items]="budgetItems()"
           (onClose)="closeItemsPanel()"
+          (onSave)="onSaveBudget($event)"
+          (onUpdateItem)="onUpdateItem($event)"
           (onDeleteItem)="deleteItem($event)"
           (onAddItem)="addItem($event)"
         />
@@ -98,6 +100,25 @@ export class BudgetsComponent {
 
   closeItemsPanel(): void {
     this.selectedBudget = null;
+  }
+
+  onSaveBudget(changes: Partial<Budget>): void {
+    if (!this.selectedBudget?.id) return;
+    this.budgetService.createNewVersion(this.selectedBudget.id, 1).subscribe({
+      next: () => {
+        this.loadBudgets();
+        alert('Borrador guardado.');
+      },
+      error: (err) => {
+        alert('Error al guardar: ' + (err.error?.message || err.message));
+      },
+    });
+  }
+
+  onUpdateItem(event: { id: number; changes: Partial<BudgetItem> }): void {
+    if (!this.selectedBudget?.id) return;
+    // TODO: Implement PUT /api/budgets/{budgetId}/items/{itemId} in the backend
+    console.log('Update item', event.id, event.changes);
   }
 
   approveBudget(id: number): void {
