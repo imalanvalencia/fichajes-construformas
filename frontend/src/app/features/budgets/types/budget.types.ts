@@ -14,6 +14,8 @@ export interface Budget {
   validUntil?: string;
   notes?: string;
   paymentTerms?: string;
+  includesMaterials?: boolean;
+  includesIva?: boolean;
   termsConditions?: string;
   createdById: number;
   createdByName?: string;
