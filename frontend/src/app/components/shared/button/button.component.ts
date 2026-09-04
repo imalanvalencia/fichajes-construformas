@@ -1,7 +1,8 @@
 import { Component, input } from '@angular/core';
-import { NgTemplateOutlet } from '@angular/common'; // 1. Importar la directiva
+import { NgTemplateOutlet } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonAppearance, MatButtonModule } from '@angular/material/button';
+import { MatStepperModule } from '@angular/material/stepper';
 
 export type ButtonVariant =
   | 'text'
@@ -17,9 +18,10 @@ export type ButtonVariant =
 @Component({
   selector: 'app-button',
   imports: [
-    NgTemplateOutlet, // 2. Agregarla al arreglo de imports
+    NgTemplateOutlet,
     MatIconModule,
     MatButtonModule,
+    MatStepperModule,
   ],
   template: `
     <ng-template #buttonContent>
@@ -30,9 +32,19 @@ export type ButtonVariant =
     </ng-template>
 
     @if (isStandardVariant) {
-      <button [matButton]="matAppearance" [disabled]="disabled()" [class]="classes">
-        <ng-container *ngTemplateOutlet="buttonContent" />
-      </button>
+      @if (stepperNext()) {
+        <button [matButton]="matAppearance" [disabled]="disabled()" [class]="classes" matStepperNext>
+          <ng-container *ngTemplateOutlet="buttonContent" />
+        </button>
+      } @else if (stepperPrevious()) {
+        <button [matButton]="matAppearance" [disabled]="disabled()" [class]="classes" matStepperPrevious>
+          <ng-container *ngTemplateOutlet="buttonContent" />
+        </button>
+      } @else {
+        <button [matButton]="matAppearance" [disabled]="disabled()" [class]="classes">
+          <ng-container *ngTemplateOutlet="buttonContent" />
+        </button>
+      }
     } @else if (variant() === 'icon') {
       <button matIconButton [disabled]="disabled()" [class]="classes">
         <ng-container *ngTemplateOutlet="buttonContent" />
@@ -58,6 +70,8 @@ export class ButtonComponent {
   readonly variant = input<ButtonVariant>('filled');
   readonly size = input<'sm' | 'md' | 'lg'>('md');
   readonly disabled = input<boolean>(false);
+  readonly stepperNext = input<boolean>(false);
+  readonly stepperPrevious = input<boolean>(false);
 
   get isStandardVariant(): boolean {
     return ['text', 'filled', 'elevated', 'outlined', 'tonal'].includes(this.variant());

@@ -35,7 +35,7 @@
           </div>
           <div class="flex justify-end gap-3 pb-2">
             <app-button variant="text" (click)="onClose.emit()">Cancelar</app-button>
-            <app-button variant="filled" matStepperNext>Siguiente</app-button>
+            <app-button variant="filled" [stepperNext]="true">Siguiente</app-button>
           </div>
         </mat-step>
 
@@ -96,10 +96,10 @@
             </div>
           </div>
           <div class="flex justify-between pb-2">
-            <app-button variant="text" matStepperPrevious>Anterior</app-button>
+            <app-button variant="text" [stepperPrevious]="true">Anterior</app-button>
             <div class="flex gap-3">
               <app-button variant="text" (click)="onClose.emit()">Cancelar</app-button>
-              <app-button variant="filled" matStepperNext>Siguiente</app-button>
+              <app-button variant="filled" [stepperNext]="true">Siguiente</app-button>
             </div>
           </div>
         </mat-step>
@@ -113,7 +113,7 @@
             </div>
           </div>
           <div class="flex justify-between pb-2">
-            <app-button variant="text" matStepperPrevious>Anterior</app-button>
+            <app-button variant="text" [stepperPrevious]="true">Anterior</app-button>
             <div class="flex gap-3">
               <app-button variant="text" (click)="onClose.emit()">Cancelar</app-button>
               <app-button variant="filled" (click)="onCreate.emit()">Crear</app-button>
