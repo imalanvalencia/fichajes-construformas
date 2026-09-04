@@ -35,7 +35,9 @@
           </div>
           <div class="flex justify-end gap-3 pb-2">
             <app-button variant="text" (click)="onClose.emit()">Cancelar</app-button>
-            <app-button variant="filled" [stepperNext]="true">Siguiente</app-button>
+            <app-button variant="filled" [stepper]="stepper" stepperAction="next"
+              >Siguiente</app-button
+            >
           </div>
         </mat-step>
 
@@ -83,7 +85,9 @@
                         type="button"
                         (click)="removeNote($index)"
                         class="text-steel hover:text-nero text-xs shrink-0"
-                      >✕</button>
+                      >
+                        ✕
+                      </button>
                     }
                   </div>
                 }
@@ -92,14 +96,20 @@
                 type="button"
                 (click)="addNote()"
                 class="mt-2 font-mono text-xs text-steel hover:text-nero"
-              >+ Agregar nota</button>
+              >
+                + Agregar nota
+              </button>
             </div>
           </div>
           <div class="flex justify-between pb-2">
-            <app-button variant="text" [stepperPrevious]="true">Anterior</app-button>
+            <app-button variant="filled" [stepper]="stepper" stepperAction="previous"
+              >Anterior</app-button
+            >
             <div class="flex gap-3">
               <app-button variant="text" (click)="onClose.emit()">Cancelar</app-button>
-              <app-button variant="filled" [stepperNext]="true">Siguiente</app-button>
+              <app-button variant="filled" [stepper]="stepper" stepperAction="next"
+                >Siguiente</app-button
+              >
             </div>
           </div>
         </mat-step>
@@ -109,11 +119,15 @@
           <div class="space-y-4 py-4">
             <div class="border border-steel rounded-md p-4 bg-gray-50">
               <h3 class="font-mono text-xs font-medium text-steel mb-2">Acuerdo de Pago</h3>
-              <p class="font-sans text-sm text-nero whitespace-pre-line">{{ paymentAgreement() }}</p>
+              <p class="font-sans text-sm text-nero whitespace-pre-line">
+                {{ paymentAgreement() }}
+              </p>
             </div>
           </div>
           <div class="flex justify-between pb-2">
-            <app-button variant="text" [stepperPrevious]="true">Anterior</app-button>
+            <app-button variant="filled" [stepper]="stepper" stepperAction="previous"
+              >Anterior</app-button
+            >
             <div class="flex gap-3">
               <app-button variant="text" (click)="onClose.emit()">Cancelar</app-button>
               <app-button variant="filled" (click)="onCreate.emit()">Crear</app-button>
