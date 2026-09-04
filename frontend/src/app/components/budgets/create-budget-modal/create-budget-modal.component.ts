@@ -28,8 +28,6 @@ export class CreateBudgetModalComponent {
   onCreateProject = output<string>();
   formChange = output<Partial<Budget>>();
 
-  currentStep = signal(0);
-
   private currencyFormatter = new Intl.NumberFormat('es-ES', {
     style: 'currency',
     currency: 'EUR',
@@ -94,13 +92,5 @@ export class CreateBudgetModalComponent {
   private syncNotes(): void {
     const joined = this.notesList().filter(n => n.trim()).join('\n');
     this.updateField('notes', joined);
-  }
-
-  nextStep(): void {
-    this.currentStep.update(s => s + 1);
-  }
-
-  prevStep(): void {
-    this.currentStep.update(s => s - 1);
   }
 }
