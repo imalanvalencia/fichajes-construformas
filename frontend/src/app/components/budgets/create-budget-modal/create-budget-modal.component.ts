@@ -1,15 +1,20 @@
-import { Component, computed, input, output } from '@angular/core';
+import { Component, computed, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Budget, BudgetType } from '../../../features/budgets/types/budget.types';
 import { Project } from '../../../features/projects/types/project.types';
 import { ButtonComponent } from '../../shared/button/button.component';
-import { InputComponent } from '../../shared/input/input.component';
 import { SelectOrCreateComponent } from '../../shared/select-or-create/select-or-create.component';
+
+const DEFAULT_NOTES = [
+  'Plazo de ejecución: A determinar tras la firma del contrato.',
+  'Garantía: Conforme a la legislación vigente una vez finalizados y entregados los trabajos.',
+  'Validez: Durante: 30 días.',
+];
 
 @Component({
   selector: 'app-create-budget-modal',
   standalone: true,
-  imports: [FormsModule, ButtonComponent, InputComponent, SelectOrCreateComponent],
+  imports: [FormsModule, ButtonComponent, SelectOrCreateComponent],
   template: `
     @if (show()) {
       <div class="fixed inset-0 z-50 flex items-center justify-center">
@@ -42,11 +47,32 @@ import { SelectOrCreateComponent } from '../../shared/select-or-create/select-or
             </select>
           </div>
 
-          <app-input
-            label="Notas"
-            [value]="form().notes ?? ''"
-            (valueChange)="updateField('notes', $event)"
-          />
+          <!-- Notas -->
+          <div>
+            <label class="block font-mono text-xs font-medium text-steel mb-2">Notas</label>
+            <div class="space-y-2">
+              @for (note of notesList(); track $index) {
+                <div class="flex items-center gap-2">
+                  <input
+                    type="text"
+                    [value]="note"
+                    (change)="updateNote($index, $any($event.target).value)"
+                    class="flex-1 bg-transparent font-sans text-sm text-nero border-b border-steel outline-none py-1 px-0"
+                  />
+                  <button
+                    type="button"
+                    (click)="removeNote($index)"
+                    class="text-steel hover:text-nero text-xs shrink-0"
+                  >✕</button>
+                </div>
+              }
+            </div>
+            <button
+              type="button"
+              (click)="addNote()"
+              class="mt-2 font-mono text-xs text-steel hover:text-nero"
+            >+ Agregar nota</button>
+          </div>
 
           <!-- Checkboxes -->
           <div class="space-y-2">
@@ -133,5 +159,30 @@ export class CreateBudgetModalComponent {
 
   updateField(field: keyof Budget, value: unknown): void {
     this.formChange.emit({ [field]: value });
+  }
+
+  notesList = signal<string[]>([...DEFAULT_NOTES]);
+
+  updateNote(index: number, value: string): void {
+    this.notesList.update(notes => {
+      const updated = [...notes];
+      updated[index] = value;
+      return updated;
+    });
+    this.syncNotes();
+  }
+
+  addNote(): void {
+    this.notesList.update(notes => [...notes, '']);
+  }
+
+  removeNote(index: number): void {
+    this.notesList.update(notes => notes.filter((_, i) => i !== index));
+    this.syncNotes();
+  }
+
+  private syncNotes(): void {
+    const joined = this.notesList().filter(n => n.trim()).join('\n');
+    this.updateField('notes', joined);
   }
 }
