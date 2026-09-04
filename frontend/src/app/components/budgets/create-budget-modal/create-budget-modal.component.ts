@@ -53,13 +53,15 @@ const DEFAULT_NOTES = [
             <div class="space-y-2">
               @for (note of notesList(); track $index) {
                 <div class="flex items-center gap-2">
-                  <input
-                    type="text"
-                    [value]="note"
-                    (change)="updateNote($index, $any($event.target).value)"
-                    class="flex-1 bg-transparent font-sans text-sm text-nero border-b border-steel outline-none py-1 px-0"
-                  />
-                  @if ($index >= defaultNotesCount) {
+                  @if ($index < defaultNotesCount) {
+                    <span class="flex-1 font-sans text-sm text-nero py-1">{{ note }}</span>
+                  } @else {
+                    <input
+                      type="text"
+                      [value]="note"
+                      (change)="updateNote($index, $any($event.target).value)"
+                      class="flex-1 bg-transparent font-sans text-sm text-nero border-b border-steel outline-none py-1 px-0"
+                    />
                     <button
                       type="button"
                       (click)="removeNote($index)"
