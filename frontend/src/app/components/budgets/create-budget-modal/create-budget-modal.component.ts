@@ -59,11 +59,13 @@ const DEFAULT_NOTES = [
                     (change)="updateNote($index, $any($event.target).value)"
                     class="flex-1 bg-transparent font-sans text-sm text-nero border-b border-steel outline-none py-1 px-0"
                   />
-                  <button
-                    type="button"
-                    (click)="removeNote($index)"
-                    class="text-steel hover:text-nero text-xs shrink-0"
-                  >✕</button>
+                  @if ($index >= defaultNotesCount) {
+                    <button
+                      type="button"
+                      (click)="removeNote($index)"
+                      class="text-steel hover:text-nero text-xs shrink-0"
+                    >✕</button>
+                  }
                 </div>
               }
             </div>
@@ -162,6 +164,7 @@ export class CreateBudgetModalComponent {
   }
 
   notesList = signal<string[]>([...DEFAULT_NOTES]);
+  defaultNotesCount = DEFAULT_NOTES.length;
 
   updateNote(index: number, value: string): void {
     this.notesList.update(notes => {
