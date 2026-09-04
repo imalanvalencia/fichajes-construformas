@@ -1,0 +1,133 @@
+@if (show()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center">
+    <div class="absolute inset-0 bg-black/50" (click)="onClose.emit()"></div>
+    <div
+      class="relative bg-white border border-steel w-full max-w-lg mx-4 p-6 max-h-[90vh] overflow-y-auto"
+    >
+      <h2 class="text-lg font-bold text-nero mb-4">Nuevo Presupuesto</h2>
+
+      <!-- Step indicators -->
+      <div class="flex gap-1 mb-6">
+        @for (step of [0, 1, 2]; track step) {
+          <div
+            class="h-1 flex-1 rounded-full"
+            [class]="currentStep() >= step ? 'bg-nero' : 'bg-steel/30'"
+          ></div>
+        }
+      </div>
+
+      <!-- Step 1: Datos del proyecto -->
+      @if (currentStep() === 0) {
+        <div class="space-y-4">
+          <app-select-or-create
+            label="Proyecto *"
+            [items]="projects()"
+            [value]="form().projectId ?? null"
+            placeholder="Seleccionar proyecto..."
+            [required]="true"
+            (valueChange)="updateField('projectId', $event)"
+            (create)="onCreateProject.emit($event)"
+          />
+
+          <div class="relative">
+            <label class="block font-mono text-xs font-medium text-steel mb-1">Tipo *</label>
+            <select
+              [ngModel]="form().budgetType"
+              (ngModelChange)="updateField('budgetType', $event)"
+              class="w-full bg-transparent font-sans text-sm text-nero border-b border-steel outline-none py-2 px-0"
+            >
+              <option value="ORIGINAL">Original</option>
+              <option value="ANNEX">Anexo</option>
+              <option value="VARIATION">Variación</option>
+            </select>
+          </div>
+        </div>
+      }
+
+      <!-- Step 2: Configuración -->
+      @if (currentStep() === 1) {
+        <div class="space-y-4">
+          <!-- Checkboxes -->
+          <div class="space-y-2">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                [ngModel]="form().includesMaterials ?? false"
+                (ngModelChange)="updateField('includesMaterials', $event)"
+                class="w-4 h-4 accent-nero border-steel rounded"
+              />
+              <span class="font-sans text-sm text-nero">Incluye materiales</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                [ngModel]="form().includesIva ?? false"
+                (ngModelChange)="updateField('includesIva', $event)"
+                class="w-4 h-4 accent-nero border-steel rounded"
+              />
+              <span class="font-sans text-sm text-nero">Incluye IVA</span>
+            </label>
+          </div>
+
+          <!-- Notas -->
+          <div>
+            <label class="block font-mono text-xs font-medium text-steel mb-2">Notas</label>
+            <div class="space-y-2">
+              @for (note of notesList(); track $index) {
+                <div class="flex items-center gap-2">
+                  @if ($index < defaultNotesCount) {
+                    <span class="flex-1 font-sans text-sm text-nero py-1">{{ note }}</span>
+                  } @else {
+                    <input
+                      type="text"
+                      [value]="note"
+                      (change)="updateNote($index, $any($event.target).value)"
+                      class="flex-1 bg-transparent font-sans text-sm text-nero border-b border-steel outline-none py-1 px-0"
+                    />
+                    <button
+                      type="button"
+                      (click)="removeNote($index)"
+                      class="text-steel hover:text-nero text-xs shrink-0"
+                    >✕</button>
+                  }
+                </div>
+              }
+            </div>
+            <button
+              type="button"
+              (click)="addNote()"
+              class="mt-2 font-mono text-xs text-steel hover:text-nero"
+            >+ Agregar nota</button>
+          </div>
+        </div>
+      }
+
+      <!-- Step 3: Acuerdo de pago -->
+      @if (currentStep() === 2) {
+        <div class="space-y-4">
+          <div class="border border-steel rounded-md p-4 bg-gray-50">
+            <h3 class="font-mono text-xs font-medium text-steel mb-2">Acuerdo de Pago</h3>
+            <p class="font-sans text-sm text-nero whitespace-pre-line">{{ paymentAgreement() }}</p>
+          </div>
+        </div>
+      }
+
+      <!-- Navigation -->
+      <div class="flex justify-between pt-6">
+        <div>
+          @if (currentStep() > 0) {
+            <app-button variant="text" (click)="prevStep()">Anterior</app-button>
+          }
+        </div>
+        <div class="flex gap-3">
+          <app-button variant="text" (click)="onClose.emit()">Cancelar</app-button>
+          @if (currentStep() < 2) {
+            <app-button variant="filled" (click)="nextStep()">Siguiente</app-button>
+          } @else {
+            <app-button variant="filled" (click)="onCreate.emit()">Crear</app-button>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+}

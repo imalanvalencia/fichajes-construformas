@@ -1,9 +1,10 @@
 import { Component, computed, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Budget, BudgetType } from '../../../features/budgets/types/budget.types';
+import { Budget } from '../../../features/budgets/types/budget.types';
 import { Project } from '../../../features/projects/types/project.types';
 import { ButtonComponent } from '../../shared/button/button.component';
 import { SelectOrCreateComponent } from '../../shared/select-or-create/select-or-create.component';
+import { MatStepperModule } from '@angular/material/stepper';
 
 const DEFAULT_NOTES = [
   'Plazo de ejecución: A determinar tras la firma del contrato.',
@@ -14,106 +15,8 @@ const DEFAULT_NOTES = [
 @Component({
   selector: 'app-create-budget-modal',
   standalone: true,
-  imports: [FormsModule, ButtonComponent, SelectOrCreateComponent],
-  template: `
-    @if (show()) {
-      <div class="fixed inset-0 z-50 flex items-center justify-center">
-        <div class="absolute inset-0 bg-black/50" (click)="onClose.emit()"></div>
-        <div
-          class="relative bg-white border border-steel w-full max-w-lg mx-4 p-6 space-y-4 max-h-[90vh] overflow-y-auto"
-        >
-          <h2 class="text-lg font-bold text-nero">Nuevo Presupuesto</h2>
-
-          <app-select-or-create
-            label="Proyecto *"
-            [items]="projects()"
-            [value]="form().projectId ?? null"
-            placeholder="Seleccionar proyecto..."
-            [required]="true"
-            (valueChange)="updateField('projectId', $event)"
-            (create)="onCreateProject.emit($event)"
-          />
-
-          <div class="relative">
-            <label class="block font-mono text-xs font-medium text-steel mb-1">Tipo *</label>
-            <select
-              [ngModel]="form().budgetType"
-              (ngModelChange)="updateField('budgetType', $event)"
-              class="w-full bg-transparent font-sans text-sm text-nero border-b border-steel outline-none py-2 px-0"
-            >
-              <option value="ORIGINAL">Original</option>
-              <option value="ANNEX">Anexo</option>
-              <option value="VARIATION">Variación</option>
-            </select>
-          </div>
-
-          <!-- Notas -->
-          <div>
-            <label class="block font-mono text-xs font-medium text-steel mb-2">Notas</label>
-            <div class="space-y-2">
-              @for (note of notesList(); track $index) {
-                <div class="flex items-center gap-2">
-                  @if ($index < defaultNotesCount) {
-                    <span class="flex-1 font-sans text-sm text-nero py-1">{{ note }}</span>
-                  } @else {
-                    <input
-                      type="text"
-                      [value]="note"
-                      (change)="updateNote($index, $any($event.target).value)"
-                      class="flex-1 bg-transparent font-sans text-sm text-nero border-b border-steel outline-none py-1 px-0"
-                    />
-                    <button
-                      type="button"
-                      (click)="removeNote($index)"
-                      class="text-steel hover:text-nero text-xs shrink-0"
-                    >✕</button>
-                  }
-                </div>
-              }
-            </div>
-            <button
-              type="button"
-              (click)="addNote()"
-              class="mt-2 font-mono text-xs text-steel hover:text-nero"
-            >+ Agregar nota</button>
-          </div>
-
-          <!-- Checkboxes -->
-          <div class="space-y-2">
-            <label class="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                [ngModel]="form().includesMaterials ?? false"
-                (ngModelChange)="updateField('includesMaterials', $event)"
-                class="w-4 h-4 accent-nero border-steel rounded"
-              />
-              <span class="font-sans text-sm text-nero">Incluye materiales</span>
-            </label>
-            <label class="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                [ngModel]="form().includesIva ?? false"
-                (ngModelChange)="updateField('includesIva', $event)"
-                class="w-4 h-4 accent-nero border-steel rounded"
-              />
-              <span class="font-sans text-sm text-nero">Incluye IVA</span>
-            </label>
-          </div>
-
-          <!-- Acuerdo de Pago Preview -->
-          <div class="border border-steel rounded-md p-4 bg-gray-50">
-            <h3 class="font-mono text-xs font-medium text-steel mb-2">Acuerdo de Pago</h3>
-            <p class="font-sans text-sm text-nero whitespace-pre-line">{{ paymentAgreement() }}</p>
-          </div>
-
-          <div class="flex justify-end gap-3 pt-2">
-            <app-button variant="text" (click)="onClose.emit()">Cancelar</app-button>
-            <app-button variant="filled" (click)="onCreate.emit()">Crear</app-button>
-          </div>
-        </div>
-      </div>
-    }
-  `,
+  imports: [FormsModule, ButtonComponent, SelectOrCreateComponent, MatStepperModule],
+  templateUrl: './create-budget-modal.component.html',
 })
 export class CreateBudgetModalComponent {
   show = input(false);
@@ -124,6 +27,8 @@ export class CreateBudgetModalComponent {
   onCreate = output<void>();
   onCreateProject = output<string>();
   formChange = output<Partial<Budget>>();
+
+  currentStep = signal(0);
 
   private currencyFormatter = new Intl.NumberFormat('es-ES', {
     style: 'currency',
@@ -189,5 +94,13 @@ export class CreateBudgetModalComponent {
   private syncNotes(): void {
     const joined = this.notesList().filter(n => n.trim()).join('\n');
     this.updateField('notes', joined);
+  }
+
+  nextStep(): void {
+    this.currentStep.update(s => s + 1);
+  }
+
+  prevStep(): void {
+    this.currentStep.update(s => s - 1);
   }
 }
