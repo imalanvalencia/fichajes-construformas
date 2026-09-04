@@ -4,7 +4,6 @@ import { Budget } from '../../../features/budgets/types/budget.types';
 import { Project } from '../../../features/projects/types/project.types';
 import { ButtonComponent } from '../../shared/button/button.component';
 import { SelectOrCreateComponent } from '../../shared/select-or-create/select-or-create.component';
-import { MatStepperModule } from '@angular/material/stepper';
 
 const DEFAULT_NOTES = [
   'Plazo de ejecución: A determinar tras la firma del contrato.',
@@ -15,7 +14,7 @@ const DEFAULT_NOTES = [
 @Component({
   selector: 'app-create-budget-modal',
   standalone: true,
-  imports: [FormsModule, ButtonComponent, SelectOrCreateComponent, MatStepperModule],
+  imports: [FormsModule, ButtonComponent, SelectOrCreateComponent],
   templateUrl: './create-budget-modal.component.html',
 })
 export class CreateBudgetModalComponent {
