@@ -12,14 +12,13 @@ import { SuppliersComponent } from './features/suppliers/suppliers.component';
 import { PaymentsComponent } from './features/payments/payments.component';
 import { ClockComponent } from './features/clock/clock.component';
 import { UsersComponent } from './features/users/users.component';
+import { DesignSystem } from './features/design-system/design-system';
 
 export const routes: Routes = [
   {
     path: 'login',
     component: AuthLayoutComponent,
-    children: [
-      { path: '', component: LoginComponent },
-    ],
+    children: [{ path: '', component: LoginComponent }],
   },
   {
     path: '',
@@ -31,10 +30,11 @@ export const routes: Routes = [
       { path: 'projects', component: ProjectsComponent },
       { path: 'budgets', component: BudgetsComponent },
       { path: 'invoices', component: InvoicesComponent },
-      { path: 'suppliers', component: SuppliersComponent },
-      { path: 'payments', component: PaymentsComponent },
-      { path: 'clock', component: ClockComponent },
-      { path: 'users', component: UsersComponent },
+      { path: 'ui', component: DesignSystem },
+      // { path: 'suppliers', component: SuppliersComponent },
+      // { path: 'payments', component: PaymentsComponent },
+      // { path: 'clock', component: ClockComponent },
+      // { path: 'users', component: UsersComponent },
     ],
   },
   { path: '**', redirectTo: '' },

@@ -3,6 +3,18 @@
 {
   "compileOnSave": false,
   "compilerOptions": {
+    "baseUrl": "src",
+    "paths": {
+      "@app/*": ["app/*"],
+      "@components/*": ["app/components/*"],
+      "@shared-components": ["app/components/shared"],
+      "@shared-components/*": ["app/components/shared/*"],
+      "@features/*": ["app/features/*"],
+      "@auth/*": ["app/auth/*"],
+      "@shell/*": ["app/shell/*"],
+      "@env/*": ["environments/*"]
+    },
+    "ignoreDeprecations": "6.0",
     "noImplicitOverride": true,
     "noPropertyAccessFromIndexSignature": true,
     "noImplicitReturns": true,

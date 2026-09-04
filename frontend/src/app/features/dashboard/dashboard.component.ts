@@ -2,8 +2,8 @@ import { Component, signal } from '@angular/core';
 import { AuthService } from '../../auth/services/auth.service';
 import { ClientService } from '../clients/services/client.service';
 import { ProjectService } from '../projects/services/project.service';
-import { MetricCardComponent } from '../../shared/components/metric-card/metric-card.component';
-import { CardComponent } from '../../shared/components/card/card.component';
+import { MetricCardComponent } from '@shared-components/metric-card/metric-card.component';
+import { CardComponent } from '@shared-components/card/card.component';
 
 @Component({
   selector: 'app-dashboard',

@@ -1,7 +1,8 @@
+@import "tailwindcss";
 @reference "../../../app.css";
 
 /* ============================================================
-   BUTTON STYLES — Tokens + Variantes
+   LINK STYLES — Compartido con button-container
    !important necesario para overridear estilos de Material
    ============================================================ */
 
@@ -12,18 +13,16 @@
   --btn-border-radius: 0px;
   display: inline-block;
   font-family: var(--font-sans);
+
 }
 
 /* Base */
 .btn {
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: 8px;
+  @apply inline-flex items-center justify-center gap-2;
 }
 
 /* Override Material border-radius */
-button {
+a {
   border-radius: var(--btn-border-radius) !important;
 }
 
@@ -62,15 +61,18 @@ button {
   color: var(--btn-bg) !important;
 }
 
-/* Sizes */
-.btn-sm {
-  min-width: 0 !important;
-  padding: 4px 12px !important;
-  font-size: 12px !important;
+.btn-link {
+  background: transparent !important;
+  color: var(--btn-bg) !important;
+  text-decoration: underline !important;
+  text-underline-offset: 2px !important;
 }
 
-.btn-lg {
-  min-width: 0 !important;
-  padding: 12px 24px !important;
-  font-size: 16px !important;
+.btn-link:hover {
+  color: var(--color-secondary) !important;
+}
+
+/* Link active state */
+a.active {
+  font-weight: 600;
 }

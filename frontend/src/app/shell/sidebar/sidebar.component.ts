@@ -1,8 +1,8 @@
 import { Component, EventEmitter, Output } from '@angular/core';
-import { AuthService } from '../../auth/services/auth.service';
+import { AuthService } from '@auth/services/auth.service';
 import { MatIconModule } from '@angular/material/icon';
-import { ButtonComponent } from '../../shared/components/button/button.component';
-import { LinkComponent } from '../../shared/components/link/link.component';
+import { NavLinkComponent } from '@components/sidebar/nav-link/nav-link.component';
+import { ButtonComponent } from '@shared-components';
 
 interface NavItem {
   icon: string;
@@ -14,30 +14,24 @@ interface NavItem {
 @Component({
   selector: 'app-sidebar',
   standalone: true,
-  imports: [MatIconModule, ButtonComponent, LinkComponent],
+  imports: [MatIconModule, ButtonComponent, NavLinkComponent],
   template: `
     <aside class="flex flex-col w-60 h-full bg-inverse-on-surface text-black font-sans select-none">
       <!-- Brand -->
       <section class="flex flex-col items-center gap-3 shrink-0 px-4 py-6">
         <span class="text-xl font-bold text-black tracking-tight">ConstruFormas</span>
-        <app-button variant="filled" icon="add">
-          <ng-template #content>Nuevo Presupuesto</ng-template>
-        </app-button>
-        <app-button>
-          <ng-template #content>información</ng-template>
-        </app-button>
+        <app-button variant="filled" icon="add"> Nuevo Presupuesto </app-button>
+        <app-button> información </app-button>
       </section>
 
       <nav class="flex-1">
         <!-- Navigation -->
         <div class="flex flex-col flex-1 overflow-y-auto py-4 gap-1">
           @for (item of visibleNavItems; track item.route) {
-            <app-link route="{{ item.route }}" (click)="toggle.emit()">
-              <ng-template #content>
-                <mat-icon fontSet="material-icons-outlined">{{ item.icon }}</mat-icon>
-                {{ item.label }}
-              </ng-template>
-            </app-link>
+            <app-nav-link route="{{ item.route }}" (click)="toggle.emit()">
+              <mat-icon fontSet="material-icons-outlined">{{ item.icon }}</mat-icon>
+              {{ item.label }}
+            </app-nav-link>
           }
         </div>
       </nav>
@@ -45,9 +39,7 @@ interface NavItem {
       <!-- Logout -->
       <div class="border-t border-white/10 px-4 py-6 shrink-0">
         <app-button icon="logout" variant="text" (click)="onLogout()">
-          <ng-template #content>
-            <span>Cerrar sesión</span>
-          </ng-template>
+          <span>Cerrar sesión</span>
         </app-button>
       </div>
     </aside>

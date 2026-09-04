@@ -1,139 +1,48 @@
 import { Component, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import { UserService } from './services/user.service';
-import { User, UserRole, UserAvailability } from './types/user.types';
-import { ButtonComponent } from '../../shared/components/button/button.component';
-import { InputComponent } from '../../shared/components/input/input.component';
-import { CardComponent } from '../../shared/components/card/card.component';
-import { BadgeComponent } from '../../shared/components/badge/badge.component';
+import { User, UserRole } from './types/user.types';
+import { ButtonComponent } from '@shared-components/button/button.component';
+import { UsersTableComponent } from '@components/users/users-table/users-table.component';
+import { UserFormModalComponent } from '@components/users/user-form-modal/user-form-modal.component';
+import { UsersFiltersComponent } from '@components/users/users-filters/users-filters.component';
 
 @Component({
   selector: 'app-users',
   standalone: true,
-  imports: [FormsModule, ButtonComponent, InputComponent, CardComponent, BadgeComponent],
+  imports: [
+    ButtonComponent,
+    UsersTableComponent,
+    UserFormModalComponent,
+    UsersFiltersComponent,
+  ],
   template: `
     <div class="space-y-6">
-      <!-- Header -->
       <div class="flex items-center justify-between">
         <h1 class="text-2xl font-bold text-nero">Usuarios</h1>
         <app-button variant="filled" (click)="openCreateModal()">+ Nuevo Usuario</app-button>
       </div>
 
-      <!-- Filters -->
-      <app-card>
-        <div class="flex gap-4">
-          <div class="relative">
-            <label class="block font-mono text-xs font-medium text-steel mb-1">Filtrar por Rol</label>
-            <select
-              [(ngModel)]="filterRole"
-              (ngModelChange)="onFilterChange()"
-              class="w-full bg-transparent font-sans text-sm text-nero border-b border-steel outline-none py-2 px-0"
-            >
-              <option value="">Todos</option>
-              <option value="ADMIN">Administrador</option>
-              <option value="OPERATOR">Operador</option>
-              <option value="MANAGER">Gerente</option>
-            </select>
-          </div>
-        </div>
-      </app-card>
+      <app-users-filters
+        [filterRole]="filterRole"
+        (onFilterChange)="onFilterChange($event)"
+      />
 
-      <!-- Table -->
-      <app-card>
-        <div class="overflow-x-auto">
-          <table class="w-full text-sm">
-            <thead>
-              <tr class="border-b border-steel/30">
-                <th class="text-left py-3 px-4 font-mono text-xs font-medium text-steel uppercase">Nombre</th>
-                <th class="text-left py-3 px-4 font-mono text-xs font-medium text-steel uppercase">Email</th>
-                <th class="text-left py-3 px-4 font-mono text-xs font-medium text-steel uppercase">Teléfono</th>
-                <th class="text-left py-3 px-4 font-mono text-xs font-medium text-steel uppercase">NIE</th>
-                <th class="text-left py-3 px-4 font-mono text-xs font-medium text-steel uppercase">Rol</th>
-                <th class="text-left py-3 px-4 font-mono text-xs font-medium text-steel uppercase">Disponibilidad</th>
-                <th class="text-left py-3 px-4 font-mono text-xs font-medium text-steel uppercase">Estado</th>
-                <th class="text-right py-3 px-4 font-mono text-xs font-medium text-steel uppercase">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (user of filteredUsers(); track user.id) {
-                <tr class="border-b border-steel/10 hover:bg-cement/50">
-                  <td class="py-3 px-4 font-medium text-nero">{{ user.name }}</td>
-                  <td class="py-3 px-4 text-steel">{{ user.email }}</td>
-                  <td class="py-3 px-4 text-steel">{{ user.phone || '—' }}</td>
-                  <td class="py-3 px-4 text-steel font-mono">{{ user.nie || '—' }}</td>
-                  <td class="py-3 px-4">
-                    <app-badge [status]="user.role" />
-                  </td>
-                  <td class="py-3 px-4 text-steel">{{ formatAvailability(user.availability) }}</td>
-                  <td class="py-3 px-4">
-                    <app-badge [status]="user.active ? 'ACTIVE' : 'INACTIVE'" />
-                  </td>
-                  <td class="py-3 px-4 text-right space-x-2">
-                    <app-button variant="text" size="sm" (click)="openEditModal(user)">Editar</app-button>
-                    <app-button variant="text" size="sm" (click)="deleteUser(user.id!)">Eliminar</app-button>
-                  </td>
-                </tr>
-              } @empty {
-                <tr>
-                  <td colspan="8" class="py-8 text-center text-steel">No hay usuarios registrados.</td>
-                </tr>
-              }
-            </tbody>
-          </table>
-        </div>
-      </app-card>
+      <app-users-table
+        [users]="filteredUsers()"
+        (onEdit)="openEditModal($event)"
+        (onDelete)="deleteUser($event)"
+      />
 
-      <!-- Modal -->
-      @if (showModal()) {
-        <div class="fixed inset-0 z-50 flex items-center justify-center">
-          <div class="absolute inset-0 bg-black/50" (click)="closeModal()"></div>
-          <div class="relative bg-white border border-steel w-full max-w-lg mx-4 p-6 space-y-4 max-h-[90vh] overflow-y-auto">
-            <h2 class="text-lg font-bold text-nero">{{ editingUser ? 'Editar Usuario' : 'Nuevo Usuario' }}</h2>
-
-            <app-input label="Nombre *" [value]="formData.name ?? ''" (valueChange)="formData.name = $event" />
-            <app-input label="Email *" type="email" [value]="formData.email ?? ''" (valueChange)="formData.email = $event" />
-            <app-input label="Teléfono" [value]="formData.phone ?? ''" (valueChange)="formData.phone = $event" />
-            <app-input label="NIE" [value]="formData.nie ?? ''" (valueChange)="formData.nie = $event" />
-
-            @if (!editingUser) {
-              <app-input label="Contraseña *" type="password" [value]="formData.password ?? ''" (valueChange)="formData.password = $event" />
-            }
-
-            <div class="relative">
-              <label class="block font-mono text-xs font-medium text-steel mb-1">Rol *</label>
-              <select
-                [(ngModel)]="formData.role"
-                class="w-full bg-transparent font-sans text-sm text-nero border-b border-steel outline-none py-2 px-0"
-              >
-                <option value="ADMIN">Administrador</option>
-                <option value="OPERATOR">Operador</option>
-                <option value="MANAGER">Gerente</option>
-              </select>
-            </div>
-
-            <div class="relative">
-              <label class="block font-mono text-xs font-medium text-steel mb-1">Disponibilidad</label>
-              <select
-                [(ngModel)]="formData.availability"
-                class="w-full bg-transparent font-sans text-sm text-nero border-b border-steel outline-none py-2 px-0"
-              >
-                <option value="AVAILABLE">Disponible</option>
-                <option value="ON_LEAVE">En Permiso</option>
-                <option value="INACTIVE">Inactivo</option>
-              </select>
-            </div>
-
-            <div class="flex justify-end gap-3 pt-2">
-              <app-button variant="text" (click)="closeModal()">Cancelar</app-button>
-              <app-button variant="filled" (click)="saveUser()">
-                {{ editingUser ? 'Actualizar' : 'Crear' }}
-              </app-button>
-            </div>
-          </div>
-        </div>
-      }
+      <app-user-form-modal
+        [show]="showModal()"
+        [form]="formData"
+        [isEditing]="!!editingUser"
+        (onClose)="closeModal()"
+        (onSave)="saveUser()"
+        (onFormChange)="onFormChange($event)"
+      />
     </div>
-  `
+  `,
 })
 export class UsersComponent {
   users = signal<User[]>([]);
@@ -156,23 +65,15 @@ export class UsersComponent {
     });
   }
 
-  onFilterChange(): void {
-    if (this.filterRole) {
-      this.userService.getByRole(this.filterRole as UserRole).subscribe({
-        next: (data) => (this.filteredUsers.set(data)),
+  onFilterChange(role: string): void {
+    this.filterRole = role;
+    if (role) {
+      this.userService.getByRole(role as UserRole).subscribe({
+        next: (data) => this.filteredUsers.set(data),
       });
     } else {
       this.filteredUsers.set(this.users());
     }
-  }
-
-  formatAvailability(availability: UserAvailability): string {
-    const map: Record<UserAvailability, string> = {
-      AVAILABLE: 'Disponible',
-      ON_LEAVE: 'En Permiso',
-      INACTIVE: 'Inactivo',
-    };
-    return map[availability] || availability;
   }
 
   openCreateModal(): void {
@@ -191,6 +92,10 @@ export class UsersComponent {
     this.showModal.set(false);
     this.editingUser = null;
     this.formData = this.emptyForm();
+  }
+
+  onFormChange(change: Partial<User>): void {
+    this.formData = { ...this.formData, ...change };
   }
 
   saveUser(): void {
