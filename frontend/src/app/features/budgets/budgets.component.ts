@@ -92,10 +92,7 @@ export class BudgetsComponent {
   }
 
   viewItems(budget: Budget): void {
-    this.selectedBudget = budget;
-    this.budgetService.getItems(budget.id!).subscribe({
-      next: (items) => this.budgetItems.set(items),
-    });
+    this.openEditor(budget);
   }
 
   closeItemsPanel(): void {
@@ -152,10 +149,18 @@ export class BudgetsComponent {
   createBudget(): void {
     if (!this.newBudget.projectId || !this.newBudget.budgetType) return;
     this.budgetService.create(this.newBudget as Budget).subscribe({
-      next: () => {
+      next: (created) => {
         this.loadBudgets();
         this.closeCreateModal();
+        this.openEditor(created);
       },
+    });
+  }
+
+  openEditor(budget: Budget): void {
+    this.selectedBudget = budget;
+    this.budgetService.getItems(budget.id!).subscribe({
+      next: (items) => this.budgetItems.set(items),
     });
   }
 
