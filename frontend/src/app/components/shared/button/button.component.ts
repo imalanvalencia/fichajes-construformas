@@ -20,7 +20,7 @@ export type ButtonVariant =
   template: `
     <ng-template #buttonContent>
       @if (icon()) {
-        <mat-icon iconPositionEnd>{{ icon()! }}</mat-icon>
+        <mat-icon fontSet="material-icons-outlined">{{ icon()! }}</mat-icon>
       }
       <ng-content />
     </ng-template>
@@ -47,23 +47,51 @@ export type ButtonVariant =
       </button>
     }
   `,
-  styleUrls: ['./button.component.css'],
+  styles: `
+    @import 'tailwindcss';
+    @import '../../../app.css';
+
+    :host {
+      @apply inline-flex! items-center;
+    }
+
+    button,
+    a {
+      @apply inline-flex! items-center! gap-4!;
+    }
+
+    mat-icon {
+      @apply align-middle;
+    }
+
+    .btn-filled {
+      @apply hover:bg-accent;
+    }
+
+    .btn-tonal {
+      @apply bg-primary/70! hover:bg-steel;
+    }
+  `,
 })
 export class ButtonComponent {
   readonly icon = input<string | null>(null);
   readonly variant = input<ButtonVariant>('filled');
   readonly size = input<'sm' | 'md' | 'lg'>('md');
   readonly disabled = input<boolean>(false);
+  readonly hostClasses = input<string>('');
 
   get isStandardVariant(): boolean {
     return ['text', 'filled', 'elevated', 'outlined', 'tonal'].includes(this.variant());
   }
 
   get matAppearance(): MatButtonAppearance {
+    if (!this.isStandardVariant) {
+      throw new Error(`Invalid variant for matButton: ${this.variant()}`);
+    }
     return this.variant() as MatButtonAppearance;
   }
 
   get classes(): string {
-    return `btn btn-${this.variant()} btn-${this.size()}`;
+    return `btn-${this.variant()} btn-${this.size()} ${this.hostClasses()}`.trim();
   }
 }
