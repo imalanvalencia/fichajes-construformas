@@ -1,9 +1,14 @@
-import { Component, input, model, forwardRef, ElementRef, ViewChild } from '@angular/core';
+import { Component, input, model, forwardRef } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 
+export interface SelectOption<T = string> {
+  value: T;
+  label: string;
+}
+
 @Component({
-  selector: 'app-input',
+  selector: 'app-select',
   standalone: true,
   imports: [CommonModule],
   template: `
@@ -16,20 +21,25 @@ import { CommonModule } from '@angular/common';
           {{ label() }}
         </label>
       }
-      <input
-        #inputEl
+      <select
         [id]="fieldId"
-        [type]="type()"
         [value]="value()"
         [disabled]="disabled()"
         [attr.aria-describedby]="describedBy"
         [attr.aria-invalid]="errorMessage() ? true : null"
         [attr.aria-required]="required() ? true : null"
-        [class]="inputClasses"
-        (input)="onInput($event)"
+        [class]="selectClasses"
+        (change)="onSelect($event)"
         (focus)="focused = true"
         (blur)="focused = false; touched = true; handleTouched()"
-      />
+      >
+        @if (placeholder()) {
+          <option value="" disabled>{{ placeholder() }}</option>
+        }
+        @for (option of options(); track option.value) {
+          <option [value]="option.value">{{ option.label }}</option>
+        }
+      </select>
       @if (helpText() && !errorMessage()) {
         <div [id]="helpId" class="font-mono text-xs text-steel mt-1">{{ helpText() }}</div>
       }
@@ -50,29 +60,28 @@ import { CommonModule } from '@angular/common';
   providers: [
     {
       provide: NG_VALUE_ACCESSOR,
-      useExisting: forwardRef(() => InputComponent),
+      useExisting: forwardRef(() => SelectComponent),
       multi: true,
     },
   ],
 })
-export class InputComponent<T = string> implements ControlValueAccessor {
+export class SelectComponent<T = string> implements ControlValueAccessor {
   private static idCounter = 0;
 
   label = input('');
-  type = input('text');
+  options = input<SelectOption<T>[]>([]);
   value = model<T>(undefined! as T);
   disabled = input(false);
   required = input(false);
+  placeholder = input('');
   errorMessage = input('');
   helpText = input('');
   id = input<string>('');
 
-  @ViewChild('inputEl') inputEl!: ElementRef<HTMLInputElement>;
-
   focused = false;
   touched = false;
 
-  private readonly instanceId = `app-input-${InputComponent.idCounter++}`;
+  private readonly instanceId = `app-select-${SelectComponent.idCounter++}`;
 
   get fieldId(): string {
     return this.id() || this.instanceId;
@@ -92,7 +101,7 @@ export class InputComponent<T = string> implements ControlValueAccessor {
     return null;
   }
 
-  get inputClasses(): string {
+  get selectClasses(): string {
     const base = 'w-full min-h-[2.5rem] bg-transparent font-sans text-sm text-nero outline-none py-2 px-0';
     const border = this.errorMessage()
       ? 'border-b-2 border-construction-red'
@@ -112,11 +121,11 @@ export class InputComponent<T = string> implements ControlValueAccessor {
     return `${base} ${color}`;
   }
 
-  onInput(event: Event): void {
-    const target = event.target as HTMLInputElement;
-    const val = target.value as unknown as T;
-    this.value.set(val);
-    this.cvaOnChange(val);
+  onSelect(event: Event): void {
+    const target = event.target as HTMLSelectElement;
+    const selectedValue = target.value as T;
+    this.value.set(selectedValue);
+    this.cvaOnChange(selectedValue);
   }
 
   handleTouched(): void {

@@ -1,9 +1,9 @@
-import { Component, input, model, forwardRef, ElementRef, ViewChild } from '@angular/core';
+import { Component, input, model, forwardRef } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 
 @Component({
-  selector: 'app-input',
+  selector: 'app-textarea',
   standalone: true,
   imports: [CommonModule],
   template: `
@@ -16,20 +16,20 @@ import { CommonModule } from '@angular/common';
           {{ label() }}
         </label>
       }
-      <input
-        #inputEl
+      <textarea
         [id]="fieldId"
-        [type]="type()"
         [value]="value()"
+        [rows]="rows()"
         [disabled]="disabled()"
+        [placeholder]="placeholder()"
         [attr.aria-describedby]="describedBy"
         [attr.aria-invalid]="errorMessage() ? true : null"
         [attr.aria-required]="required() ? true : null"
-        [class]="inputClasses"
+        [class]="textareaClasses"
         (input)="onInput($event)"
         (focus)="focused = true"
         (blur)="focused = false; touched = true; handleTouched()"
-      />
+      ></textarea>
       @if (helpText() && !errorMessage()) {
         <div [id]="helpId" class="font-mono text-xs text-steel mt-1">{{ helpText() }}</div>
       }
@@ -50,29 +50,28 @@ import { CommonModule } from '@angular/common';
   providers: [
     {
       provide: NG_VALUE_ACCESSOR,
-      useExisting: forwardRef(() => InputComponent),
+      useExisting: forwardRef(() => TextareaComponent),
       multi: true,
     },
   ],
 })
-export class InputComponent<T = string> implements ControlValueAccessor {
+export class TextareaComponent implements ControlValueAccessor {
   private static idCounter = 0;
 
   label = input('');
-  type = input('text');
-  value = model<T>(undefined! as T);
+  value = model<string>('');
+  rows = input(4);
   disabled = input(false);
   required = input(false);
+  placeholder = input('');
   errorMessage = input('');
   helpText = input('');
   id = input<string>('');
 
-  @ViewChild('inputEl') inputEl!: ElementRef<HTMLInputElement>;
-
   focused = false;
   touched = false;
 
-  private readonly instanceId = `app-input-${InputComponent.idCounter++}`;
+  private readonly instanceId = `app-textarea-${TextareaComponent.idCounter++}`;
 
   get fieldId(): string {
     return this.id() || this.instanceId;
@@ -92,8 +91,8 @@ export class InputComponent<T = string> implements ControlValueAccessor {
     return null;
   }
 
-  get inputClasses(): string {
-    const base = 'w-full min-h-[2.5rem] bg-transparent font-sans text-sm text-nero outline-none py-2 px-0';
+  get textareaClasses(): string {
+    const base = 'w-full bg-transparent font-sans text-sm text-nero outline-none py-2 px-0 resize-y';
     const border = this.errorMessage()
       ? 'border-b-2 border-construction-red'
       : 'border-b border-steel';
@@ -113,10 +112,9 @@ export class InputComponent<T = string> implements ControlValueAccessor {
   }
 
   onInput(event: Event): void {
-    const target = event.target as HTMLInputElement;
-    const val = target.value as unknown as T;
-    this.value.set(val);
-    this.cvaOnChange(val);
+    const target = event.target as HTMLTextAreaElement;
+    this.value.set(target.value);
+    this.cvaOnChange(target.value);
   }
 
   handleTouched(): void {
@@ -124,14 +122,14 @@ export class InputComponent<T = string> implements ControlValueAccessor {
   }
 
   // CVA implementation
-  private cvaOnChange: (value: T) => void = () => {};
+  private cvaOnChange: (value: string) => void = () => {};
   private cvaOnTouched: () => void = () => {};
 
-  writeValue(val: T): void {
+  writeValue(val: string): void {
     this.value.set(val);
   }
 
-  registerOnChange(fn: (value: T) => void): void {
+  registerOnChange(fn: (value: string) => void): void {
     this.cvaOnChange = fn;
   }
 
