@@ -136,7 +136,7 @@ class BudgetControllerTest {
 
         try (MockedStatic<SecurityUtils> security = mockStatic(SecurityUtils.class)) {
             security.when(() -> SecurityUtils.getCurrentUser(userRepository)).thenReturn(admin);
-            when(budgetService.approve(1L, 1L)).thenReturn(approved);
+            when(budgetService.approve(1L)).thenReturn(approved);
 
             mockMvc.perform(post("/api/budgets/1/status").param("status", "APPROVED"))
                     .andExpect(status().isOk())
@@ -215,7 +215,7 @@ class BudgetControllerTest {
 
         try (MockedStatic<SecurityUtils> security = mockStatic(SecurityUtils.class)) {
             security.when(() -> SecurityUtils.getCurrentUser(userRepository)).thenReturn(admin);
-            when(budgetService.approve(1L, 1L)).thenReturn(approved);
+            when(budgetService.approve(1L)).thenReturn(approved);
 
             mockMvc.perform(post("/api/budgets/1/status").param("status", "APPROVED"))
                     .andExpect(status().isOk())

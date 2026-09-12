@@ -5,16 +5,12 @@ import { ButtonComponent } from '@shared-components/button/button.component';
 import { UsersTableComponent } from '@components/users/users-table/users-table.component';
 import { UserFormModalComponent } from '@components/users/user-form-modal/user-form-modal.component';
 import { UsersFiltersComponent } from '@components/users/users-filters/users-filters.component';
+import { NotificationService } from '@app/services/notification.service';
 
 @Component({
   selector: 'app-users',
   standalone: true,
-  imports: [
-    ButtonComponent,
-    UsersTableComponent,
-    UserFormModalComponent,
-    UsersFiltersComponent,
-  ],
+  imports: [ButtonComponent, UsersTableComponent, UserFormModalComponent, UsersFiltersComponent],
   template: `
     <div class="space-y-6">
       <div class="flex items-center justify-between">
@@ -22,10 +18,7 @@ import { UsersFiltersComponent } from '@components/users/users-filters/users-fil
         <app-button variant="filled" (click)="openCreateModal()">+ Nuevo Usuario</app-button>
       </div>
 
-      <app-users-filters
-        [filterRole]="filterRole"
-        (onFilterChange)="onFilterChange($event)"
-      />
+      <app-users-filters [filterRole]="filterRole" (onFilterChange)="onFilterChange($event)" />
 
       <app-users-table
         [users]="filteredUsers()"
@@ -51,14 +44,21 @@ export class UsersComponent {
   showModal = signal(false);
   editingUser: User | null = null;
   formData: Partial<User> = this.emptyForm();
+  private loadVersion = 0;
+  private filterVersion = 0;
 
-  constructor(private userService: UserService) {
+  constructor(
+    private userService: UserService,
+    private notifications: NotificationService,
+  ) {
     this.loadUsers();
   }
 
   loadUsers(): void {
+    const requestVersion = ++this.loadVersion;
     this.userService.getAll().subscribe({
       next: (data) => {
+        if (requestVersion !== this.loadVersion) return;
         this.users.set(data);
         this.filteredUsers.set(data);
       },
@@ -67,9 +67,13 @@ export class UsersComponent {
 
   onFilterChange(role: string): void {
     this.filterRole = role;
+    const requestVersion = ++this.filterVersion;
     if (role) {
       this.userService.getByRole(role as UserRole).subscribe({
-        next: (data) => this.filteredUsers.set(data),
+        next: (data) => {
+          if (requestVersion !== this.filterVersion) return;
+          this.filteredUsers.set(data);
+        },
       });
     } else {
       this.filteredUsers.set(this.users());
@@ -111,9 +115,21 @@ export class UsersComponent {
       });
     } else {
       this.userService.create({ ...this.formData, active: true } as User).subscribe({
-        next: () => {
-          this.loadUsers();
+        next: (user) => {
+          this.loadVersion++;
+          const users = [...this.users(), user];
+          this.users.set(users);
+          if (!this.filterRole) {
+            this.filteredUsers.set(users);
+          } else if (user.role === this.filterRole) {
+            this.filterVersion++;
+            this.filteredUsers.update((filteredUsers) => [...filteredUsers, user]);
+          }
           this.closeModal();
+          this.notifications.success('Usuario creado correctamente.');
+        },
+        error: () => {
+          this.notifications.error('No se pudo crear el usuario. Inténtalo de nuevo.');
         },
       });
     }
@@ -128,8 +144,13 @@ export class UsersComponent {
 
   private emptyForm(): Partial<User> {
     return {
-      name: '', email: '', phone: '', nie: '',
-      password: '', role: 'OPERATOR', availability: 'AVAILABLE',
+      name: '',
+      email: '',
+      phone: '',
+      nie: '',
+      password: '',
+      role: 'OPERATOR',
+      availability: 'AVAILABLE',
     };
   }
 }

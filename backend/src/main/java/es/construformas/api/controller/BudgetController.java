@@ -86,8 +86,7 @@ public class BudgetController {
         BudgetStatus statusToEnum = BudgetStatus.valueOf(status);
 
         if (statusToEnum == BudgetStatus.APPROVED) {
-            Long userId = SecurityUtils.getCurrentUser(userRepository).getId();
-            return ResponseEntity.ok(budgetService.approve(id, userId));
+            return ResponseEntity.ok(budgetService.approve(id));
         }
         return ResponseEntity.ok(budgetService.updateStatus(id, statusToEnum));
     }

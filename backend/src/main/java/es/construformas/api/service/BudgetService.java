@@ -41,9 +41,7 @@ public class BudgetService {
                 ? BudgetType.valueOf(request.getBudgetType())
                 : BudgetType.ORIGINAL;
 
-        BudgetStatus status = request.getStatus() != null
-                ? BudgetStatus.valueOf(request.getStatus())
-                : BudgetStatus.DRAFT;
+        BudgetStatus status = BudgetStatus.DRAFT;
 
         Budget budget = Budget.builder()
                 .project(project)
@@ -154,7 +152,7 @@ public class BudgetService {
         return saved;
     }
 
-    public Budget approve(Long budgetId, Long userId) {
+    public Budget approve(Long budgetId) {
         requireAdmin();
         Budget budget = findById(budgetId);
         if (budget.getStatus() == BudgetStatus.APPROVED) {

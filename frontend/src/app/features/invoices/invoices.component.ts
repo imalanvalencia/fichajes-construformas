@@ -9,6 +9,7 @@ import { ButtonComponent } from '@shared-components/button/button.component';
 import { InvoicesTableComponent } from '@components/invoices/invoices-table/invoices-table.component';
 import { InvoiceFormModalComponent } from '@components/invoices/invoice-form-modal/invoice-form-modal.component';
 import { InvoicesSummaryComponent } from '@components/invoices/invoices-summary/invoices-summary.component';
+import { NotificationService } from '@app/services/notification.service';
 
 @Component({
   selector: 'app-invoices',
@@ -59,11 +60,13 @@ export class InvoicesComponent {
   showModal = signal(false);
   editingInvoice: Invoice | null = null;
   formData: Partial<Invoice> = this.emptyForm();
+  private loadVersion = 0;
 
   constructor(
     private invoiceService: InvoiceService,
     private clientService: ClientService,
     private projectService: ProjectService,
+    private notifications: NotificationService,
   ) {
     this.loadInvoices();
     this.clientService.getAll().subscribe({
@@ -75,8 +78,12 @@ export class InvoicesComponent {
   }
 
   loadInvoices(): void {
+    const requestVersion = ++this.loadVersion;
     this.invoiceService.getAll().subscribe({
-      next: (data) => this.invoices.set(data),
+      next: (data) => {
+        if (requestVersion !== this.loadVersion) return;
+        this.invoices.set(data);
+      },
     });
   }
 
@@ -110,7 +117,8 @@ export class InvoicesComponent {
   }
 
   saveInvoice(): void {
-    if (!this.formData.invoiceNumber?.trim() || !this.formData.projectId || !this.formData.clientId) return;
+    if (!this.formData.invoiceNumber?.trim() || !this.formData.projectId || !this.formData.clientId)
+      return;
 
     const payload: Invoice = {
       invoiceNumber: this.formData.invoiceNumber!,
@@ -136,9 +144,14 @@ export class InvoicesComponent {
       });
     } else {
       this.invoiceService.create(payload).subscribe({
-        next: () => {
-          this.loadInvoices();
+        next: (created) => {
+          this.loadVersion++;
+          this.invoices.update((invoices) => [...invoices, this.toDisplayInvoice(created)]);
           this.closeModal();
+          this.notifications.success('Factura creada correctamente.');
+        },
+        error: () => {
+          this.notifications.error('No se pudo crear la factura. Inténtalo de nuevo.');
         },
       });
     }
@@ -154,33 +167,52 @@ export class InvoicesComponent {
   onCreateClient(name: string): void {
     this.clientService.create({ name, email: '', active: true }).subscribe({
       next: (created) => {
-        this.clients.update(prev => [...prev, created]);
+        this.clients.update((prev) => [...prev, created]);
         this.formData.clientId = created.id!;
       },
     });
   }
 
   onCreateProject(name: string): void {
-    this.projectService.create({
-      name,
-      clientId: this.formData.clientId || 0,
-      address: '',
-      latitude: 0,
-      longitude: 0,
-      status: 'PLANNED',
-      active: true,
-    }).subscribe({
-      next: (created) => {
-        this.projects.update(prev => [...prev, created]);
-        this.formData.projectId = created.id!;
-      },
-    });
+    this.projectService
+      .create({
+        name,
+        clientId: this.formData.clientId || 0,
+        address: '',
+        latitude: 0,
+        longitude: 0,
+        status: 'PLANNED',
+        active: true,
+      })
+      .subscribe({
+        next: (created) => {
+          this.projects.update((prev) => [...prev, created]);
+          this.formData.projectId = created.id!;
+        },
+      });
   }
 
   private emptyForm(): Partial<Invoice> {
     return {
-      invoiceNumber: '', projectId: 0, clientId: 0, status: 'DRAFT',
-      subtotal: 0, taxRate: 21, taxAmount: 0, total: 0,
+      invoiceNumber: '',
+      projectId: 0,
+      clientId: 0,
+      status: 'DRAFT',
+      subtotal: 0,
+      taxRate: 21,
+      taxAmount: 0,
+      total: 0,
+    };
+  }
+
+  private toDisplayInvoice(invoice: Invoice): Invoice {
+    const project = this.projects().find((item) => item.id === invoice.projectId);
+    const client = this.clients().find((item) => item.id === invoice.clientId);
+
+    return {
+      ...invoice,
+      projectName: project?.name ?? invoice.projectName,
+      clientName: client?.name ?? invoice.clientName,
     };
   }
 }

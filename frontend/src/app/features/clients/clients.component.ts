@@ -6,6 +6,7 @@ import { InputComponent } from '@shared-components/input/input.component';
 import { CardComponent } from '@components/shared/card/card.component';
 import { ClientsTableComponent } from '@components/clients/clients-table/clients-table.component';
 import { ClientFormModalComponent } from '@components/clients/client-form-modal/client-form-modal.component';
+import { NotificationService } from '@app/services/notification.service';
 
 @Component({
   selector: 'app-clients',
@@ -56,14 +57,20 @@ export class ClientsComponent {
   showModal = signal(false);
   editingClient: Client | null = null;
   formData: Partial<Client> = this.emptyForm();
+  private loadVersion = 0;
 
-  constructor(private clientService: ClientService) {
+  constructor(
+    private clientService: ClientService,
+    private notifications: NotificationService,
+  ) {
     this.loadClients();
   }
 
   loadClients(): void {
+    const requestVersion = ++this.loadVersion;
     this.clientService.getAll().subscribe({
       next: (data) => {
+        if (requestVersion !== this.loadVersion) return;
         this.clients.set(data);
         this.filteredClients.set(data);
       },
@@ -115,9 +122,17 @@ export class ClientsComponent {
       });
     } else {
       this.clientService.create({ ...this.formData, active: true } as Client).subscribe({
-        next: () => {
-          this.loadClients();
+        next: (client) => {
+          this.loadVersion++;
+          this.clients.update((clients) => [...clients, client]);
+          if (this.matchesActiveFilter(client)) {
+            this.filteredClients.update((clients) => [...clients, client]);
+          }
           this.closeModal();
+          this.notifications.success('Cliente creado correctamente.');
+        },
+        error: () => {
+          this.notifications.error('No se pudo crear el cliente. Inténtalo de nuevo.');
         },
       });
     }
@@ -132,5 +147,10 @@ export class ClientsComponent {
 
   private emptyForm(): Partial<Client> {
     return { name: '', email: '', phone: '', address: '', city: '', postalCode: '', notes: '' };
+  }
+
+  private matchesActiveFilter(client: Client): boolean {
+    const filter = this.searchTerm.trim().toLowerCase();
+    return !filter || client.name.toLowerCase().includes(filter);
   }
 }

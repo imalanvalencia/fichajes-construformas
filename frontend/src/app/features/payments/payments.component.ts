@@ -10,6 +10,7 @@ import { CardComponent } from '@shared-components/card/card.component';
 import { PaymentsTableComponent } from '@components/payments/payments-table/payments-table.component';
 import { PaymentFormModalComponent } from '@components/payments/payment-form-modal/payment-form-modal.component';
 import { PaymentsSummaryComponent } from '@components/payments/payments-summary/payments-summary.component';
+import { NotificationService } from '@app/services/notification.service';
 
 @Component({
   selector: 'app-payments',
@@ -69,11 +70,13 @@ export class PaymentsComponent {
   projects = signal<Project[]>([]);
   showModal = signal(false);
   formData: Partial<Payment> = this.emptyForm();
+  private loadVersion = 0;
 
   constructor(
     private paymentService: PaymentService,
     private clientService: ClientService,
     private projectService: ProjectService,
+    private notifications: NotificationService,
   ) {
     this.loadPayments();
     this.loadMethods();
@@ -86,8 +89,12 @@ export class PaymentsComponent {
   }
 
   loadPayments(): void {
+    const requestVersion = ++this.loadVersion;
     this.paymentService.getAll().subscribe({
-      next: (data) => this.payments.set(data),
+      next: (data) => {
+        if (requestVersion !== this.loadVersion) return;
+        this.payments.set(data);
+      },
     });
   }
 
@@ -112,12 +119,23 @@ export class PaymentsComponent {
   }
 
   createPayment(): void {
-    if (!this.formData.projectId || !this.formData.clientId || !this.formData.paymentMethodId || !this.formData.amount) return;
+    if (
+      !this.formData.projectId ||
+      !this.formData.clientId ||
+      !this.formData.paymentMethodId ||
+      !this.formData.amount
+    )
+      return;
 
     this.paymentService.create(this.formData as Payment).subscribe({
-      next: () => {
-        this.loadPayments();
+      next: (created) => {
+        this.loadVersion++;
+        this.payments.update((payments) => [...payments, this.toDisplayPayment(created)]);
         this.closeModal();
+        this.notifications.success('Pago creado correctamente.');
+      },
+      error: () => {
+        this.notifications.error('No se pudo crear el pago. Inténtalo de nuevo.');
       },
     });
   }
@@ -125,34 +143,54 @@ export class PaymentsComponent {
   onCreateClient(name: string): void {
     this.clientService.create({ name, email: '', active: true }).subscribe({
       next: (created) => {
-        this.clients.update(prev => [...prev, created]);
+        this.clients.update((prev) => [...prev, created]);
         this.formData.clientId = created.id!;
       },
     });
   }
 
   onCreateProject(name: string): void {
-    this.projectService.create({
-      name,
-      clientId: this.formData.clientId || 0,
-      address: '',
-      latitude: 0,
-      longitude: 0,
-      status: 'PLANNED',
-      active: true,
-    }).subscribe({
-      next: (created) => {
-        this.projects.update(prev => [...prev, created]);
-        this.formData.projectId = created.id!;
-      },
-    });
+    this.projectService
+      .create({
+        name,
+        clientId: this.formData.clientId || 0,
+        address: '',
+        latitude: 0,
+        longitude: 0,
+        status: 'PLANNED',
+        active: true,
+      })
+      .subscribe({
+        next: (created) => {
+          this.projects.update((prev) => [...prev, created]);
+          this.formData.projectId = created.id!;
+        },
+      });
   }
 
   private emptyForm(): Partial<Payment> {
     return {
-      projectId: 0, clientId: 0, paymentMethodId: 0,
-      amount: 0, paymentDate: '', type: 'PHASE_1',
-      reference: '', notes: '',
+      projectId: 0,
+      clientId: 0,
+      paymentMethodId: 0,
+      amount: 0,
+      paymentDate: '',
+      type: 'PHASE_1',
+      reference: '',
+      notes: '',
+    };
+  }
+
+  private toDisplayPayment(payment: Payment): Payment {
+    const project = this.projects().find((item) => item.id === payment.projectId);
+    const client = this.clients().find((item) => item.id === payment.clientId);
+    const method = this.paymentMethods().find((item) => item.id === payment.paymentMethodId);
+
+    return {
+      ...payment,
+      projectName: project?.name ?? payment.projectName,
+      clientName: client?.name ?? payment.clientName,
+      paymentMethodName: method?.name ?? payment.paymentMethodName,
     };
   }
 }

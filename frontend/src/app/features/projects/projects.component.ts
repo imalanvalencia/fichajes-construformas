@@ -7,6 +7,7 @@ import { ButtonComponent } from '@shared-components/button/button.component';
 import { ProjectsTableComponent } from '@components/projects/projects-table/projects-table.component';
 import { ProjectFormModalComponent } from '@components/projects/project-form-modal/project-form-modal.component';
 import { ProjectsSummaryComponent } from '@components/projects/projects-summary/projects-summary.component';
+import { NotificationService } from '@app/services/notification.service';
 
 @Component({
   selector: 'app-projects',
@@ -53,10 +54,12 @@ export class ProjectsComponent {
   showModal = signal(false);
   editingProject: Project | null = null;
   formData: Partial<Project> = this.emptyForm();
+  private loadVersion = 0;
 
   constructor(
     private projectService: ProjectService,
     private clientService: ClientService,
+    private notifications: NotificationService,
   ) {
     this.loadProjects();
     this.clientService.getAll().subscribe({
@@ -65,8 +68,12 @@ export class ProjectsComponent {
   }
 
   loadProjects(): void {
+    const requestVersion = ++this.loadVersion;
     this.projectService.getAll().subscribe({
-      next: (data) => this.projects.set(data),
+      next: (data) => {
+        if (requestVersion !== this.loadVersion) return;
+        this.projects.set(data);
+      },
     });
   }
 
@@ -101,7 +108,8 @@ export class ProjectsComponent {
   }
 
   saveProject(): void {
-    if (!this.formData.name?.trim() || !this.formData.address?.trim() || !this.formData.clientId) return;
+    if (!this.formData.name?.trim() || !this.formData.address?.trim() || !this.formData.clientId)
+      return;
 
     const payload: Project = {
       clientId: this.formData.clientId!,
@@ -114,7 +122,7 @@ export class ProjectsComponent {
       allowedRadiusMeters: this.formData.allowedRadiusMeters ?? 50,
       startDate: this.formData.startDate,
       estimatedEndDate: this.formData.estimatedEndDate,
-      status: this.formData.status as any || 'PLANNED',
+      status: (this.formData.status as any) || 'PLANNED',
       active: true,
     };
 
@@ -127,9 +135,14 @@ export class ProjectsComponent {
       });
     } else {
       this.projectService.create(payload).subscribe({
-        next: () => {
-          this.loadProjects();
+        next: (project) => {
+          this.loadVersion++;
+          this.projects.update((projects) => [...projects, project]);
           this.closeModal();
+          this.notifications.success('Proyecto creado correctamente.');
+        },
+        error: () => {
+          this.notifications.error('No se pudo crear el proyecto. Inténtalo de nuevo.');
         },
       });
     }
@@ -148,7 +161,7 @@ export class ProjectsComponent {
   onCreateClient(name: string): void {
     this.clientService.create({ name, email: '', active: true }).subscribe({
       next: (created) => {
-        this.clients.update(prev => [...prev, created]);
+        this.clients.update((prev) => [...prev, created]);
         this.formData.clientId = created.id!;
       },
     });
@@ -156,9 +169,15 @@ export class ProjectsComponent {
 
   private emptyForm(): Partial<Project> {
     return {
-      name: '', description: '', address: '', city: '',
-      clientId: 0, latitude: 0, longitude: 0,
-      status: 'PLANNED', active: true,
+      name: '',
+      description: '',
+      address: '',
+      city: '',
+      clientId: 0,
+      latitude: 0,
+      longitude: 0,
+      status: 'PLANNED',
+      active: true,
     };
   }
 }

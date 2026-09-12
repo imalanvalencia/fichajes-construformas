@@ -6,6 +6,7 @@ import { InputComponent } from '@shared-components/input/input.component';
 import { CardComponent } from '@components/shared/card/card.component';
 import { SuppliersTableComponent } from '@components/suppliers/suppliers-table/suppliers-table.component';
 import { SupplierFormModalComponent } from '@components/suppliers/supplier-form-modal/supplier-form-modal.component';
+import { NotificationService } from '@app/services/notification.service';
 
 @Component({
   selector: 'app-suppliers',
@@ -56,14 +57,20 @@ export class SuppliersComponent {
   showModal = signal(false);
   editingSupplier: Supplier | null = null;
   formData: Partial<Supplier> = this.emptyForm();
+  private loadVersion = 0;
 
-  constructor(private supplierService: SupplierService) {
+  constructor(
+    private supplierService: SupplierService,
+    private notifications: NotificationService,
+  ) {
     this.loadSuppliers();
   }
 
   loadSuppliers(): void {
+    const requestVersion = ++this.loadVersion;
     this.supplierService.getAll().subscribe({
       next: (data) => {
+        if (requestVersion !== this.loadVersion) return;
         this.suppliers.set(data);
         this.filteredSuppliers.set(data);
       },
@@ -115,9 +122,17 @@ export class SuppliersComponent {
       });
     } else {
       this.supplierService.create({ ...this.formData, active: true } as Supplier).subscribe({
-        next: () => {
-          this.loadSuppliers();
+        next: (supplier) => {
+          this.loadVersion++;
+          this.suppliers.update((suppliers) => [...suppliers, supplier]);
+          if (this.matchesActiveFilter(supplier)) {
+            this.filteredSuppliers.update((suppliers) => [...suppliers, supplier]);
+          }
           this.closeModal();
+          this.notifications.success('Proveedor creado correctamente.');
+        },
+        error: () => {
+          this.notifications.error('No se pudo crear el proveedor. Inténtalo de nuevo.');
         },
       });
     }
@@ -132,9 +147,21 @@ export class SuppliersComponent {
 
   private emptyForm(): Partial<Supplier> {
     return {
-      name: '', contactName: '', email: '', phone: '',
-      address: '', city: '', postalCode: '', taxId: '',
-      bankAccount: '', notes: '',
+      name: '',
+      contactName: '',
+      email: '',
+      phone: '',
+      address: '',
+      city: '',
+      postalCode: '',
+      taxId: '',
+      bankAccount: '',
+      notes: '',
     };
+  }
+
+  private matchesActiveFilter(supplier: Supplier): boolean {
+    const filter = this.searchTerm.trim().toLowerCase();
+    return !filter || supplier.name.toLowerCase().includes(filter);
   }
 }

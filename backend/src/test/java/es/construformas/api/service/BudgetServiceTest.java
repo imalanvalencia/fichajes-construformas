@@ -221,7 +221,7 @@ class BudgetServiceTest {
         try (MockedStatic<SecurityUtils> security = mockStatic(SecurityUtils.class)) {
             security.when(() -> SecurityUtils.hasRole("ADMIN")).thenReturn(true);
             security.when(() -> SecurityUtils.getCurrentUser(userRepository)).thenReturn(admin);
-            result = budgetService.approve(1L, 7L);
+            result = budgetService.approve(1L);
         }
 
         assertThat(result.getStatus()).isEqualTo(BudgetStatus.APPROVED);
@@ -245,7 +245,7 @@ class BudgetServiceTest {
 
         try (MockedStatic<SecurityUtils> security = mockStatic(SecurityUtils.class)) {
             security.when(() -> SecurityUtils.hasRole("ADMIN")).thenReturn(true);
-            assertThatThrownBy(() -> budgetService.approve(1L, 7L))
+            assertThatThrownBy(() -> budgetService.approve(1L))
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessageContaining("already approved");
         }
@@ -259,7 +259,7 @@ class BudgetServiceTest {
         try (MockedStatic<SecurityUtils> security = mockStatic(SecurityUtils.class)) {
             security.when(() -> SecurityUtils.hasRole("ADMIN")).thenReturn(false);
 
-            assertThatThrownBy(() -> budgetService.approve(1L, 7L))
+            assertThatThrownBy(() -> budgetService.approve(1L))
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessageContaining("ADMIN");
         }
@@ -282,7 +282,7 @@ class BudgetServiceTest {
         try (MockedStatic<SecurityUtils> security = mockStatic(SecurityUtils.class)) {
             security.when(() -> SecurityUtils.hasRole("ADMIN")).thenReturn(true);
             security.when(() -> SecurityUtils.getCurrentUser(userRepository)).thenReturn(admin);
-            assertThatThrownBy(() -> budgetService.approve(1L, 7L))
+            assertThatThrownBy(() -> budgetService.approve(1L))
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessage("database unavailable");
         }
