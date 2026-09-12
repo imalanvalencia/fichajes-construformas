@@ -56,12 +56,12 @@ Chain strategy: pending
 
 ## Phase 5: Composite Components
 
-- [ ] 5.1 Modify `shared/select-or-create/*.ts`: rewrite internals to compose `<app-select>` + `<app-input>` instead of raw elements. Lines: ~80.
-- [ ] 5.2 Modify `components/budgets/budget-editor/*.ts`: replace raw inputs with `<app-input>`/`<app-textarea>`, preserve `updateFieldNumber` coercion and Enter-to-add. Lines: ~60.
+- [x] 5.1 Modify `shared/select-or-create/*.ts`: rewrite internals to compose `<app-select>` + `<app-input>` instead of raw elements. Lines: ~80.
+- [x] 5.2 Modify `components/budgets/budget-editor/*.ts`: replace raw inputs with `<app-input>`/`<app-textarea>`, preserve `updateFieldNumber` coercion and Enter-to-add. Lines: ~60.
 
 ## Phase 6: Auth Migration
 
-- [ ] 6.1 Modify `auth/pages/login/*.ts`: replace raw fields with `<app-input>`, preserve `name` attributes for form submission and `required` semantics. Verify Angular forms submit behavior. Lines: ~40.
+- [x] 6.1 Modify `auth/pages/login/*.ts`: replace raw fields with `<app-input>`, preserve `name` attributes for form submission and `required` semantics. Verify Angular forms submit behavior. Lines: ~40.
 
 ## Phase 7: Documentation
 
