@@ -4,12 +4,13 @@ import { Project, ProjectStatus } from '../../../features/projects/types/project
 import { Client } from '../../../features/clients/types/client.types';
 import { ButtonComponent } from '../../shared/button/button.component';
 import { InputComponent } from '../../shared/input/input.component';
+import { SelectComponent } from '../../shared/select/select.component';
 import { SelectOrCreateComponent } from '../../shared/select-or-create/select-or-create.component';
 
 @Component({
   selector: 'app-project-form-modal',
   standalone: true,
-  imports: [FormsModule, ButtonComponent, InputComponent, SelectOrCreateComponent],
+  imports: [FormsModule, ButtonComponent, InputComponent, SelectComponent, SelectOrCreateComponent],
   template: `
     @if (show()) {
       <div class="fixed inset-0 z-50 flex items-center justify-center">
@@ -42,19 +43,12 @@ import { SelectOrCreateComponent } from '../../shared/select-or-create/select-or
             <app-input label="Fecha Fin Estimada" type="date" [value]="form().estimatedEndDate ?? ''" (valueChange)="updateField('estimatedEndDate', $event)" />
           </div>
 
-          <div class="relative">
-            <label class="block font-mono text-xs font-medium text-steel mb-1">Estado</label>
-            <select
-              [ngModel]="form().status"
-              (ngModelChange)="updateField('status', $event)"
-              class="w-full bg-transparent font-sans text-sm text-nero border-b border-steel outline-none py-2 px-0"
-            >
-              <option value="PLANNED">Planificado</option>
-              <option value="IN_PROGRESS">En Progreso</option>
-              <option value="COMPLETED">Completado</option>
-              <option value="CANCELLED">Cancelado</option>
-            </select>
-          </div>
+          <app-select
+            label="Estado"
+            [options]="statusOptions"
+            [value]="form().status"
+            (valueChange)="updateField('status', $event!)"
+          />
 
           <div class="flex justify-end gap-3 pt-2">
             <app-button variant="text" (click)="onClose.emit()">Cancelar</app-button>
@@ -77,6 +71,13 @@ export class ProjectFormModalComponent {
   onSave = output<void>();
   onFormChange = output<Partial<Project>>();
   onCreateClient = output<string>();
+
+  readonly statusOptions = [
+    { value: 'PLANNED', label: 'Planificado' },
+    { value: 'IN_PROGRESS', label: 'En Progreso' },
+    { value: 'COMPLETED', label: 'Completado' },
+    { value: 'CANCELLED', label: 'Cancelado' },
+  ];
 
   updateField(field: keyof Project, value: unknown): void {
     this.onFormChange.emit({ [field]: value });

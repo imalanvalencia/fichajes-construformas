@@ -17,25 +17,9 @@ import { InputComponent } from '../../shared/input/input.component';
             {{ registeringType() === 'ENTRY' ? 'Fichar Entrada' : 'Fichar Salida' }}
           </h2>
 
-          <div class="relative">
-            <label class="block font-mono text-xs font-medium text-steel mb-1">Usuario ID *</label>
-            <input
-              type="number"
-              [ngModel]="form().userId"
-              (ngModelChange)="updateField('userId', $event)"
-              class="w-full bg-transparent font-sans text-sm text-nero border-b border-steel outline-none py-2 px-0"
-            />
-          </div>
+          <app-input label="Usuario ID *" type="number" [value]="form().userId?.toString() ?? ''" (valueChange)="updateField('userId', +$event)" />
 
-          <div class="relative">
-            <label class="block font-mono text-xs font-medium text-steel mb-1">Proyecto ID *</label>
-            <input
-              type="number"
-              [ngModel]="form().projectId"
-              (ngModelChange)="updateField('projectId', $event)"
-              class="w-full bg-transparent font-sans text-sm text-nero border-b border-steel outline-none py-2 px-0"
-            />
-          </div>
+          <app-input label="Proyecto ID *" type="number" [value]="form().projectId?.toString() ?? ''" (valueChange)="updateField('projectId', +$event)" />
 
           <div class="grid grid-cols-2 gap-4">
             <app-input label="Latitud *" type="number" [value]="form().userLatitude?.toString() ?? ''" (valueChange)="updateField('userLatitude', +$event)" />

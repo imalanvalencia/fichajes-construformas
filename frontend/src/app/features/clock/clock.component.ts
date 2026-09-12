@@ -31,14 +31,7 @@ import { ClockRegisterModalComponent } from '@components/clock/clock-register-mo
 
       <app-card>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div class="relative">
-            <label class="block font-mono text-xs font-medium text-steel mb-1">Usuario ID</label>
-            <input
-              type="number"
-              [(ngModel)]="filterUserId"
-              class="w-full bg-transparent font-sans text-sm text-nero border-b border-steel outline-none py-2 px-0"
-            />
-          </div>
+          <app-input label="Usuario ID" type="number" [value]="filterUserId.toString()" (valueChange)="filterUserId = +$event" />
           <app-input label="Fecha Inicio" type="date" [value]="filterStart" (valueChange)="filterStart = $event" />
           <app-input label="Fecha Fin" type="date" [value]="filterEnd" (valueChange)="filterEnd = $event" />
         </div>
