@@ -48,11 +48,11 @@ Chain strategy: pending
 
 ## Phase 4: Form Migration
 
-- [ ] 4.1 Modify `components/users/user-form-modal/*.ts`: replace raw `<select>` with `<app-select>`, wire `[(ngModel)]` binding. Lines: ~40.
-- [ ] 4.2 Modify `components/projects/project-form-modal/*.ts`: replace raw `<select>` with `<app-select>`. Lines: ~40.
-- [ ] 4.3 Modify `components/users/users-filters/*.ts`: replace raw `<select>` with `<app-select>`. Lines: ~40.
-- [ ] 4.4 Modify `components/clock/clock-register-modal/*.ts`: replace raw `<input type="number">` with `<app-input type="number">`. Lines: ~40.
-- [ ] 4.5 Modify `features/clock/clock.component.ts`: replace raw filter `<input>` with `<app-input>`. Lines: ~30.
+- [x] 4.1 Modify `components/users/user-form-modal/*.ts`: replace raw `<select>` with `<app-select>`, wire `[(ngModel)]` binding. Lines: ~40.
+- [x] 4.2 Modify `components/projects/project-form-modal/*.ts`: replace raw `<select>` with `<app-select>`. Lines: ~40.
+- [x] 4.3 Modify `components/users/users-filters/*.ts`: replace raw `<select>` with `<app-select>`. Lines: ~40.
+- [x] 4.4 Modify `components/clock/clock-register-modal/*.ts`: replace raw `<input type="number">` with `<app-input type="number">`. Lines: ~40.
+- [x] 4.5 Modify `features/clock/clock.component.ts`: replace raw filter `<input>` with `<app-input>`. Lines: ~30.
 
 ## Phase 5: Composite Components
 
