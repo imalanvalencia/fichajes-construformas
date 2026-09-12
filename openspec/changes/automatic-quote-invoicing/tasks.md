@@ -46,11 +46,11 @@ Chain strategy: feature-branch-chain
 
 ## Phase 3: Secured API Contract
 
-- [ ] 3.1 RED: extend `BudgetControllerTest` for ADMIN-only approval, missing/false `confirmed`, issued/paid protection, and authorized lifecycle history after removal.
-- [ ] 3.2 GREEN: update `BudgetController.java` to resolve actor from `SecurityContext`, require ADMIN approval/removal, accept `confirmed=true`, and expose `GET /{id}/lifecycle`.
+- [x] 3.1 RED: extend `BudgetControllerTest` for ADMIN-only approval, missing/false `confirmed`, issued/paid protection, and authorized lifecycle history after removal.
+- [x] 3.2 GREEN: update `BudgetController.java` to resolve actor from `SecurityContext`, require ADMIN approval/removal, accept `confirmed=true`, and expose `GET /{id}/lifecycle`.
 
 ## Phase 4: Budget UI and Verification
 
-- [ ] 4.1 RED: create budget service/component specs: cancelled removal sends no DELETE; confirmed removal sends `confirmed=true`, refreshes state, and renders lifecycle metadata.
-- [ ] 4.2 GREEN: update `budget.service.ts`, `budget.types.ts`, `budgets.component.ts`, and budget components to confirm removal, show success/error and linked invoice/history.
-- [ ] 4.3 Run `mvn test`, PostgreSQL Testcontainers tests, `pnpm test -- --run`, and `pnpm build`; record results and resolve the invoice-prefix/padding question before release.
+- [x] 4.1 RED: create budget service/component specs: cancelled removal sends no DELETE; confirmed removal sends `confirmed=true`, refreshes state, and renders lifecycle metadata.
+- [x] 4.2 GREEN: update `budget.service.ts`, `budget.types.ts`, `budgets.component.ts`, and budget components to confirm removal, show success/error and linked invoice/history.
+- [x] 4.3 Run `mvn test`, PostgreSQL Testcontainers tests, `pnpm test -- --run`, and `pnpm build`; record results and resolve the invoice-prefix/padding question before release.

@@ -9,6 +9,7 @@ import { BudgetsTableComponent } from '@components/budgets/budgets-table/budgets
 import { BudgetSummaryComponent } from '@components/budgets/budget-summary/budget-summary.component';
 import { BudgetEditorComponent } from '@components/budgets/budget-editor/budget-editor.component';
 import { CreateBudgetModalComponent } from '@components/budgets/create-budget-modal/create-budget-modal.component';
+import { NotificationService } from '@app/services/notification.service';
 
 @Component({
   selector: 'app-budgets',
@@ -72,10 +73,12 @@ export class BudgetsComponent {
   selectedBudget: Budget | null = null;
   showCreateModal = signal(false);
   newBudget: Partial<Budget> = this.emptyBudgetForm();
+  private loadVersion = 0;
 
   constructor(
     private budgetService: BudgetService,
     private projectService: ProjectService,
+    private notifications: NotificationService,
   ) {
     this.loadBudgets();
     this.projectService.getAll().subscribe({
@@ -85,8 +88,12 @@ export class BudgetsComponent {
   }
 
   loadBudgets(): void {
+    const requestVersion = ++this.loadVersion;
     this.budgetService.getAll().subscribe({
-      next: (data) => this.budgets.set(data),
+      next: (data) => {
+        if (requestVersion !== this.loadVersion) return;
+        this.budgets.set(data);
+      },
       error: (err) => console.error('Failed to load budgets', err),
     });
   }
@@ -150,9 +157,15 @@ export class BudgetsComponent {
     if (!this.newBudget.projectId || !this.newBudget.budgetType) return;
     this.budgetService.create(this.newBudget as Budget).subscribe({
       next: (created) => {
-        this.loadBudgets();
+        const budget = this.toDisplayBudget(created);
+        this.loadVersion++;
+        this.budgets.update((budgets) => [...budgets, budget]);
         this.closeCreateModal();
-        this.openEditor(created);
+        this.openEditor(budget);
+        this.notifications.success('Presupuesto creado correctamente.');
+      },
+      error: () => {
+        this.notifications.error('No se pudo crear el presupuesto. Inténtalo de nuevo.');
       },
     });
   }
@@ -188,18 +201,17 @@ export class BudgetsComponent {
     });
   }
 
-  deleteBudget(id: number): void {
-    if (!confirm('¿Estás seguro de eliminar este presupuesto?')) return;
-    this.budgetService.delete(id).subscribe({
-      next: () => this.loadBudgets(),
+  deleteBudget(id: number, confirmed?: boolean): void {
+    if (confirmed === false) return;
+    if (confirmed === undefined && !confirm('¿Estás seguro de eliminar este presupuesto?')) return;
+    this.budgetService.delete(id, true).subscribe({
+      next: () => {
+        this.loadBudgets();
+        this.notifications.success('Presupuesto eliminado correctamente.');
+      },
       error: (err) => {
-        if (err.status === 500) {
-          alert(
-            'No se puede borrar un presupuesto Aprobado.\nCambia su status a DRAFT o REJECTED primero.',
-          );
-        } else {
-          alert('Error al eliminar: ' + (err.error?.message || err.message));
-        }
+        const message = err.error?.error || err.message || 'Error al eliminar';
+        this.notifications.error(message);
       },
     });
   }
@@ -245,6 +257,16 @@ export class BudgetsComponent {
       createdById: 1,
       includesMaterials: false,
       includesIva: false,
+    };
+  }
+
+  private toDisplayBudget(budget: Budget): Budget {
+    const project = this.projects().find((item) => item.id === budget.projectId);
+
+    return {
+      ...budget,
+      projectName: project?.name ?? budget.projectName,
+      project: project ?? budget.project,
     };
   }
 }
