@@ -43,8 +43,8 @@ Chain strategy: pending
 
 ## Phase 3: Token Bridge
 
-- [ ] 3.1 Modify `app.css`: add `--color-*` CSS custom properties for Material bridge (primary, accent, warn, background, surface, etc.). Lines: ~30.
-- [ ] 3.2 Modify `material-theme.scss`: replace hex literals with `var(--color-*)` references. Lines: ~20.
+- [x] 3.1 Modify `app.css`: add `--color-*` CSS custom properties for Material bridge (primary, accent, warn, background, surface, etc.). Lines: ~30.
+- [x] 3.2 Modify `material-theme.scss`: replace hex literals with `var(--color-*)` references. Lines: ~20.
 
 ## Phase 4: Form Migration
 
@@ -65,4 +65,4 @@ Chain strategy: pending
 
 ## Phase 7: Documentation
 
-- [ ] 7.1 Create documentation for `NotificationService` as Material snackbar adapter; document token bridge ownership and style-load order. Lines: ~20.
+- [x] 7.1 Create documentation for `NotificationService` as Material snackbar adapter; document token bridge ownership and style-load order. Lines: ~20.
