@@ -1,5 +1,6 @@
 package es.construformas.api.service;
 
+import es.construformas.api.dto.InvoiceRequest;
 import es.construformas.api.model.*;
 import es.construformas.api.repository.*;
 import es.construformas.api.security.SecurityUtils;
@@ -24,24 +25,40 @@ public class InvoiceService {
     private final ClientRepository clientRepository;
     private final UserRepository userRepository;
 
-    public Invoice create(Invoice invoice) {
-        Project project = projectRepository.findById(invoice.getProject().getId())
+    public Invoice create(InvoiceRequest request) {
+        Project project = projectRepository.findById(request.getProjectId())
                 .orElseThrow(() -> new IllegalArgumentException("Project not found"));
-        Client client = clientRepository.findById(invoice.getClient().getId())
+        Client client = clientRepository.findById(request.getClientId())
                 .orElseThrow(() -> new IllegalArgumentException("Client not found"));
-        User creator = userRepository.findById(invoice.getCreatedBy().getId())
+        User creator = userRepository.findById(request.getCreatedById())
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-        invoice.setProject(project);
-        invoice.setClient(client);
-        invoice.setCreatedBy(creator);
-        if (invoice.getStatus() == null) invoice.setStatus(InvoiceStatus.DRAFT);
-        if (invoice.getSubtotal() == null) invoice.setSubtotal(BigDecimal.ZERO);
-        if (invoice.getTaxRate() == null) invoice.setTaxRate(new BigDecimal("21.00"));
-        if (invoice.getTaxAmount() == null) invoice.setTaxAmount(BigDecimal.ZERO);
-        if (invoice.getTotal() == null) invoice.setTotal(BigDecimal.ZERO);
+        Invoice invoice = Invoice.builder()
+                .project(project)
+                .client(client)
+                .createdBy(creator)
+                .invoiceNumber(request.getInvoiceNumber())
+                .status(request.getStatus() != null ? request.getStatus() : InvoiceStatus.DRAFT)
+                .subtotal(request.getSubtotal() != null ? request.getSubtotal() : BigDecimal.ZERO)
+                .taxRate(request.getTaxRate() != null ? request.getTaxRate() : new BigDecimal("21.00"))
+                .taxAmount(request.getTaxAmount() != null ? request.getTaxAmount() : BigDecimal.ZERO)
+                .total(request.getTotal() != null ? request.getTotal() : BigDecimal.ZERO)
+                .issuedDate(request.getIssuedDate())
+                .dueDate(request.getDueDate())
+                .notes(request.getNotes())
+                .build();
 
         return invoiceRepository.save(invoice);
+    }
+
+    public List<Invoice> findAll() {
+        if (SecurityUtils.hasRole("OPERATOR")) {
+            User user = SecurityUtils.getCurrentUser(userRepository);
+            List<Project> operatorProjects = projectRepository.findByOperatorId(user.getId());
+            List<Long> projectIds = operatorProjects.stream().map(Project::getId).toList();
+            return invoiceRepository.findByProjectIdIn(projectIds);
+        }
+        return invoiceRepository.findAll();
     }
 
     public Invoice findById(Long id) {
@@ -76,22 +93,33 @@ public class InvoiceService {
         return invoiceRepository.findByClientId(clientId);
     }
 
-    public Invoice update(Long id, Invoice updated) {
+    public Invoice update(Long id, InvoiceRequest request) {
         Invoice existing = findById(id);
 
         if (existing.getStatus() == InvoiceStatus.ISSUED || existing.getStatus() == InvoiceStatus.PAID) {
             throw new IllegalStateException("Cannot modify an invoice that has been issued or paid");
         }
 
-        existing.setInvoiceNumber(updated.getInvoiceNumber());
-        existing.setSubtotal(updated.getSubtotal());
-        existing.setTaxRate(updated.getTaxRate());
-        existing.setTaxAmount(updated.getTaxAmount());
-        existing.setTotal(updated.getTotal());
-        existing.setIssuedDate(updated.getIssuedDate());
-        existing.setDueDate(updated.getDueDate());
-        existing.setNotes(updated.getNotes());
-        existing.setStatus(updated.getStatus());
+        existing.setInvoiceNumber(request.getInvoiceNumber());
+        existing.setSubtotal(request.getSubtotal());
+        existing.setTaxRate(request.getTaxRate());
+        existing.setTaxAmount(request.getTaxAmount());
+        existing.setTotal(request.getTotal());
+        existing.setIssuedDate(request.getIssuedDate());
+        existing.setDueDate(request.getDueDate());
+        existing.setNotes(request.getNotes());
+        existing.setStatus(request.getStatus());
+
+        if (request.getProjectId() != null) {
+            Project project = projectRepository.findById(request.getProjectId())
+                    .orElseThrow(() -> new IllegalArgumentException("Project not found"));
+            existing.setProject(project);
+        }
+        if (request.getClientId() != null) {
+            Client client = clientRepository.findById(request.getClientId())
+                    .orElseThrow(() -> new IllegalArgumentException("Client not found"));
+            existing.setClient(client);
+        }
 
         return invoiceRepository.save(existing);
     }
@@ -114,6 +142,18 @@ public class InvoiceService {
         }
         invoice.setStatus(InvoiceStatus.ISSUED);
         invoice.setIssuedDate(LocalDate.now());
+        return invoiceRepository.save(invoice);
+    }
+
+    public Invoice markAsPaid(Long id) {
+        Invoice invoice = findById(id);
+        if (invoice.getStatus() == InvoiceStatus.PAID) {
+            throw new IllegalStateException("Invoice is already paid");
+        }
+        if (invoice.getStatus() == InvoiceStatus.DRAFT) {
+            throw new IllegalStateException("Cannot mark a draft invoice as paid — issue it first");
+        }
+        invoice.setStatus(InvoiceStatus.PAID);
         return invoiceRepository.save(invoice);
     }
 

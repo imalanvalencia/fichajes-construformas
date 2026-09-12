@@ -1,0 +1,16 @@
+allowBuilds:
+  '@parcel/watcher': true
+  '@tailwindcss/oxide': true
+  esbuild: true
+  lmdb: true
+  msgpackr-extract: true
+minimumReleaseAgeExclude:
+  - '@angular-devkit/architect@0.2201.7'
+  - '@angular-devkit/core@22.1.7'
+  - '@angular-devkit/schematics@22.1.7'
+  - '@angular/build@22.1.7'
+  - '@angular/cdk@22.1.5'
+  - '@angular/cli@22.1.7'
+  - '@angular/material@22.1.5'
+  - '@schematics/angular@22.1.7'
+  - zone.js@0.16.3

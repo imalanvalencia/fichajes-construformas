@@ -1,5 +1,6 @@
 package es.construformas.api.controller;
 
+import es.construformas.api.dto.SupplierInvoiceRequest;
 import es.construformas.api.model.SupplierInvoice;
 import es.construformas.api.model.SupplierInvoiceStatus;
 import es.construformas.api.service.SupplierInvoiceService;
@@ -18,10 +19,16 @@ import java.util.List;
 public class SupplierInvoiceController {
     private final SupplierInvoiceService supplierInvoiceService;
 
+    @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN','OPERATOR')")
+    public ResponseEntity<List<SupplierInvoice>> getAll() {
+        return ResponseEntity.ok(supplierInvoiceService.findAll());
+    }
+
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<SupplierInvoice> create(@Valid @RequestBody SupplierInvoice invoice) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(supplierInvoiceService.create(invoice));
+    public ResponseEntity<SupplierInvoice> create(@Valid @RequestBody SupplierInvoiceRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(supplierInvoiceService.create(request));
     }
 
     @GetMapping("/{id}")

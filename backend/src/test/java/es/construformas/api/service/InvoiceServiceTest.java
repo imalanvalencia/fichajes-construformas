@@ -1,5 +1,6 @@
 package es.construformas.api.service;
 
+import es.construformas.api.dto.InvoiceRequest;
 import es.construformas.api.model.*;
 import es.construformas.api.repository.*;
 import org.junit.jupiter.api.DisplayName;
@@ -36,16 +37,19 @@ class InvoiceServiceTest {
         Project project = Project.builder().id(1L).build();
         Client client = Client.builder().id(1L).build();
         User user = User.builder().id(1L).build();
-        Invoice invoice = Invoice.builder()
-                .project(project).client(client).createdBy(user)
-                .invoiceNumber("INV-001").build();
 
         when(projectRepository.findById(1L)).thenReturn(Optional.of(project));
         when(clientRepository.findById(1L)).thenReturn(Optional.of(client));
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(invoiceRepository.save(any(Invoice.class))).thenAnswer(i -> i.getArgument(0));
 
-        Invoice result = invoiceService.create(invoice);
+        InvoiceRequest request = new InvoiceRequest();
+        request.setProjectId(1L);
+        request.setClientId(1L);
+        request.setCreatedById(1L);
+        request.setInvoiceNumber("INV-001");
+
+        Invoice result = invoiceService.create(request);
 
         assertThat(result.getStatus()).isEqualTo(InvoiceStatus.DRAFT);
         assertThat(result.getInvoiceNumber()).isEqualTo("INV-001");
@@ -55,13 +59,13 @@ class InvoiceServiceTest {
     @DisplayName("Create invoice with missing project should throw")
     void shouldRejectCreateWithMissingProject() {
         when(projectRepository.findById(99L)).thenReturn(Optional.empty());
-        Client client = Client.builder().id(1L).build();
-        User user = User.builder().id(1L).build();
-        Invoice invoice = Invoice.builder()
-                .project(Project.builder().id(99L).build())
-                .client(client).createdBy(user).build();
 
-        assertThatThrownBy(() -> invoiceService.create(invoice))
+        InvoiceRequest request = new InvoiceRequest();
+        request.setProjectId(99L);
+        request.setClientId(1L);
+        request.setCreatedById(1L);
+
+        assertThatThrownBy(() -> invoiceService.create(request))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Project not found");
     }
@@ -72,8 +76,9 @@ class InvoiceServiceTest {
         Invoice issued = Invoice.builder().id(1L).status(InvoiceStatus.ISSUED).build();
         when(invoiceRepository.findById(1L)).thenReturn(Optional.of(issued));
 
-        Invoice updated = Invoice.builder().invoiceNumber("NEW-001").build();
-        assertThatThrownBy(() -> invoiceService.update(1L, updated))
+        InvoiceRequest request = new InvoiceRequest();
+        request.setInvoiceNumber("NEW-001");
+        assertThatThrownBy(() -> invoiceService.update(1L, request))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Cannot modify");
     }
@@ -84,8 +89,9 @@ class InvoiceServiceTest {
         Invoice paid = Invoice.builder().id(1L).status(InvoiceStatus.PAID).build();
         when(invoiceRepository.findById(1L)).thenReturn(Optional.of(paid));
 
-        Invoice updated = Invoice.builder().invoiceNumber("NEW-001").build();
-        assertThatThrownBy(() -> invoiceService.update(1L, updated))
+        InvoiceRequest request = new InvoiceRequest();
+        request.setInvoiceNumber("NEW-001");
+        assertThatThrownBy(() -> invoiceService.update(1L, request))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Cannot modify");
     }
@@ -110,10 +116,14 @@ class InvoiceServiceTest {
         when(invoiceRepository.findById(1L)).thenReturn(Optional.of(draft));
         when(invoiceRepository.save(any(Invoice.class))).thenAnswer(i -> i.getArgument(0));
 
-        Invoice updated = Invoice.builder().invoiceNumber("NEW-001")
-                .subtotal(new BigDecimal("1000")).taxRate(new BigDecimal("21"))
-                .taxAmount(new BigDecimal("210")).total(new BigDecimal("1210")).build();
-        Invoice result = invoiceService.update(1L, updated);
+        InvoiceRequest request = new InvoiceRequest();
+        request.setInvoiceNumber("NEW-001");
+        request.setSubtotal(new BigDecimal("1000"));
+        request.setTaxRate(new BigDecimal("21"));
+        request.setTaxAmount(new BigDecimal("210"));
+        request.setTotal(new BigDecimal("1210"));
+
+        Invoice result = invoiceService.update(1L, request);
 
         assertThat(result.getInvoiceNumber()).isEqualTo("NEW-001");
         assertThat(result.getSubtotal()).isEqualByComparingTo("1000");

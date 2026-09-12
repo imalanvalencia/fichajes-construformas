@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.LinkedHashMap;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -54,12 +55,16 @@ class InvoiceIntegrationTest {
     @Test
     void shouldCreateAndIssueInvoice() throws Exception {
         String invoiceJson = objectMapper.writeValueAsString(
-            Invoice.builder()
-                .project(testProject).client(testClient).createdBy(testUser)
-                .invoiceNumber("INV-2024-001")
-                .subtotal(new BigDecimal("10000")).taxRate(new BigDecimal("21"))
-                .taxAmount(new BigDecimal("2100")).total(new BigDecimal("12100"))
-                .status(InvoiceStatus.DRAFT).build());
+            new LinkedHashMap<>() {{
+                put("projectId", testProject.getId());
+                put("clientId", testClient.getId());
+                put("createdById", testUser.getId());
+                put("invoiceNumber", "INV-2024-001");
+                put("subtotal", "10000");
+                put("taxRate", "21");
+                put("taxAmount", "2100");
+                put("total", "12100");
+            }});
 
         String createResponse = mockMvc.perform(post("/api/invoices")
                 .contentType(MediaType.APPLICATION_JSON).content(invoiceJson))
@@ -85,11 +90,16 @@ class InvoiceIntegrationTest {
             .issuedDate(LocalDate.now()).build());
 
         String updateJson = objectMapper.writeValueAsString(
-            Invoice.builder().invoiceNumber("MODIFIED").build());
+            new LinkedHashMap<>() {{
+                put("invoiceNumber", "MODIFIED");
+                put("projectId", testProject.getId());
+                put("clientId", testClient.getId());
+                put("createdById", testUser.getId());
+            }});
 
         mockMvc.perform(put("/api/invoices/" + invoice.getId())
                 .contentType(MediaType.APPLICATION_JSON).content(updateJson))
-            .andExpect(status().is5xxServerError());
+            .andExpect(status().isConflict());
     }
 
     @Test

@@ -37,3 +37,4 @@ Setting up the basic Spring Boot V1 backend architecture and verifying local dat
 - `ddl-auto` changed from `update` to `validate` — Flyway now owns schema management.
 - `baseline-on-migrate: false` set because this is a fresh DB with no prior data.
 - Repositories go in `backend/src/main/java/es/construformas/api/repository/`.
+- Frontend: `app-input` switched from floating labels to static labels (matches `app-select-or-create`) to fix label overlap in modals with pre-filled numeric values.

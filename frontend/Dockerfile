@@ -1,15 +1,16 @@
 # ---- Build stage ----
-FROM node:22-alpine AS build
+FROM node:26.8.1-alpine AS build
+RUN corepack enable
 WORKDIR /app
 
-COPY package.json package-lock.json ./
-RUN npm ci
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
 
 COPY . .
-RUN npm run build -- --configuration production
+RUN pnpm run build -- --configuration production
 
 # ---- Runtime stage ----
-FROM nginx:alpine
+FROM nginx:alpine3.24
 
 # Remove default nginx config
 RUN rm /etc/nginx/conf.d/default.conf

@@ -1,6 +1,7 @@
 package es.construformas.api.service;
 
 import es.construformas.api.dto.ProjectFinancialSummaryDTO;
+import es.construformas.api.dto.ProjectRequest;
 import es.construformas.api.model.*;
 import es.construformas.api.repository.*;
 import org.junit.jupiter.api.DisplayName;
@@ -34,9 +35,12 @@ class ProjectServiceTest {
     @DisplayName("Create project should set status PLANNED and save")
     void shouldCreateProject() {
         Client client = Client.builder().id(1L).name("Client").build();
-        Project project = Project.builder()
-                .name("Test Project").address("Calle 1")
-                .latitude(40.0).longitude(-3.0).build();
+        ProjectRequest request = new ProjectRequest();
+        request.setClientId(1L);
+        request.setName("Test Project");
+        request.setAddress("Calle 1");
+        request.setLatitude(40.0);
+        request.setLongitude(-3.0);
 
         when(clientRepository.findById(1L)).thenReturn(Optional.of(client));
         when(projectRepository.save(any(Project.class))).thenAnswer(i -> {
@@ -45,8 +49,7 @@ class ProjectServiceTest {
             return p;
         });
 
-        project.setClient(client);
-        Project result = projectService.create(project);
+        Project result = projectService.create(request);
 
         assertThat(result.getName()).isEqualTo("Test Project");
         assertThat(result.getStatus()).isEqualTo(ProjectStatus.PLANNED);
@@ -56,11 +59,14 @@ class ProjectServiceTest {
     @Test
     @DisplayName("Create project without client should throw")
     void shouldRejectProjectWithoutClient() {
-        Project project = Project.builder()
-                .name("No Client").address("Calle 1")
-                .latitude(40.0).longitude(-3.0).build();
+        ProjectRequest request = new ProjectRequest();
+        request.setName("No Client");
+        request.setAddress("Calle 1");
+        request.setLatitude(40.0);
+        request.setLongitude(-3.0);
+        // no clientId set
 
-        assertThatThrownBy(() -> projectService.create(project))
+        assertThatThrownBy(() -> projectService.create(request))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Client is required");
     }

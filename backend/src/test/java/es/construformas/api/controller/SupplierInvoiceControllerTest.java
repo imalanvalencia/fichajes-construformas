@@ -1,5 +1,6 @@
 package es.construformas.api.controller;
 
+import es.construformas.api.dto.SupplierInvoiceRequest;
 import es.construformas.api.model.Supplier;
 import es.construformas.api.model.SupplierInvoice;
 import es.construformas.api.model.SupplierInvoiceStatus;
@@ -70,11 +71,24 @@ class SupplierInvoiceControllerTest {
     @Test
     @DisplayName("POST /api/supplier-invoices should create and return supplier invoice")
     void createShouldReturn201() throws Exception {
-        when(supplierInvoiceService.create(any(SupplierInvoice.class))).thenReturn(sampleSupplierInvoice());
+        when(supplierInvoiceService.create(any(SupplierInvoiceRequest.class))).thenReturn(sampleSupplierInvoice());
+
+        String requestJson = objectMapper.writeValueAsString(
+            new java.util.LinkedHashMap<>() {{
+                put("supplierId", 1L);
+                put("createdById", 1L);
+                put("invoiceNumber", "SI-001");
+                put("invoiceDate", LocalDate.now().toString());
+                put("subtotal", "3000.00");
+                put("taxRate", "21.00");
+                put("taxAmount", "630.00");
+                put("total", "3630.00");
+                put("status", "RECEIVED");
+            }});
 
         mockMvc.perform(post("/api/supplier-invoices")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(sampleSupplierInvoice())))
+                        .content(requestJson))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(1))
                 .andExpect(jsonPath("$.invoiceNumber").value("SI-001"));
