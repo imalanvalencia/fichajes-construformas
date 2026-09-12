@@ -96,7 +96,12 @@ public class BudgetController {
     public ResponseEntity<Void> delete(@PathVariable Long id,
                                        @RequestParam(required = false, defaultValue = "false") boolean confirmed) {
         var actor = SecurityUtils.getCurrentUser(userRepository);
-        budgetService.delete(id, confirmed, actor);
+        var budget = budgetService.findById(id);
+        if (budget.getStatus() == BudgetStatus.APPROVED) {
+            budgetService.delete(id, confirmed, actor);
+        } else {
+            budgetService.delete(id);
+        }
         return ResponseEntity.noContent().build();
     }
 

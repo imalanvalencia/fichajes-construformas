@@ -192,14 +192,17 @@ class BudgetControllerTest {
     @WithMockUser(roles = "ADMIN")
     void deleteBudgetShouldReturn204() throws Exception {
         User admin = User.builder().id(1L).name("Admin").build();
+        Budget draft = sampleBudget();
+        draft.setStatus(BudgetStatus.DRAFT);
 
         try (MockedStatic<SecurityUtils> security = mockStatic(SecurityUtils.class)) {
             security.when(() -> SecurityUtils.getCurrentUser(userRepository)).thenReturn(admin);
+            when(budgetService.findById(1L)).thenReturn(draft);
 
             mockMvc.perform(delete("/api/budgets/1"))
                     .andExpect(status().isNoContent());
 
-            verify(budgetService).delete(1L, false, admin);
+            verify(budgetService).delete(1L);
         }
     }
 
@@ -244,9 +247,12 @@ class BudgetControllerTest {
     @WithMockUser(roles = "ADMIN")
     void adminDeleteUnconfirmedShouldReturn400() throws Exception {
         User admin = User.builder().id(1L).name("Admin").build();
+        Budget approved = sampleBudget();
+        approved.setStatus(BudgetStatus.APPROVED);
 
         try (MockedStatic<SecurityUtils> security = mockStatic(SecurityUtils.class)) {
             security.when(() -> SecurityUtils.getCurrentUser(userRepository)).thenReturn(admin);
+            when(budgetService.findById(1L)).thenReturn(approved);
             doThrow(new IllegalArgumentException("Removal requires explicit confirmation"))
                     .when(budgetService).delete(1L, false, admin);
 
@@ -260,9 +266,12 @@ class BudgetControllerTest {
     @WithMockUser(roles = "ADMIN")
     void adminDeleteConfirmedShouldReturn204() throws Exception {
         User admin = User.builder().id(1L).name("Admin").build();
+        Budget approved = sampleBudget();
+        approved.setStatus(BudgetStatus.APPROVED);
 
         try (MockedStatic<SecurityUtils> security = mockStatic(SecurityUtils.class)) {
             security.when(() -> SecurityUtils.getCurrentUser(userRepository)).thenReturn(admin);
+            when(budgetService.findById(1L)).thenReturn(approved);
 
             mockMvc.perform(delete("/api/budgets/1").param("confirmed", "true"))
                     .andExpect(status().isNoContent());
@@ -276,9 +285,12 @@ class BudgetControllerTest {
     @WithMockUser(roles = "ADMIN")
     void adminDeleteConfirmedIssuedInvoiceShouldReturn409() throws Exception {
         User admin = User.builder().id(1L).name("Admin").build();
+        Budget approved = sampleBudget();
+        approved.setStatus(BudgetStatus.APPROVED);
 
         try (MockedStatic<SecurityUtils> security = mockStatic(SecurityUtils.class)) {
             security.when(() -> SecurityUtils.getCurrentUser(userRepository)).thenReturn(admin);
+            when(budgetService.findById(1L)).thenReturn(approved);
             doThrow(new IllegalStateException("Cannot remove an invoice that has been issued or paid"))
                     .when(budgetService).delete(1L, true, admin);
 
