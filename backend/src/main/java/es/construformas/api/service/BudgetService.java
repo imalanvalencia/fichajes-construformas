@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -26,6 +27,9 @@ public class BudgetService {
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
     private final InvoiceRepository invoiceRepository;
+    private final InvoiceItemRepository invoiceItemRepository;
+    private final InvoiceYearSequenceRepository invoiceYearSequenceRepository;
+    private final DocumentLifecycleEventRepository documentLifecycleEventRepository;
 
     public Budget create(BudgetRequest request) {
         Project project = projectRepository.findById(request.getProjectId())
@@ -151,15 +155,78 @@ public class BudgetService {
     }
 
     public Budget approve(Long budgetId, Long userId) {
+        requireAdmin();
         Budget budget = findById(budgetId);
-        User approver = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        if (budget.getStatus() == BudgetStatus.APPROVED) {
+            throw new IllegalStateException("Budget is already approved");
+        }
+        if (invoiceRepository.findBySourceBudgetId(budgetId).isPresent()) {
+            throw new IllegalStateException("Budget already has an automatic invoice");
+        }
+
+        User approver = SecurityUtils.getCurrentUser(userRepository);
+        LocalDateTime approvedAt = LocalDateTime.now();
+        Invoice invoice = createAutomaticDraft(budget, approver, approvedAt);
 
         budget.setStatus(BudgetStatus.APPROVED);
         budget.setApprovedBy(approver);
-        budget.setApprovedAt(LocalDateTime.now());
+        budget.setApprovedAt(approvedAt);
+
+        documentLifecycleEventRepository.save(DocumentLifecycleEvent.builder()
+                .type(DocumentLifecycleEventType.BUDGET_APPROVED).budget(budget).invoice(invoice)
+                .actor(approver).occurredAt(approvedAt).build());
+        documentLifecycleEventRepository.save(DocumentLifecycleEvent.builder()
+                .type(DocumentLifecycleEventType.INVOICE_CREATED).budget(budget).invoice(invoice)
+                .actor(approver).occurredAt(approvedAt).build());
 
         return budgetRepository.save(budget);
+    }
+
+    private Invoice createAutomaticDraft(Budget budget, User actor, LocalDateTime approvedAt) {
+        int year = approvedAt.getYear();
+        int sequence = invoiceYearSequenceRepository.allocateNextValue(year);
+        Invoice invoice = Invoice.builder()
+                .project(budget.getProject())
+                .client(budget.getProject().getClient())
+                .createdBy(actor)
+                .sourceBudgetId(budget.getId())
+                .invoiceNumber("INV-%d-%03d".formatted(year, sequence))
+                .status(InvoiceStatus.DRAFT)
+                .taxRate(new BigDecimal("21.00"))
+                .issuedDate(approvedAt.toLocalDate())
+                .notes(budget.getPaymentTerms())
+                .build();
+        Invoice saved = invoiceRepository.save(invoice);
+
+        List<InvoiceItem> items = getItems(budget.getId()).stream()
+                .map(item -> snapshot(saved, item.getDescription(), item.getQuantity(), item.getUnitPrice(), item.getTotalPrice(), item.getOrderNum()))
+                .toList();
+        List<InvoiceItem> discounts = getDiscounts(budget.getId()).stream()
+                .map(discount -> snapshot(saved, discount.getDescription(), BigDecimal.ONE,
+                        discount.getAmount().negate(), discount.getAmount().negate(), items.size()))
+                .toList();
+        items.forEach(invoiceItemRepository::save);
+        discounts.forEach(invoiceItemRepository::save);
+
+        BigDecimal subtotal = java.util.stream.Stream.concat(items.stream(), discounts.stream())
+                .map(InvoiceItem::getTotalPrice).reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal taxAmount = subtotal.multiply(invoice.getTaxRate()).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+        invoice.setSubtotal(subtotal);
+        invoice.setTaxAmount(taxAmount);
+        invoice.setTotal(subtotal.add(taxAmount));
+        return invoiceRepository.save(invoice);
+    }
+
+    private InvoiceItem snapshot(Invoice invoice, String description, BigDecimal quantity, BigDecimal unitPrice,
+                                 BigDecimal totalPrice, Integer orderNum) {
+        return InvoiceItem.builder().invoice(invoice).description(description).quantity(quantity)
+                .unitPrice(unitPrice).totalPrice(totalPrice).orderNum(orderNum).build();
+    }
+
+    private void requireAdmin() {
+        if (!SecurityUtils.hasRole("ADMIN")) {
+            throw new IllegalStateException("ADMIN role is required");
+        }
     }
 
     public Budget updateStatus(Long budgetId, BudgetStatus newStatus) {
@@ -174,6 +241,37 @@ public class BudgetService {
             throw new IllegalStateException("Cannot delete an approved budget");
         }
         budgetRepository.deleteById(id);
+    }
+
+    public void delete(Long id, boolean confirmed, User actor) {
+        requireAdmin();
+        if (!confirmed) {
+            throw new IllegalArgumentException("Removal requires explicit confirmation");
+        }
+        Budget budget = findById(id);
+        if (budget.getStatus() != BudgetStatus.APPROVED) {
+            throw new IllegalStateException("Only approved budgets use protected removal");
+        }
+        Invoice invoice = invoiceRepository.findBySourceBudgetId(id)
+                .orElseThrow(() -> new IllegalStateException("Automatic invoice not found"));
+        if (invoice.getStatus() == InvoiceStatus.ISSUED || invoice.getStatus() == InvoiceStatus.PAID) {
+            throw new IllegalStateException("Cannot remove an invoice that has been issued or paid");
+        }
+
+        LocalDateTime deletedAt = LocalDateTime.now();
+        budget.setDeletedAt(deletedAt);
+        budget.setDeletedBy(actor);
+        invoice.setDeletedAt(deletedAt);
+        invoice.setDeletedBy(actor);
+        invoiceRepository.save(invoice);
+        budgetRepository.save(budget);
+        documentLifecycleEventRepository.save(DocumentLifecycleEvent.builder()
+                .type(DocumentLifecycleEventType.BUDGET_REMOVED).budget(budget).invoice(invoice)
+                .actor(actor).occurredAt(deletedAt).build());
+    }
+
+    public List<DocumentLifecycleEvent> getLifecycle(Long budgetId) {
+        return documentLifecycleEventRepository.findByBudgetIdOrderByOccurredAtAsc(budgetId);
     }
 
     public BudgetItem addItem(Long budgetId, BudgetItem item) {
