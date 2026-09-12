@@ -19,9 +19,11 @@ import { CommonModule } from '@angular/common';
       <input
         #inputEl
         [id]="fieldId"
+        [name]="name() || undefined"
         [type]="type()"
         [value]="value()"
         [disabled]="disabled()"
+        [placeholder]="placeholder()"
         [attr.aria-describedby]="describedBy"
         [attr.aria-invalid]="errorMessage() ? true : null"
         [attr.aria-required]="required() ? true : null"
@@ -63,9 +65,11 @@ export class InputComponent<T = string> implements ControlValueAccessor {
   value = model<T>(undefined! as T);
   disabled = input(false);
   required = input(false);
+  name = input<string>('');
   errorMessage = input('');
   helpText = input('');
   id = input<string>('');
+  placeholder = input('');
 
   @ViewChild('inputEl') inputEl!: ElementRef<HTMLInputElement>;
 

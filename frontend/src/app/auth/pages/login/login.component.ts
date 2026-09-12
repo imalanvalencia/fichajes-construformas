@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { InputComponent } from '../../../components/shared/input/input.component';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, InputComponent],
   template: `
     <div class="min-h-screen flex items-center justify-center bg-cement">
       <div class="w-full max-w-md bg-white border border-steel p-8">
@@ -51,41 +52,41 @@ import { AuthService } from '../../services/auth.service';
           <!-- Email Tab -->
           @if (activeTab() === 'email') {
             <div class="mb-4">
-              <label class="block text-xs font-mono text-steel mb-1">Email</label>
-              <input
+              <app-input
                 type="email"
                 [(ngModel)]="email"
                 name="email"
-                class="w-full py-2 border-b border-steel focus:border-accent outline-none bg-transparent text-nero"
+                label="Email"
                 placeholder="you&#64;company.com"
-                required>
+                [required]="true"
+              />
             </div>
           }
 
           <!-- NIE Tab -->
           @if (activeTab() === 'nie') {
             <div class="mb-4">
-              <label class="block text-xs font-mono text-steel mb-1">DNI/NIE</label>
-              <input
+              <app-input
                 type="text"
                 [(ngModel)]="nie"
                 name="nie"
-                class="w-full py-2 border-b border-steel focus:border-accent outline-none bg-transparent text-nero"
+                label="DNI/NIE"
                 placeholder="12345678Z"
-                required>
+                [required]="true"
+              />
             </div>
           }
 
           <!-- Password -->
           <div class="mb-6">
-            <label class="block text-xs font-mono text-steel mb-1">Password</label>
-            <input
+            <app-input
               type="password"
               [(ngModel)]="password"
               name="password"
-              class="w-full py-2 border-b border-steel focus:border-accent outline-none bg-transparent text-nero"
+              label="Password"
               placeholder="Enter your password"
-              required>
+              [required]="true"
+            />
           </div>
 
           <!-- Submit Button -->

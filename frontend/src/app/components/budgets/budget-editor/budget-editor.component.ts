@@ -4,6 +4,8 @@ import { Budget, BudgetItem } from '../../../features/budgets/types/budget.types
 import { ButtonComponent } from '../../shared/button/button.component';
 import { CardComponent } from '../../shared/card/card.component';
 import { BadgeComponent } from '../../shared/badge/badge.component';
+import { InputComponent } from '../../shared/input/input.component';
+import { TextareaComponent } from '../../shared/textarea/textarea.component';
 
 interface EditableItem {
   local: Partial<BudgetItem>;
@@ -13,7 +15,7 @@ interface EditableItem {
 @Component({
   selector: 'app-budget-editor',
   standalone: true,
-  imports: [FormsModule, ButtonComponent, CardComponent, BadgeComponent],
+  imports: [FormsModule, ButtonComponent, CardComponent, BadgeComponent, InputComponent, TextareaComponent],
   template: `
     <div class="fixed inset-0 z-50 bg-white overflow-y-auto">
       <div class="max-w-6xl mx-auto px-6 py-6">
@@ -91,59 +93,50 @@ interface EditableItem {
                         {{ i + 1 }}
                       </td>
                       <td class="py-2 px-3">
-                        <input
+                        <app-input
                           type="text"
-                          [ngModel]="item.local.description ?? ''"
-                          (ngModelChange)="updateField(i, 'description', $event)"
+                          [value]="item.local.description ?? ''"
+                          (valueChange)="updateField(i, 'description', $event)"
                           (blur)="emitUpdate(i)"
-                          class="w-full bg-transparent font-sans text-sm text-nero outline-none border border-steel/30 rounded px-2 py-1 focus:border-accent"
                           placeholder="Descripción *"
                         />
                       </td>
                       <td class="py-2 px-3">
-                        <input
+                        <app-input
                           type="text"
-                          [ngModel]="item.local.zone ?? ''"
-                          (ngModelChange)="updateField(i, 'zone', $event)"
+                          [value]="item.local.zone ?? ''"
+                          (valueChange)="updateField(i, 'zone', $event)"
                           (blur)="emitUpdate(i)"
-                          class="w-full bg-transparent font-sans text-sm text-nero outline-none border border-steel/30 rounded px-2 py-1 focus:border-accent"
                           placeholder="Zona"
                         />
                       </td>
                       <td class="py-2 px-3">
-                        <input
+                        <app-input
                           type="text"
-                          [ngModel]="item.local.unit ?? ''"
-                          (ngModelChange)="updateField(i, 'unit', $event)"
+                          [value]="item.local.unit ?? ''"
+                          (valueChange)="updateField(i, 'unit', $event)"
                           (blur)="emitUpdate(i)"
-                          class="w-full bg-transparent font-sans text-sm text-nero outline-none border border-steel/30 rounded px-2 py-1 focus:border-accent"
                           placeholder="Unidad"
                         />
                       </td>
                       <td class="py-2 px-3">
-                        <input
+                        <app-input
                           type="number"
-                          [ngModel]="item.local.quantity ?? 0"
-                          (ngModelChange)="updateFieldNumber(i, 'quantity', $event)"
+                          [value]="str(item.local.quantity)"
+                          (valueChange)="updateFieldNumber(i, 'quantity', $event)"
                           (blur)="emitUpdate(i)"
-                          class="w-full bg-transparent font-sans text-sm text-nero outline-none border border-steel/30 rounded px-2 py-1 text-right focus:border-accent"
                           placeholder="0"
-                          min="0"
-                          step="0.01"
                         />
                       </td>
                       <td class="py-2 px-3">
                         <div class="flex items-center justify-end">
                           <span class="font-mono text-xs text-steel mr-1">€</span>
-                          <input
+                          <app-input
                             type="number"
-                            [ngModel]="item.local.unitPrice ?? 0"
-                            (ngModelChange)="updateFieldNumber(i, 'unitPrice', $event)"
+                            [value]="str(item.local.unitPrice)"
+                            (valueChange)="updateFieldNumber(i, 'unitPrice', $event)"
                             (blur)="emitUpdate(i)"
-                            class="w-full bg-transparent font-sans text-sm text-nero outline-none border border-steel/30 rounded px-2 py-1 text-right focus:border-accent"
                             placeholder="0.00"
-                            min="0"
-                            step="0.01"
                           />
                         </div>
                       </td>
@@ -164,49 +157,50 @@ interface EditableItem {
                       {{ editableItems().length + 1 }}
                     </td>
                     <td class="py-2 px-3">
-                      <input
+                      <app-input
                         type="text"
-                        [(ngModel)]="newItemDescription"
-                        class="w-full bg-transparent font-sans text-sm text-nero outline-none border border-steel/30 rounded px-2 py-1 focus:border-accent"
+                        [value]="newItemDescription()"
+                        (valueChange)="newItemDescription.set($event)"
+                        (keydown.enter)="addItem()"
                         placeholder="Nueva descripción *"
                       />
                     </td>
                     <td class="py-2 px-3">
-                      <input
+                      <app-input
                         type="text"
-                        [(ngModel)]="newItemZone"
-                        class="w-full bg-transparent font-sans text-sm text-nero outline-none border border-steel/30 rounded px-2 py-1 focus:border-accent"
+                        [value]="newItemZone()"
+                        (valueChange)="newItemZone.set($event)"
+                        (keydown.enter)="addItem()"
                         placeholder="Zona"
                       />
                     </td>
                     <td class="py-2 px-3">
-                      <input
+                      <app-input
                         type="text"
-                        [(ngModel)]="newItemUnit"
-                        class="w-full bg-transparent font-sans text-sm text-nero outline-none border border-steel/30 rounded px-2 py-1 focus:border-accent"
+                        [value]="newItemUnit()"
+                        (valueChange)="newItemUnit.set($event)"
+                        (keydown.enter)="addItem()"
                         placeholder="Unidad"
                       />
                     </td>
                     <td class="py-2 px-3">
-                      <input
+                      <app-input
                         type="number"
-                        [(ngModel)]="newItemQuantity"
-                        class="w-full bg-transparent font-sans text-sm text-nero outline-none border border-steel/30 rounded px-2 py-1 text-right focus:border-accent"
-                        placeholder="0"
-                        min="0"
-                        step="0.01"
+                        [value]="str(newItemQuantity())"
+                        (valueChange)="newItemQuantity.set(+$event || 1)"
+                        (keydown.enter)="addItem()"
+                        placeholder="1"
                       />
                     </td>
                     <td class="py-2 px-3">
                       <div class="flex items-center justify-end">
                         <span class="font-mono text-xs text-steel mr-1">€</span>
-                        <input
+                        <app-input
                           type="number"
-                          [(ngModel)]="newItemPrice"
-                          class="w-full bg-transparent font-sans text-sm text-nero outline-none border border-steel/30 rounded px-2 py-1 text-right focus:border-accent"
+                          [value]="str(newItemPrice())"
+                          (valueChange)="newItemPrice.set(+$event || 0)"
+                          (keydown.enter)="addItem()"
                           placeholder="0.00"
-                          min="0"
-                          step="0.01"
                         />
                       </div>
                     </td>
@@ -236,12 +230,12 @@ interface EditableItem {
         <!-- Terms & Conditions -->
         <div class="mt-6">
           <app-card category="Condiciones" title="Términos y Condiciones">
-            <textarea
-              [(ngModel)]="termsText"
-              rows="5"
-              class="w-full bg-transparent font-sans text-sm text-nero outline-none border border-steel/30 rounded px-3 py-2 focus:border-accent resize-y"
+            <app-textarea
+              [value]="termsText()"
+              (valueChange)="termsText.set($event)"
+              [rows]="5"
               placeholder="Escribe los términos y condiciones del presupuesto..."
-            ></textarea>
+            />
           </app-card>
         </div>
 
@@ -319,7 +313,7 @@ export class BudgetEditorComponent {
   newItemDescription = signal('');
   newItemZone = signal('');
   newItemUnit = signal('');
-  newItemQuantity = signal(0);
+  newItemQuantity = signal(1);
   newItemPrice = signal(0);
 
   // --- Terms & Conditions ---
@@ -425,7 +419,7 @@ export class BudgetEditorComponent {
     const desc = this.newItemDescription().trim();
     if (!desc) return;
 
-    const qty = this.newItemQuantity() || 0;
+    const qty = Math.max(1, this.newItemQuantity() || 1);
     const price = this.newItemPrice() || 0;
 
     this.onAddItem.emit({
@@ -441,7 +435,7 @@ export class BudgetEditorComponent {
     this.newItemDescription.set('');
     this.newItemZone.set('');
     this.newItemUnit.set('');
-    this.newItemQuantity.set(0);
+    this.newItemQuantity.set(1);
     this.newItemPrice.set(0);
   }
 
@@ -460,5 +454,10 @@ export class BudgetEditorComponent {
 
   formatCurrency(value: number): string {
     return this.currencyFmt.format(value ?? 0);
+  }
+
+  /** Convert number to string for template bindings (String() unavailable in templates) */
+  str(value: number | undefined | null): string {
+    return String(value ?? 0);
   }
 }
