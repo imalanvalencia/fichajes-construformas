@@ -53,7 +53,7 @@ import { BadgeComponent } from '../../shared/badge/badge.component';
                     >
                   }
 
-                  @if (budget.status === 'DRAFT') {
+                  @if (budget.status === 'DRAFT' && isAdmin()) {
                     <app-button variant="filled" size="sm" (click)="onApprove.emit(budget.id!)"
                       >Aprobar</app-button
                     >
@@ -86,6 +86,7 @@ import { BadgeComponent } from '../../shared/badge/badge.component';
 })
 export class BudgetsTableComponent {
   budgets = input<Budget[]>([]);
+  isAdmin = input(false);
 
   onViewItems = output<Budget>();
   onApprove = output<number>();
