@@ -1,5 +1,6 @@
 import { Component, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { AuthService } from '@app/auth/services/auth.service';
 import { BudgetService } from './services/budget.service';
 import { ProjectService } from '../projects/services/project.service';
 import { Budget, BudgetItem } from './types/budget.types';
@@ -35,6 +36,7 @@ import { NotificationService } from '@app/services/notification.service';
 
       <app-budgets-table
         [budgets]="budgets()"
+        [isAdmin]="isAdmin()"
         (onViewItems)="viewItems($event)"
         (onApprove)="approveBudget($event)"
         (onReject)="rejectBudget($event)"
@@ -74,12 +76,15 @@ export class BudgetsComponent {
   showCreateModal = signal(false);
   newBudget: Partial<Budget> = this.emptyBudgetForm();
   private loadVersion = 0;
+  isAdmin = signal(false);
 
   constructor(
     private budgetService: BudgetService,
     private projectService: ProjectService,
     private notifications: NotificationService,
+    private authService: AuthService,
   ) {
+    this.isAdmin.set(this.authService.hasRole('ADMIN'));
     this.loadBudgets();
     this.projectService.getAll().subscribe({
       next: (data) => this.projects.set(data),
@@ -126,9 +131,16 @@ export class BudgetsComponent {
   }
 
   approveBudget(id: number): void {
+    if (!this.isAdmin()) {
+      this.notifications.error('Solo los administradores pueden aprobar presupuestos.');
+      return;
+    }
     if (!confirm('¿Aprobar este presupuesto?')) return;
     this.budgetService.approve(id).subscribe({
       next: () => this.loadBudgets(),
+      error: (err) => {
+        this.notifications.error(err.error?.message || err.message || 'Error al aprobar el presupuesto.');
+      },
     });
   }
 

@@ -6,6 +6,8 @@ import { BudgetService } from './services/budget.service';
 import { ProjectService } from '../projects/services/project.service';
 import { Budget } from './types/budget.types';
 import { NotificationService } from '@app/services/notification.service';
+import { AuthService } from '@app/auth/services/auth.service';
+import { AuthResponse } from '@app/auth/types/auth.types';
 
 describe('BudgetsComponent', () => {
   let component: BudgetsComponent;
@@ -15,8 +17,10 @@ describe('BudgetsComponent', () => {
     create: ReturnType<typeof vi.fn>;
     getItems: ReturnType<typeof vi.fn>;
     delete: ReturnType<typeof vi.fn>;
+    approve: ReturnType<typeof vi.fn>;
   };
   let notifications: { success: ReturnType<typeof vi.fn>; error: ReturnType<typeof vi.fn> };
+  let authService: { hasRole: ReturnType<typeof vi.fn>; getUser: ReturnType<typeof vi.fn> };
 
   const existingBudget: Budget = {
     id: 1,
@@ -30,14 +34,32 @@ describe('BudgetsComponent', () => {
     createdById: 1,
   };
 
+  const mockAdminAuthResponse: AuthResponse = {
+    accessToken: 'token',
+    refreshToken: 'refresh',
+    email: 'admin@test.com',
+    roles: ['ADMIN'],
+    name: 'Admin User',
+  };
+
+  const mockOperatorAuthResponse: AuthResponse = {
+    accessToken: 'token',
+    refreshToken: 'refresh',
+    email: 'operator@test.com',
+    roles: ['OPERATOR'],
+    name: 'Operator User',
+  };
+
   beforeEach(async () => {
     budgetService = {
       getAll: vi.fn().mockReturnValue(of([existingBudget])),
       create: vi.fn(),
       getItems: vi.fn().mockReturnValue(of([])),
       delete: vi.fn(),
+      approve: vi.fn().mockReturnValue(of(existingBudget)),
     };
     notifications = { success: vi.fn(), error: vi.fn() };
+    authService = { hasRole: vi.fn().mockReturnValue(false), getUser: vi.fn() };
 
     await TestBed.configureTestingModule({
       imports: [BudgetsComponent],
@@ -64,6 +86,7 @@ describe('BudgetsComponent', () => {
           },
         },
         { provide: NotificationService, useValue: notifications },
+        { provide: AuthService, useValue: authService },
       ],
     }).compileComponents();
 
@@ -154,5 +177,30 @@ describe('BudgetsComponent', () => {
     component.deleteBudget(1, true);
 
     expect(notifications.error).toHaveBeenCalled();
+  });
+
+  describe('approveBudget', () => {
+    it('should not approve and show error when user is not ADMIN', () => {
+      authService.hasRole.mockReturnValue(false);
+      component.isAdmin.set(false);
+
+      component.approveBudget(1);
+
+      expect(notifications.error).toHaveBeenCalledWith(
+        'Solo los administradores pueden aprobar presupuestos.',
+      );
+      expect(budgetService.approve).not.toHaveBeenCalled();
+    });
+
+    it('should approve when user is ADMIN and call the service', () => {
+      authService.hasRole.mockReturnValue(true);
+      component.isAdmin.set(true);
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+      component.approveBudget(1);
+
+      expect(authService.hasRole).toHaveBeenCalledWith('ADMIN');
+      expect(budgetService.approve).toHaveBeenCalledWith(1);
+    });
   });
 });
