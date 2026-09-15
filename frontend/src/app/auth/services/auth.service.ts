@@ -50,6 +50,17 @@ export class AuthService {
     }
   }
 
+  /**
+   * Verifica si el usuario actual tiene un rol específico.
+   * @param role - El rol a verificar (ej: 'ADMIN', 'OPERATOR', 'MANAGER')
+   * @returns true si el rol existe en la lista de roles del usuario
+   */
+  hasRole(role: string): boolean {
+    const user = this.getUser();
+    if (!user) return false;
+    return user.roles?.includes(role) ?? false;
+  }
+
   isAuthenticated(): boolean {
     const token = this.getToken();
     if (!token) return false;
