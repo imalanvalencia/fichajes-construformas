@@ -62,6 +62,14 @@ interface EditableItem {
           </div>
         </div>
 
+        <!-- Error Banner — top of page, always visible -->
+        @if (errorMessage()) {
+          <div class="mb-6 bg-red-50 border border-red-200 rounded-lg px-4 py-3 flex items-center gap-3">
+            <mat-icon class="text-construction-red">error_outline</mat-icon>
+            <span class="text-sm text-construction-red">{{ errorMessage() }}</span>
+          </div>
+        }
+
         <!-- Client / Project Info -->
         @if (budget()?.project) {
           <app-card category="Proyecto" [title]="budget()!.project!.name">
@@ -300,14 +308,6 @@ interface EditableItem {
             </div>
           </app-card>
         </div>
-
-        <!-- Error Banner -->
-        @if (errorMessage()) {
-          <div class="mt-6 bg-red-50 border border-red-200 rounded-lg px-4 py-3 flex items-center gap-3">
-            <mat-icon class="text-construction-red">error_outline</mat-icon>
-            <span class="text-sm text-construction-red">{{ errorMessage() }}</span>
-          </div>
-        }
 
         <!-- Action Buttons -->
         <div class="mt-6 flex items-center justify-end gap-3 pb-8">
