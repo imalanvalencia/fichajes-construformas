@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { SidebarComponent } from './sidebar/sidebar.component';
 import { HeaderComponent } from './header/header.component';
 import { RouterOutlet } from '@angular/router';
@@ -7,6 +7,7 @@ import {
   MatSidenav,
   MatSidenavContent,
 } from '@angular/material/sidenav';
+import { SidebarService } from '@app/services/sidebar.service';
 
 @Component({
   selector: 'app-shell',
@@ -21,7 +22,7 @@ import {
   ],
   template: `
     <mat-sidenav-container class="flex h-screen overflow-hidden">
-      <mat-sidenav class="max-w-max" opened mode="side">
+      <mat-sidenav class="max-w-max" [opened]="sidebarService.visible()" mode="side">
         <app-sidebar />
       </mat-sidenav>
 
@@ -44,4 +45,5 @@ import {
 })
 export class ShellComponent {
   mobileOpen = false;
+  sidebarService = inject(SidebarService);
 }

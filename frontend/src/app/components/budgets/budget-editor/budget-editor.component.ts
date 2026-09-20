@@ -19,18 +19,46 @@ interface EditableItem {
   template: `
     <div class="fixed inset-0 z-50 bg-white overflow-y-auto">
       <div class="max-w-6xl mx-auto px-6 py-6">
-        <!-- Header -->
+        <!-- Breadcrumb + Header -->
         <div class="flex items-center justify-between mb-6">
           <div class="flex items-center gap-4">
-            <h1 class="text-2xl font-bold text-nero">Editor de Presupuesto</h1>
-            @if (budget()) {
-              <span class="font-mono text-sm text-steel">
-                #{{ budget()!.id }} — v{{ budget()!.version }}
+            <!-- Breadcrumb -->
+            <nav class="flex items-center gap-2 text-sm">
+              <a (click)="onClose.emit()" class="text-steel hover:text-nero cursor-pointer font-medium transition-colors">
+                Presupuestos
+              </a>
+              <span class="text-steel/50">/</span>
+              <span class="text-nero font-medium">
+                Editor
+                @if (budget()) {
+                  <span class="font-mono text-steel ml-1">#{{ budget()!.id }} — v{{ budget()!.version }}</span>
+                }
               </span>
+            </nav>
+            @if (budget()) {
               <app-badge [status]="budget()!.status" />
             }
           </div>
-          <app-button variant="text" (click)="onClose.emit()">Cerrar</app-button>
+
+          <!-- Navigation + Close -->
+          <div class="flex items-center gap-2">
+            <app-button
+              variant="text"
+              size="sm"
+              icon="chevron_left"
+              [disabled]="!hasPrevious()"
+              (click)="onNavigate.emit('prev')"
+            >Anterior</app-button>
+            <app-button
+              variant="text"
+              size="sm"
+              icon="chevron_right"
+              [disabled]="!hasNext()"
+              (click)="onNavigate.emit('next')"
+            >Siguiente</app-button>
+            <div class="w-px h-6 bg-steel/30 mx-1"></div>
+            <app-button variant="text" (click)="onClose.emit()">Cerrar</app-button>
+          </div>
         </div>
 
         <!-- Client / Project Info -->
@@ -288,12 +316,15 @@ interface EditableItem {
 export class BudgetEditorComponent {
   budget = input<Budget | null>(null);
   items = input<BudgetItem[]>([]);
+  hasPrevious = input(false);
+  hasNext = input(false);
 
   onClose = output<void>();
   onSave = output<Partial<Budget>>();
   onUpdateItem = output<{ id: number; changes: Partial<BudgetItem> }>();
   onDeleteItem = output<number>();
   onAddItem = output<Partial<BudgetItem>>();
+  onNavigate = output<'prev' | 'next'>();
 
   // --- Local editing state for existing items ---
   editableItems = signal<EditableItem[]>([]);

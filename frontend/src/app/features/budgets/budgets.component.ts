@@ -12,6 +12,7 @@ import { BudgetSummaryComponent } from '@components/budgets/budget-summary/budge
 import { BudgetEditorComponent } from '@components/budgets/budget-editor/budget-editor.component';
 import { CreateBudgetModalComponent } from '@components/budgets/create-budget-modal/create-budget-modal.component';
 import { NotificationService } from '@app/services/notification.service';
+import { SidebarService } from '@app/services/sidebar.service';
 
 @Component({
   selector: 'app-budgets',
@@ -49,11 +50,14 @@ import { NotificationService } from '@app/services/notification.service';
         <app-budget-editor
           [budget]="selectedBudget"
           [items]="budgetItems()"
+          [hasPrevious]="hasPreviousBudget()"
+          [hasNext]="hasNextBudget()"
           (onClose)="closeItemsPanel()"
           (onSave)="onSaveBudget($event)"
           (onUpdateItem)="onUpdateItem($event)"
           (onDeleteItem)="deleteItem($event)"
           (onAddItem)="addItem($event)"
+          (onNavigate)="navigateBudget($event)"
         />
       }
 
@@ -84,6 +88,7 @@ export class BudgetsComponent {
   private projectService = inject(ProjectService);
   private notifications = inject(NotificationService);
   private authService = inject(AuthService);
+  private sidebarService = inject(SidebarService);
 
   constructor() {
     this.isAdmin.set(this.authService.hasRole('ADMIN'));
@@ -111,6 +116,7 @@ export class BudgetsComponent {
 
   closeItemsPanel(): void {
     this.selectedBudget = null;
+    this.sidebarService.show();
   }
 
   onSaveBudget(changes: Partial<Budget>): void {
@@ -186,6 +192,7 @@ export class BudgetsComponent {
 
   openEditor(budget: Budget): void {
     this.selectedBudget = budget;
+    this.sidebarService.hide();
     this.budgetService.getItems(budget.id!).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (items) => this.budgetItems.set(items),
     });
@@ -258,6 +265,28 @@ export class BudgetsComponent {
           this.newBudget.projectId = created.id!;
         },
       });
+  }
+
+  // --- Navigation between budgets ---
+  hasPreviousBudget(): boolean {
+    if (!this.selectedBudget) return false;
+    const idx = this.budgets().findIndex((b) => b.id === this.selectedBudget!.id);
+    return idx > 0;
+  }
+
+  hasNextBudget(): boolean {
+    if (!this.selectedBudget) return false;
+    const idx = this.budgets().findIndex((b) => b.id === this.selectedBudget!.id);
+    return idx >= 0 && idx < this.budgets().length - 1;
+  }
+
+  navigateBudget(direction: 'prev' | 'next'): void {
+    if (!this.selectedBudget) return;
+    const idx = this.budgets().findIndex((b) => b.id === this.selectedBudget!.id);
+    const newIdx = direction === 'prev' ? idx - 1 : idx + 1;
+    if (newIdx >= 0 && newIdx < this.budgets().length) {
+      this.openEditor(this.budgets()[newIdx]);
+    }
   }
 
   private emptyBudgetForm(): Partial<Budget> {
