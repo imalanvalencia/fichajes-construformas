@@ -211,7 +211,7 @@ interface EditableItem {
                   type="text"
                   [value]="newItemDescription()"
                   (valueChange)="newItemDescription.set($event); clearItemError('description')"
-                  [errorMessage]="itemErrors().description"
+                  [errorMessage]="itemErrors().description ?? ''"
                   placeholder="Ej: Demolición de muro"
                 />
               </div>
@@ -239,7 +239,7 @@ interface EditableItem {
                   type="number"
                   [value]="str(newItemQuantity())"
                   (valueChange)="newItemQuantity.set(+$event || 1); clearItemError('quantity')"
-                  [errorMessage]="itemErrors().quantity"
+                  [errorMessage]="itemErrors().quantity ?? ''"
                   placeholder="1"
                 />
               </div>
@@ -249,7 +249,7 @@ interface EditableItem {
                   type="number"
                   [value]="str(newItemPrice())"
                   (valueChange)="newItemPrice.set(+$event || 0); clearItemError('unitPrice')"
-                  [errorMessage]="itemErrors().unitPrice"
+                  [errorMessage]="itemErrors().unitPrice ?? ''"
                   placeholder="0.00"
                 />
               </div>
