@@ -16,6 +16,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.LinkedHashMap;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -52,10 +53,12 @@ class BudgetIntegrationTest {
     @Test
     void shouldCreateBudgetWithItems() throws Exception {
         String budgetJson = objectMapper.writeValueAsString(
-            Budget.builder()
-                .project(testProject).createdBy(testUser)
-                .totalAmount(new BigDecimal("20000"))
-                .status(BudgetStatus.DRAFT).build());
+            new LinkedHashMap<>() {{
+                put("projectId", testProject.getId());
+                put("createdById", testUser.getId());
+                put("totalAmount", "20000");
+                put("status", "DRAFT");
+            }});
 
         String response = mockMvc.perform(post("/api/budgets")
                 .contentType(MediaType.APPLICATION_JSON).content(budgetJson))
@@ -79,10 +82,12 @@ class BudgetIntegrationTest {
     @Test
     void shouldCreateNewVersion() throws Exception {
         String budgetJson = objectMapper.writeValueAsString(
-            Budget.builder()
-                .project(testProject).createdBy(testUser)
-                .totalAmount(new BigDecimal("15000"))
-                .status(BudgetStatus.DRAFT).build());
+            new LinkedHashMap<>() {{
+                put("projectId", testProject.getId());
+                put("createdById", testUser.getId());
+                put("totalAmount", "15000");
+                put("status", "DRAFT");
+            }});
 
         String response = mockMvc.perform(post("/api/budgets")
                 .contentType(MediaType.APPLICATION_JSON).content(budgetJson))

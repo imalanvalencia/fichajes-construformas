@@ -1,6 +1,7 @@
 package es.construformas.api.controller;
 
 import es.construformas.api.dto.ProjectFinancialSummaryDTO;
+import es.construformas.api.dto.ProjectRequest;
 import es.construformas.api.model.Project;
 import es.construformas.api.service.ProjectService;
 import jakarta.validation.Valid;
@@ -20,8 +21,8 @@ public class ProjectController {
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Project> create(@Valid @RequestBody Project project) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(projectService.create(project));
+    public ResponseEntity<Project> create(@Valid @RequestBody ProjectRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(projectService.create(request));
     }
 
     @GetMapping("/{id}")
@@ -50,8 +51,8 @@ public class ProjectController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Project> update(@PathVariable Long id, @RequestBody Project project) {
-        return ResponseEntity.ok(projectService.update(id, project));
+    public ResponseEntity<Project> update(@PathVariable Long id, @RequestBody ProjectRequest request) {
+        return ResponseEntity.ok(projectService.update(id, request));
     }
 
     @DeleteMapping("/{id}")

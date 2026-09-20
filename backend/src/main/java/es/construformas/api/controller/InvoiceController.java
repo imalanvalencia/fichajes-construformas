@@ -1,5 +1,6 @@
 package es.construformas.api.controller;
 
+import es.construformas.api.dto.InvoiceRequest;
 import es.construformas.api.model.Invoice;
 import es.construformas.api.model.InvoiceItem;
 import es.construformas.api.model.RectifyingInvoice;
@@ -19,10 +20,16 @@ import java.util.List;
 public class InvoiceController {
     private final InvoiceService invoiceService;
 
+    @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN','OPERATOR')")
+    public ResponseEntity<List<Invoice>> getAll() {
+        return ResponseEntity.ok(invoiceService.findAll());
+    }
+
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Invoice> create(@Valid @RequestBody Invoice invoice) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(invoiceService.create(invoice));
+    public ResponseEntity<Invoice> create(@Valid @RequestBody InvoiceRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(invoiceService.create(request));
     }
 
     @GetMapping("/{id}")
@@ -39,14 +46,20 @@ public class InvoiceController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Invoice> update(@PathVariable Long id, @RequestBody Invoice invoice) {
-        return ResponseEntity.ok(invoiceService.update(id, invoice));
+    public ResponseEntity<Invoice> update(@PathVariable Long id, @RequestBody InvoiceRequest request) {
+        return ResponseEntity.ok(invoiceService.update(id, request));
     }
 
     @PostMapping("/{id}/issue")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Invoice> issue(@PathVariable Long id) {
         return ResponseEntity.ok(invoiceService.issue(id));
+    }
+
+    @PostMapping("/{id}/pay")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Invoice> markAsPaid(@PathVariable Long id) {
+        return ResponseEntity.ok(invoiceService.markAsPaid(id));
     }
 
     @PostMapping("/{id}/items")

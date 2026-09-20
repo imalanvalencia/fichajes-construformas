@@ -1,5 +1,6 @@
 package es.construformas.api.controller;
 
+import es.construformas.api.dto.PaymentRequest;
 import es.construformas.api.model.Payment;
 import es.construformas.api.model.PaymentMethod;
 import es.construformas.api.service.PaymentService;
@@ -18,10 +19,16 @@ import java.util.List;
 public class PaymentController {
     private final PaymentService paymentService;
 
+    @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN','OPERATOR')")
+    public ResponseEntity<List<Payment>> getAll() {
+        return ResponseEntity.ok(paymentService.findAll());
+    }
+
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Payment> create(@Valid @RequestBody Payment payment) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(paymentService.create(payment));
+    public ResponseEntity<Payment> create(@Valid @RequestBody PaymentRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(paymentService.create(request));
     }
 
     @GetMapping("/{id}")

@@ -1,5 +1,6 @@
 package es.construformas.api.controller;
 
+import es.construformas.api.dto.InvoiceRequest;
 import es.construformas.api.model.*;
 import es.construformas.api.service.InvoiceService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -68,7 +69,7 @@ class InvoiceControllerTest {
     @Test
     @DisplayName("POST /api/invoices should create and return invoice")
     void createInvoiceShouldReturn201() throws Exception {
-        when(invoiceService.create(any(Invoice.class))).thenReturn(sampleInvoice());
+        when(invoiceService.create(any(InvoiceRequest.class))).thenReturn(sampleInvoice());
 
         mockMvc.perform(post("/api/invoices")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -103,7 +104,7 @@ class InvoiceControllerTest {
     @DisplayName("PUT /api/invoices/{id} should update invoice")
     void updateInvoiceShouldReturnUpdated() throws Exception {
         Invoice updated = Invoice.builder().invoiceNumber("INV-002").status(InvoiceStatus.DRAFT).build();
-        when(invoiceService.update(eq(1L), any(Invoice.class))).thenReturn(updated);
+        when(invoiceService.update(eq(1L), any(InvoiceRequest.class))).thenReturn(updated);
 
         mockMvc.perform(put("/api/invoices/1")
                         .contentType(MediaType.APPLICATION_JSON)

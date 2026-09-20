@@ -1,5 +1,6 @@
 package es.construformas.api.controller;
 
+import es.construformas.api.dto.PaymentRequest;
 import es.construformas.api.model.*;
 import es.construformas.api.service.PaymentService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -66,11 +67,22 @@ class PaymentControllerTest {
     @Test
     @DisplayName("POST /api/payments should create and return payment")
     void createPaymentShouldReturn201() throws Exception {
-        when(paymentService.create(any(Payment.class))).thenReturn(samplePayment());
+        when(paymentService.create(any(PaymentRequest.class))).thenReturn(samplePayment());
+
+        String requestJson = objectMapper.writeValueAsString(
+            new java.util.LinkedHashMap<>() {{
+                put("projectId", 1L);
+                put("clientId", 1L);
+                put("paymentMethodId", 1L);
+                put("createdById", 1L);
+                put("amount", "5000.00");
+                put("paymentDate", LocalDate.now().toString());
+                put("type", "PHASE_1");
+            }});
 
         mockMvc.perform(post("/api/payments")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(samplePayment())))
+                        .content(requestJson))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(1))
                 .andExpect(jsonPath("$.amount").value(5000.00));

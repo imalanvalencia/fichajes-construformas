@@ -34,14 +34,13 @@ public class User {
 
     /**
      * @deprecated Use {@link #roles} (many-to-many RBAC) instead.
-     * Kept temporarily so existing services compile. Remove in PR 3.
+     * Column dropped in V9 migration; kept as @Transient for backward compatibility.
      */
     @Deprecated
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Transient
     private UserRole role;
 
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
         name = "user_roles",
         joinColumns = @JoinColumn(name = "user_id"),

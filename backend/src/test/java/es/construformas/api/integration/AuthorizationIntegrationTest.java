@@ -1,6 +1,7 @@
 package es.construformas.api.integration;
 
 import es.construformas.api.controller.*;
+import es.construformas.api.repository.UserRepository;
 import es.construformas.api.security.CustomUserDetailsService;
 import es.construformas.api.security.JwtAuthFilter;
 import es.construformas.api.security.JwtUtil;
@@ -53,6 +54,7 @@ class AuthorizationIntegrationTest {
     @MockitoBean private SupplierInvoiceService supplierInvoiceService;
     @MockitoBean private ClockEntryService clockEntryService;
     @MockitoBean private ClockCorrectionService clockCorrectionService;
+    @MockitoBean private UserRepository userRepository;
     @MockitoBean private JwtUtil jwtUtil;
     @MockitoBean private JwtAuthFilter jwtAuthFilter;
     @MockitoBean private CustomUserDetailsService customUserDetailsService;

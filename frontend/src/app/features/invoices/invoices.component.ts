@@ -1,0 +1,221 @@
+import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { InvoiceService } from './services/invoice.service';
+import { ClientService } from '../clients/services/client.service';
+import { ProjectService } from '../projects/services/project.service';
+import { Invoice } from './types/invoice.types';
+import { Client } from '../clients/types/client.types';
+import { Project } from '../projects/types/project.types';
+import { ButtonComponent } from '@shared-components/button/button.component';
+import { InvoicesTableComponent } from '@components/invoices/invoices-table/invoices-table.component';
+import { InvoiceFormModalComponent } from '@components/invoices/invoice-form-modal/invoice-form-modal.component';
+import { InvoicesSummaryComponent } from '@components/invoices/invoices-summary/invoices-summary.component';
+import { NotificationService } from '@app/services/notification.service';
+
+@Component({
+  selector: 'app-invoices',
+  standalone: true,
+  imports: [
+    ButtonComponent,
+    InvoicesTableComponent,
+    InvoiceFormModalComponent,
+    InvoicesSummaryComponent,
+  ],
+  template: `
+    <div class="space-y-6">
+      <div class="flex items-center justify-between">
+        <h1 class="text-2xl font-bold text-nero">Facturas</h1>
+        <app-button variant="filled" (click)="openCreateModal()">+ Nueva Factura</app-button>
+      </div>
+
+      @if (invoices().length > 0) {
+        <app-invoices-summary [invoices]="invoices()" />
+      }
+
+      <app-invoices-table
+        [invoices]="invoices()"
+        (onEdit)="openEditModal($event)"
+        (onDelete)="deleteInvoice($event)"
+        (onIssue)="issueInvoice($event)"
+      />
+
+      <app-invoice-form-modal
+        [show]="showModal()"
+        [form]="formData"
+        [isEditing]="!!editingInvoice"
+        [clients]="clients()"
+        [projects]="projects()"
+        (onClose)="closeModal()"
+        (onSave)="saveInvoice()"
+        (onFormChange)="onFormChange($event)"
+        (onCreateClient)="onCreateClient($event)"
+        (onCreateProject)="onCreateProject($event)"
+      />
+    </div>
+  `,
+})
+export class InvoicesComponent {
+  invoices = signal<Invoice[]>([]);
+  clients = signal<Client[]>([]);
+  projects = signal<Project[]>([]);
+  showModal = signal(false);
+  editingInvoice: Invoice | null = null;
+  formData: Partial<Invoice> = this.emptyForm();
+  private loadVersion = 0;
+
+  private destroyRef = inject(DestroyRef);
+  private invoiceService = inject(InvoiceService);
+  private clientService = inject(ClientService);
+  private projectService = inject(ProjectService);
+  private notifications = inject(NotificationService);
+
+  constructor() {
+    this.loadInvoices();
+    this.clientService.getAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (data) => this.clients.set(data),
+    });
+    this.projectService.getAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (data) => this.projects.set(data),
+    });
+  }
+
+  loadInvoices(): void {
+    const requestVersion = ++this.loadVersion;
+    this.invoiceService.getAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (data) => {
+        if (requestVersion !== this.loadVersion) return;
+        this.invoices.set(data);
+      },
+    });
+  }
+
+  issueInvoice(id: number): void {
+    if (!confirm('¿Emitir esta factura?')) return;
+    this.invoiceService.issue(id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => this.loadInvoices(),
+    });
+  }
+
+  openCreateModal(): void {
+    this.editingInvoice = null;
+    this.formData = this.emptyForm();
+    this.showModal.set(true);
+  }
+
+  openEditModal(invoice: Invoice): void {
+    this.editingInvoice = invoice;
+    this.formData = { ...invoice };
+    this.showModal.set(true);
+  }
+
+  closeModal(): void {
+    this.showModal.set(false);
+    this.editingInvoice = null;
+    this.formData = this.emptyForm();
+  }
+
+  onFormChange(change: Partial<Invoice>): void {
+    this.formData = { ...this.formData, ...change };
+  }
+
+  saveInvoice(): void {
+    if (!this.formData.invoiceNumber?.trim() || !this.formData.projectId || !this.formData.clientId)
+      return;
+
+    const payload: Invoice = {
+      invoiceNumber: this.formData.invoiceNumber!,
+      projectId: this.formData.projectId!,
+      clientId: this.formData.clientId!,
+      status: this.formData.status || 'DRAFT',
+      subtotal: this.formData.subtotal ?? 0,
+      taxRate: this.formData.taxRate ?? 21,
+      taxAmount: (this.formData.subtotal ?? 0) * ((this.formData.taxRate ?? 21) / 100),
+      total: (this.formData.subtotal ?? 0) * (1 + (this.formData.taxRate ?? 21) / 100),
+      issuedDate: this.formData.issuedDate,
+      dueDate: this.formData.dueDate,
+      notes: this.formData.notes,
+      createdById: 1,
+    };
+
+    if (this.editingInvoice?.id) {
+      this.invoiceService.update(this.editingInvoice.id, payload).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+        next: () => {
+          this.loadInvoices();
+          this.closeModal();
+        },
+      });
+    } else {
+      this.invoiceService.create(payload).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+        next: (created) => {
+          this.loadVersion++;
+          this.invoices.update((invoices) => [...invoices, this.toDisplayInvoice(created)]);
+          this.closeModal();
+          this.notifications.success('Factura creada correctamente.');
+        },
+        error: () => {
+          this.notifications.error('No se pudo crear la factura. Inténtalo de nuevo.');
+        },
+      });
+    }
+  }
+
+  deleteInvoice(id: number): void {
+    if (!confirm('¿Estás seguro de eliminar esta factura?')) return;
+    this.invoiceService.delete(id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => this.loadInvoices(),
+    });
+  }
+
+  onCreateClient(name: string): void {
+    this.clientService.create({ name, email: '', active: true }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (created) => {
+        this.clients.update((prev) => [...prev, created]);
+        this.formData.clientId = created.id!;
+      },
+    });
+  }
+
+  onCreateProject(name: string): void {
+    this.projectService
+      .create({
+        name,
+        clientId: this.formData.clientId || 0,
+        address: '',
+        latitude: 0,
+        longitude: 0,
+        status: 'PLANNED',
+        active: true,
+      })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (created) => {
+          this.projects.update((prev) => [...prev, created]);
+          this.formData.projectId = created.id!;
+        },
+      });
+  }
+
+  private emptyForm(): Partial<Invoice> {
+    return {
+      invoiceNumber: '',
+      projectId: 0,
+      clientId: 0,
+      status: 'DRAFT',
+      subtotal: 0,
+      taxRate: 21,
+      taxAmount: 0,
+      total: 0,
+    };
+  }
+
+  private toDisplayInvoice(invoice: Invoice): Invoice {
+    const project = this.projects().find((item) => item.id === invoice.projectId);
+    const client = this.clients().find((item) => item.id === invoice.clientId);
+
+    return {
+      ...invoice,
+      projectName: project?.name ?? invoice.projectName,
+      clientName: client?.name ?? invoice.clientName,
+    };
+  }
+}

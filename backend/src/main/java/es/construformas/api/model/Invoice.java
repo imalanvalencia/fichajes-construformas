@@ -58,6 +58,15 @@ public class Invoice {
     @JoinColumn(name = "created_by", nullable = false)
     private User createdBy;
 
+    @Column(name = "source_budget_id", unique = true)
+    private Long sourceBudgetId;
+
+    private LocalDateTime deletedAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "deleted_by")
+    private User deletedBy;
+
     @Builder.Default
     @Column(nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
@@ -74,16 +83,6 @@ public class Invoice {
 
     @PreUpdate
     protected void onUpdate() {
-        if (status == InvoiceStatus.ISSUED || status == InvoiceStatus.PAID) {
-            throw new IllegalStateException("Cannot modify an invoice that has been issued.");
-        }
         updatedAt = LocalDateTime.now();
-    }
-
-    @PreRemove
-    protected void onRemove() {
-        if (status == InvoiceStatus.ISSUED || status == InvoiceStatus.PAID) {
-            throw new IllegalStateException("Cannot delete an invoice that has been issued.");
-        }
     }
 }
