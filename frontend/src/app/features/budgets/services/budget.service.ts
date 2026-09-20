@@ -1,13 +1,13 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Budget, BudgetItem } from '../types/budget.types';
+import { Budget, BudgetItem, DocumentLifecycleEvent } from '../types/budget.types';
 
 @Injectable({ providedIn: 'root' })
 export class BudgetService {
   private readonly API = '/api/budgets';
 
-  constructor(private http: HttpClient) {}
+  private http = inject(HttpClient);
 
   getAll(): Observable<Budget[]> {
     return this.http.get<Budget[]>(this.API);
@@ -49,7 +49,12 @@ export class BudgetService {
     return this.http.delete<void>(`${this.API}/${budgetId}/items/${itemId}`);
   }
 
-  delete(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.API}/${id}`);
+  delete(id: number, confirmed?: boolean): Observable<void> {
+    const url = confirmed ? `${this.API}/${id}?confirmed=true` : `${this.API}/${id}`;
+    return this.http.delete<void>(url);
+  }
+
+  getLifecycle(id: number): Observable<DocumentLifecycleEvent[]> {
+    return this.http.get<DocumentLifecycleEvent[]>(`${this.API}/${id}/lifecycle`);
   }
 }

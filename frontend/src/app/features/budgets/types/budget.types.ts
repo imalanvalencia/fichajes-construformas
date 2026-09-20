@@ -24,6 +24,7 @@ export interface Budget {
   approvedAt?: string;
   createdAt?: string;
   updatedAt?: string;
+  deletedAt?: string;
   project?: Project;
 }
 
@@ -42,4 +43,18 @@ export interface BudgetItem {
   totalPrice: number;
   orderNum: number;
   createdAt?: string;
+}
+
+export type DocumentLifecycleEventType =
+  | 'BUDGET_APPROVED'
+  | 'INVOICE_CREATED'
+  | 'BUDGET_REMOVED';
+
+export interface DocumentLifecycleEvent {
+  id?: number;
+  type: DocumentLifecycleEventType;
+  budgetId?: number;
+  invoiceId?: number;
+  actorId?: number;
+  occurredAt: string;
 }

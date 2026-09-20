@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Output } from '@angular/core';
+import { Component, inject, output } from '@angular/core';
 import { AuthService } from '@auth/services/auth.service';
 import { MatIconModule } from '@angular/material/icon';
 import { NavLinkComponent } from '@components/sidebar/nav-link/nav-link.component';
@@ -17,19 +17,18 @@ interface NavItem {
   imports: [MatIconModule, ButtonComponent, NavLinkComponent],
   template: `
     <aside class="flex flex-col w-60 h-full bg-inverse-on-surface text-black font-sans select-none">
-      <!-- Brand -->
+
+    <!-- Brand -->
       <section class="flex flex-col items-center gap-3 shrink-0 px-4 py-6">
         <span class="text-xl font-bold text-black tracking-tight">ConstruFormas</span>
         <app-button variant="filled" icon="add"> Nuevo Presupuesto </app-button>
-        <app-button> información </app-button>
       </section>
 
       <nav class="flex-1">
         <!-- Navigation -->
         <div class="flex flex-col flex-1 overflow-y-auto py-4 gap-1">
           @for (item of visibleNavItems; track item.route) {
-            <app-nav-link route="{{ item.route }}" (click)="toggle.emit()">
-              <mat-icon fontSet="material-icons-outlined">{{ item.icon }}</mat-icon>
+            <app-nav-link route="{{ item.route }}" (click)="toggle.emit()" icon="{{ item.icon }}">
               {{ item.label }}
             </app-nav-link>
           }
@@ -46,8 +45,9 @@ interface NavItem {
   `,
 })
 export class SidebarComponent {
-  @Output() toggle = new EventEmitter<void>();
+  toggle = output<void>();
 
+  private authService = inject(AuthService);
   private allNavItems: NavItem[] = [
     { icon: 'dashboard', label: 'Dashboard', route: '/' },
     { icon: 'groups', label: 'Clientes', route: '/clients' },
@@ -59,8 +59,6 @@ export class SidebarComponent {
     // { icon: 'home', label: 'Fichajes', route: '/clock' },
     { icon: 'user', label: 'Usuarios', route: '/users', adminOnly: true },
   ];
-
-  constructor(private authService: AuthService) {}
 
   get visibleNavItems(): NavItem[] {
     const user = this.authService.getUser();

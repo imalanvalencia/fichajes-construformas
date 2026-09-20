@@ -5,6 +5,7 @@ import es.construformas.api.model.Budget;
 import es.construformas.api.model.BudgetStatus;
 import es.construformas.api.model.BudgetDiscount;
 import es.construformas.api.model.BudgetItem;
+import es.construformas.api.model.DocumentLifecycleEvent;
 import es.construformas.api.repository.UserRepository;
 import es.construformas.api.security.SecurityUtils;
 import es.construformas.api.service.BudgetService;
@@ -80,21 +81,33 @@ public class BudgetController {
     }
 
     @PostMapping("/{id}/status")
-    @PreAuthorize("hasAnyRole('ADMIN','OPERATOR')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Budget> updateStatus(@PathVariable Long id, @RequestParam String status) {
         BudgetStatus statusToEnum = BudgetStatus.valueOf(status);
 
         if (statusToEnum == BudgetStatus.APPROVED) {
-            Long userId = SecurityUtils.getCurrentUser(userRepository).getId();
-            return ResponseEntity.ok(budgetService.approve(id, userId));
+            return ResponseEntity.ok(budgetService.approve(id));
         }
         return ResponseEntity.ok(budgetService.updateStatus(id, statusToEnum));
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        budgetService.delete(id);
+    public ResponseEntity<Void> delete(@PathVariable Long id,
+                                       @RequestParam(required = false, defaultValue = "false") boolean confirmed) {
+        var actor = SecurityUtils.getCurrentUser(userRepository);
+        var budget = budgetService.findById(id);
+        if (budget.getStatus() == BudgetStatus.APPROVED) {
+            budgetService.delete(id, confirmed, actor);
+        } else {
+            budgetService.delete(id);
+        }
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{id}/lifecycle")
+    @PreAuthorize("hasAnyRole('ADMIN','OPERATOR')")
+    public ResponseEntity<List<DocumentLifecycleEvent>> getLifecycle(@PathVariable Long id) {
+        return ResponseEntity.ok(budgetService.getLifecycle(id));
     }
 }

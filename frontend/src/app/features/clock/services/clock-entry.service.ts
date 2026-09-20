@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { ClockEntry } from '../types/clock.types';
@@ -7,7 +7,7 @@ import { ClockEntry } from '../types/clock.types';
 export class ClockEntryService {
   private readonly API = '/api/clock-entries';
 
-  constructor(private http: HttpClient) {}
+  private http = inject(HttpClient);
 
   getById(id: number): Observable<ClockEntry> {
     return this.http.get<ClockEntry>(`${this.API}/${id}`);

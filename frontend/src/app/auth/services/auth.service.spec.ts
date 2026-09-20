@@ -215,6 +215,33 @@ describe('AuthService', () => {
     });
   });
 
+  describe('hasRole', () => {
+    it('should return false when no user data is stored', () => {
+      expect(service.hasRole('ADMIN')).toBe(false);
+    });
+
+    it('should return false when user does not have the requested role', () => {
+      localStorage.setItem('user_data', JSON.stringify({ ...mockAuthResponse, roles: ['CONSTRUCTOR'] }));
+      expect(service.hasRole('ADMIN')).toBe(false);
+    });
+
+    it('should return true when user has the requested role', () => {
+      localStorage.setItem('user_data', JSON.stringify({ ...mockAuthResponse, roles: ['ADMIN', 'CONSTRUCTOR'] }));
+      expect(service.hasRole('ADMIN')).toBe(true);
+    });
+
+    it('should return true when user has the requested role (case-sensitive)', () => {
+      localStorage.setItem('user_data', JSON.stringify({ ...mockAuthResponse, roles: ['OPERATOR'] }));
+      expect(service.hasRole('OPERATOR')).toBe(true);
+      expect(service.hasRole('operator')).toBe(false);
+    });
+
+    it('should return false when user data has no roles field', () => {
+      localStorage.setItem('user_data', JSON.stringify({ accessToken: 'token', email: 'test@example.com' }));
+      expect(service.hasRole('ADMIN')).toBe(false);
+    });
+  });
+
   describe('login error handling', () => {
     it('should propagate HTTP errors from login', () => {
       let errorCaught = false;

@@ -1,4 +1,5 @@
-import { Component, signal } from '@angular/core';
+import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { InvoiceService } from './services/invoice.service';
 import { ClientService } from '../clients/services/client.service';
 import { ProjectService } from '../projects/services/project.service';
@@ -9,6 +10,7 @@ import { ButtonComponent } from '@shared-components/button/button.component';
 import { InvoicesTableComponent } from '@components/invoices/invoices-table/invoices-table.component';
 import { InvoiceFormModalComponent } from '@components/invoices/invoice-form-modal/invoice-form-modal.component';
 import { InvoicesSummaryComponent } from '@components/invoices/invoices-summary/invoices-summary.component';
+import { NotificationService } from '@app/services/notification.service';
 
 @Component({
   selector: 'app-invoices',
@@ -59,30 +61,37 @@ export class InvoicesComponent {
   showModal = signal(false);
   editingInvoice: Invoice | null = null;
   formData: Partial<Invoice> = this.emptyForm();
+  private loadVersion = 0;
 
-  constructor(
-    private invoiceService: InvoiceService,
-    private clientService: ClientService,
-    private projectService: ProjectService,
-  ) {
+  private destroyRef = inject(DestroyRef);
+  private invoiceService = inject(InvoiceService);
+  private clientService = inject(ClientService);
+  private projectService = inject(ProjectService);
+  private notifications = inject(NotificationService);
+
+  constructor() {
     this.loadInvoices();
-    this.clientService.getAll().subscribe({
+    this.clientService.getAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (data) => this.clients.set(data),
     });
-    this.projectService.getAll().subscribe({
+    this.projectService.getAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (data) => this.projects.set(data),
     });
   }
 
   loadInvoices(): void {
-    this.invoiceService.getAll().subscribe({
-      next: (data) => this.invoices.set(data),
+    const requestVersion = ++this.loadVersion;
+    this.invoiceService.getAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (data) => {
+        if (requestVersion !== this.loadVersion) return;
+        this.invoices.set(data);
+      },
     });
   }
 
   issueInvoice(id: number): void {
     if (!confirm('¿Emitir esta factura?')) return;
-    this.invoiceService.issue(id).subscribe({
+    this.invoiceService.issue(id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => this.loadInvoices(),
     });
   }
@@ -110,7 +119,8 @@ export class InvoicesComponent {
   }
 
   saveInvoice(): void {
-    if (!this.formData.invoiceNumber?.trim() || !this.formData.projectId || !this.formData.clientId) return;
+    if (!this.formData.invoiceNumber?.trim() || !this.formData.projectId || !this.formData.clientId)
+      return;
 
     const payload: Invoice = {
       invoiceNumber: this.formData.invoiceNumber!,
@@ -128,17 +138,22 @@ export class InvoicesComponent {
     };
 
     if (this.editingInvoice?.id) {
-      this.invoiceService.update(this.editingInvoice.id, payload).subscribe({
+      this.invoiceService.update(this.editingInvoice.id, payload).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
         next: () => {
           this.loadInvoices();
           this.closeModal();
         },
       });
     } else {
-      this.invoiceService.create(payload).subscribe({
-        next: () => {
-          this.loadInvoices();
+      this.invoiceService.create(payload).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+        next: (created) => {
+          this.loadVersion++;
+          this.invoices.update((invoices) => [...invoices, this.toDisplayInvoice(created)]);
           this.closeModal();
+          this.notifications.success('Factura creada correctamente.');
+        },
+        error: () => {
+          this.notifications.error('No se pudo crear la factura. Inténtalo de nuevo.');
         },
       });
     }
@@ -146,41 +161,61 @@ export class InvoicesComponent {
 
   deleteInvoice(id: number): void {
     if (!confirm('¿Estás seguro de eliminar esta factura?')) return;
-    this.invoiceService.delete(id).subscribe({
+    this.invoiceService.delete(id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => this.loadInvoices(),
     });
   }
 
   onCreateClient(name: string): void {
-    this.clientService.create({ name, email: '', active: true }).subscribe({
+    this.clientService.create({ name, email: '', active: true }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (created) => {
-        this.clients.update(prev => [...prev, created]);
+        this.clients.update((prev) => [...prev, created]);
         this.formData.clientId = created.id!;
       },
     });
   }
 
   onCreateProject(name: string): void {
-    this.projectService.create({
-      name,
-      clientId: this.formData.clientId || 0,
-      address: '',
-      latitude: 0,
-      longitude: 0,
-      status: 'PLANNED',
-      active: true,
-    }).subscribe({
-      next: (created) => {
-        this.projects.update(prev => [...prev, created]);
-        this.formData.projectId = created.id!;
-      },
-    });
+    this.projectService
+      .create({
+        name,
+        clientId: this.formData.clientId || 0,
+        address: '',
+        latitude: 0,
+        longitude: 0,
+        status: 'PLANNED',
+        active: true,
+      })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (created) => {
+          this.projects.update((prev) => [...prev, created]);
+          this.formData.projectId = created.id!;
+        },
+      });
   }
 
   private emptyForm(): Partial<Invoice> {
     return {
-      invoiceNumber: '', projectId: 0, clientId: 0, status: 'DRAFT',
-      subtotal: 0, taxRate: 21, taxAmount: 0, total: 0,
+      invoiceNumber: '',
+      projectId: 0,
+      clientId: 0,
+      status: 'DRAFT',
+      subtotal: 0,
+      taxRate: 21,
+      taxAmount: 0,
+      total: 0,
+    };
+  }
+
+  private toDisplayInvoice(invoice: Invoice): Invoice {
+    const project = this.projects().find((item) => item.id === invoice.projectId);
+    const client = this.clients().find((item) => item.id === invoice.clientId);
+
+    return {
+      ...invoice,
+      projectName: project?.name ?? invoice.projectName,
+      clientName: client?.name ?? invoice.clientName,
     };
   }
 }

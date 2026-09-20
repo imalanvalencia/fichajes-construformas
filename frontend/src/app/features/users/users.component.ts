@@ -1,20 +1,17 @@
-import { Component, signal } from '@angular/core';
+import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { UserService } from './services/user.service';
 import { User, UserRole } from './types/user.types';
 import { ButtonComponent } from '@shared-components/button/button.component';
 import { UsersTableComponent } from '@components/users/users-table/users-table.component';
 import { UserFormModalComponent } from '@components/users/user-form-modal/user-form-modal.component';
 import { UsersFiltersComponent } from '@components/users/users-filters/users-filters.component';
+import { NotificationService } from '@app/services/notification.service';
 
 @Component({
   selector: 'app-users',
   standalone: true,
-  imports: [
-    ButtonComponent,
-    UsersTableComponent,
-    UserFormModalComponent,
-    UsersFiltersComponent,
-  ],
+  imports: [ButtonComponent, UsersTableComponent, UserFormModalComponent, UsersFiltersComponent],
   template: `
     <div class="space-y-6">
       <div class="flex items-center justify-between">
@@ -22,10 +19,7 @@ import { UsersFiltersComponent } from '@components/users/users-filters/users-fil
         <app-button variant="filled" (click)="openCreateModal()">+ Nuevo Usuario</app-button>
       </div>
 
-      <app-users-filters
-        [filterRole]="filterRole"
-        (onFilterChange)="onFilterChange($event)"
-      />
+      <app-users-filters [filterRole]="filterRole" (onFilterChange)="onFilterChange($event)" />
 
       <app-users-table
         [users]="filteredUsers()"
@@ -51,14 +45,22 @@ export class UsersComponent {
   showModal = signal(false);
   editingUser: User | null = null;
   formData: Partial<User> = this.emptyForm();
+  private loadVersion = 0;
+  private filterVersion = 0;
 
-  constructor(private userService: UserService) {
+  private destroyRef = inject(DestroyRef);
+  private userService = inject(UserService);
+  private notifications = inject(NotificationService);
+
+  constructor() {
     this.loadUsers();
   }
 
   loadUsers(): void {
-    this.userService.getAll().subscribe({
+    const requestVersion = ++this.loadVersion;
+    this.userService.getAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (data) => {
+        if (requestVersion !== this.loadVersion) return;
         this.users.set(data);
         this.filteredUsers.set(data);
       },
@@ -67,9 +69,13 @@ export class UsersComponent {
 
   onFilterChange(role: string): void {
     this.filterRole = role;
+    const requestVersion = ++this.filterVersion;
     if (role) {
-      this.userService.getByRole(role as UserRole).subscribe({
-        next: (data) => this.filteredUsers.set(data),
+      this.userService.getByRole(role as UserRole).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+        next: (data) => {
+          if (requestVersion !== this.filterVersion) return;
+          this.filteredUsers.set(data);
+        },
       });
     } else {
       this.filteredUsers.set(this.users());
@@ -103,17 +109,29 @@ export class UsersComponent {
     if (!this.editingUser && !this.formData.password?.trim()) return;
 
     if (this.editingUser?.id) {
-      this.userService.update(this.editingUser.id, this.formData as User).subscribe({
+      this.userService.update(this.editingUser.id, this.formData as User).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
         next: () => {
           this.loadUsers();
           this.closeModal();
         },
       });
     } else {
-      this.userService.create({ ...this.formData, active: true } as User).subscribe({
-        next: () => {
-          this.loadUsers();
+      this.userService.create({ ...this.formData, active: true } as User).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+        next: (user) => {
+          this.loadVersion++;
+          const users = [...this.users(), user];
+          this.users.set(users);
+          if (!this.filterRole) {
+            this.filteredUsers.set(users);
+          } else if (user.role === this.filterRole) {
+            this.filterVersion++;
+            this.filteredUsers.update((filteredUsers) => [...filteredUsers, user]);
+          }
           this.closeModal();
+          this.notifications.success('Usuario creado correctamente.');
+        },
+        error: () => {
+          this.notifications.error('No se pudo crear el usuario. Inténtalo de nuevo.');
         },
       });
     }
@@ -121,15 +139,20 @@ export class UsersComponent {
 
   deleteUser(id: number): void {
     if (!confirm('¿Estás seguro de eliminar este usuario?')) return;
-    this.userService.delete(id).subscribe({
+    this.userService.delete(id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => this.loadUsers(),
     });
   }
 
   private emptyForm(): Partial<User> {
     return {
-      name: '', email: '', phone: '', nie: '',
-      password: '', role: 'OPERATOR', availability: 'AVAILABLE',
+      name: '',
+      email: '',
+      phone: '',
+      nie: '',
+      password: '',
+      role: 'OPERATOR',
+      availability: 'AVAILABLE',
     };
   }
 }

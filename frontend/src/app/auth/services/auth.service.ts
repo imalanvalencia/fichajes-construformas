@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
 import { AuthResponse, LoginRequest, RefreshRequest } from '../types/auth.types';
@@ -9,7 +9,7 @@ export class AuthService {
   private readonly REFRESH_TOKEN_KEY = 'refresh_token';
   private readonly USER_DATA_KEY = 'user_data';
 
-  constructor(private http: HttpClient) {}
+  private http = inject(HttpClient);
 
   login(request: LoginRequest): Observable<AuthResponse> {
     return this.http.post<AuthResponse>('/api/auth/login', request).pipe(
@@ -48,6 +48,17 @@ export class AuthService {
     } catch {
       return null;
     }
+  }
+
+  /**
+   * Verifica si el usuario actual tiene un rol específico.
+   * @param role - El rol a verificar (ej: 'ADMIN', 'OPERATOR', 'MANAGER')
+   * @returns true si el rol existe en la lista de roles del usuario
+   */
+  hasRole(role: string): boolean {
+    const user = this.getUser();
+    if (!user) return false;
+    return user.roles?.includes(role) ?? false;
   }
 
   isAuthenticated(): boolean {

@@ -3,11 +3,12 @@ import { FormsModule } from '@angular/forms';
 import { User } from '../../../features/users/types/user.types';
 import { ButtonComponent } from '../../shared/button/button.component';
 import { InputComponent } from '../../shared/input/input.component';
+import { SelectComponent } from '../../shared/select/select.component';
 
 @Component({
   selector: 'app-user-form-modal',
   standalone: true,
-  imports: [FormsModule, ButtonComponent, InputComponent],
+  imports: [FormsModule, ButtonComponent, InputComponent, SelectComponent],
   template: `
     @if (show()) {
       <div class="fixed inset-0 z-50 flex items-center justify-center">
@@ -24,31 +25,20 @@ import { InputComponent } from '../../shared/input/input.component';
             <app-input label="Contraseña *" type="password" [value]="form().password ?? ''" (valueChange)="updateField('password', $event)" />
           }
 
-          <div class="relative">
-            <label class="block font-mono text-xs font-medium text-steel mb-1">Rol *</label>
-            <select
-              [ngModel]="form().role"
-              (ngModelChange)="updateField('role', $event)"
-              class="w-full bg-transparent font-sans text-sm text-nero border-b border-steel outline-none py-2 px-0"
-            >
-              <option value="ADMIN">Administrador</option>
-              <option value="OPERATOR">Operador</option>
-              <option value="MANAGER">Gerente</option>
-            </select>
-          </div>
+          <app-select
+            label="Rol *"
+            [options]="roleOptions"
+            [value]="form().role"
+            (valueChange)="updateField('role', $event!)"
+            [required]="true"
+          />
 
-          <div class="relative">
-            <label class="block font-mono text-xs font-medium text-steel mb-1">Disponibilidad</label>
-            <select
-              [ngModel]="form().availability"
-              (ngModelChange)="updateField('availability', $event)"
-              class="w-full bg-transparent font-sans text-sm text-nero border-b border-steel outline-none py-2 px-0"
-            >
-              <option value="AVAILABLE">Disponible</option>
-              <option value="ON_LEAVE">En Permiso</option>
-              <option value="INACTIVE">Inactivo</option>
-            </select>
-          </div>
+          <app-select
+            label="Disponibilidad"
+            [options]="availabilityOptions"
+            [value]="form().availability"
+            (valueChange)="updateField('availability', $event!)"
+          />
 
           <div class="flex justify-end gap-3 pt-2">
             <app-button variant="text" (click)="onClose.emit()">Cancelar</app-button>
@@ -69,6 +59,18 @@ export class UserFormModalComponent {
   onClose = output<void>();
   onSave = output<void>();
   onFormChange = output<Partial<User>>();
+
+  readonly roleOptions = [
+    { value: 'ADMIN', label: 'Administrador' },
+    { value: 'OPERATOR', label: 'Operador' },
+    { value: 'MANAGER', label: 'Gerente' },
+  ];
+
+  readonly availabilityOptions = [
+    { value: 'AVAILABLE', label: 'Disponible' },
+    { value: 'ON_LEAVE', label: 'En Permiso' },
+    { value: 'INACTIVE', label: 'Inactivo' },
+  ];
 
   updateField(field: keyof User, value: string): void {
     this.onFormChange.emit({ [field]: value });

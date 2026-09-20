@@ -1,4 +1,5 @@
-import { Component, signal } from '@angular/core';
+import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { PaymentService } from './services/payment.service';
 import { ClientService } from '../clients/services/client.service';
 import { ProjectService } from '../projects/services/project.service';
@@ -10,6 +11,7 @@ import { CardComponent } from '@shared-components/card/card.component';
 import { PaymentsTableComponent } from '@components/payments/payments-table/payments-table.component';
 import { PaymentFormModalComponent } from '@components/payments/payment-form-modal/payment-form-modal.component';
 import { PaymentsSummaryComponent } from '@components/payments/payments-summary/payments-summary.component';
+import { NotificationService } from '@app/services/notification.service';
 
 @Component({
   selector: 'app-payments',
@@ -69,30 +71,37 @@ export class PaymentsComponent {
   projects = signal<Project[]>([]);
   showModal = signal(false);
   formData: Partial<Payment> = this.emptyForm();
+  private loadVersion = 0;
 
-  constructor(
-    private paymentService: PaymentService,
-    private clientService: ClientService,
-    private projectService: ProjectService,
-  ) {
+  private destroyRef = inject(DestroyRef);
+  private paymentService = inject(PaymentService);
+  private clientService = inject(ClientService);
+  private projectService = inject(ProjectService);
+  private notifications = inject(NotificationService);
+
+  constructor() {
     this.loadPayments();
     this.loadMethods();
-    this.clientService.getAll().subscribe({
+    this.clientService.getAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (data) => this.clients.set(data),
     });
-    this.projectService.getAll().subscribe({
+    this.projectService.getAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (data) => this.projects.set(data),
     });
   }
 
   loadPayments(): void {
-    this.paymentService.getAll().subscribe({
-      next: (data) => this.payments.set(data),
+    const requestVersion = ++this.loadVersion;
+    this.paymentService.getAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (data) => {
+        if (requestVersion !== this.loadVersion) return;
+        this.payments.set(data);
+      },
     });
   }
 
   loadMethods(): void {
-    this.paymentService.getMethods().subscribe({
+    this.paymentService.getMethods().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (data) => this.paymentMethods.set(data),
     });
   }
@@ -112,47 +121,79 @@ export class PaymentsComponent {
   }
 
   createPayment(): void {
-    if (!this.formData.projectId || !this.formData.clientId || !this.formData.paymentMethodId || !this.formData.amount) return;
+    if (
+      !this.formData.projectId ||
+      !this.formData.clientId ||
+      !this.formData.paymentMethodId ||
+      !this.formData.amount
+    )
+      return;
 
-    this.paymentService.create(this.formData as Payment).subscribe({
-      next: () => {
-        this.loadPayments();
+    this.paymentService.create(this.formData as Payment).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (created) => {
+        this.loadVersion++;
+        this.payments.update((payments) => [...payments, this.toDisplayPayment(created)]);
         this.closeModal();
+        this.notifications.success('Pago creado correctamente.');
+      },
+      error: () => {
+        this.notifications.error('No se pudo crear el pago. Inténtalo de nuevo.');
       },
     });
   }
 
   onCreateClient(name: string): void {
-    this.clientService.create({ name, email: '', active: true }).subscribe({
+    this.clientService.create({ name, email: '', active: true }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (created) => {
-        this.clients.update(prev => [...prev, created]);
+        this.clients.update((prev) => [...prev, created]);
         this.formData.clientId = created.id!;
       },
     });
   }
 
   onCreateProject(name: string): void {
-    this.projectService.create({
-      name,
-      clientId: this.formData.clientId || 0,
-      address: '',
-      latitude: 0,
-      longitude: 0,
-      status: 'PLANNED',
-      active: true,
-    }).subscribe({
-      next: (created) => {
-        this.projects.update(prev => [...prev, created]);
-        this.formData.projectId = created.id!;
-      },
-    });
+    this.projectService
+      .create({
+        name,
+        clientId: this.formData.clientId || 0,
+        address: '',
+        latitude: 0,
+        longitude: 0,
+        status: 'PLANNED',
+        active: true,
+      })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (created) => {
+          this.projects.update((prev) => [...prev, created]);
+          this.formData.projectId = created.id!;
+        },
+      });
   }
 
   private emptyForm(): Partial<Payment> {
     return {
-      projectId: 0, clientId: 0, paymentMethodId: 0,
-      amount: 0, paymentDate: '', type: 'PHASE_1',
-      reference: '', notes: '',
+      projectId: 0,
+      clientId: 0,
+      paymentMethodId: 0,
+      amount: 0,
+      paymentDate: '',
+      type: 'PHASE_1',
+      reference: '',
+      notes: '',
+    };
+  }
+
+  private toDisplayPayment(payment: Payment): Payment {
+    const project = this.projects().find((item) => item.id === payment.projectId);
+    const client = this.clients().find((item) => item.id === payment.clientId);
+    const method = this.paymentMethods().find((item) => item.id === payment.paymentMethodId);
+
+    return {
+      ...payment,
+      projectName: project?.name ?? payment.projectName,
+      clientName: client?.name ?? payment.clientName,
+      paymentMethodName: method?.name ?? payment.paymentMethodName,
     };
   }
 }

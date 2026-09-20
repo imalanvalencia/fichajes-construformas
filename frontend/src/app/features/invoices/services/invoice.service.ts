@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Invoice, InvoiceItem, RectifyingInvoice } from '../types/invoice.types';
@@ -7,7 +7,7 @@ import { Invoice, InvoiceItem, RectifyingInvoice } from '../types/invoice.types'
 export class InvoiceService {
   private readonly API = '/api/invoices';
 
-  constructor(private http: HttpClient) {}
+  private http = inject(HttpClient);
 
   getAll(): Observable<Invoice[]> {
     return this.http.get<Invoice[]>(this.API);

@@ -99,7 +99,7 @@ class InvoiceIntegrationTest {
 
         mockMvc.perform(put("/api/invoices/" + invoice.getId())
                 .contentType(MediaType.APPLICATION_JSON).content(updateJson))
-            .andExpect(status().is5xxServerError());
+            .andExpect(status().isConflict());
     }
 
     @Test

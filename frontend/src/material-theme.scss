@@ -1,38 +1,94 @@
-// Include theming for Angular Material with `mat.theme()`.
-// This Sass mixin will define CSS variables that are used for styling Angular Material
-// components according to the Material 3 design spec.
-// Learn more about theming and how to use it for your application's
-// custom components at https://material.angular.dev/guide/theming
+// ============================================================
+// STRUCTURAL PRECISION — Material 3 Theme
+// Consumes CSS custom properties from app.css (token bridge).
+// Source of truth: app.css --color-* properties.
+//
+// Style-load order (angular.json):
+//   1. styles.css → imports app.css (defines --color-*)
+//   2. This file → consumes var(--color-*) at runtime
+//
+// DO NOT duplicate hex values here. Always reference var(--color-*).
+// ============================================================
 @use '@angular/material' as mat;
 
 html {
   height: 100%;
+
+  // Material base — we override ALL colors below via token bridge.
   @include mat.theme(
     (
       color: (
-        primary: mat.$rose-palette,
-        tertiary: mat.$red-palette,
+        primary: mat.$red-palette,
       ),
       typography: Roboto,
       density: 0,
     )
   );
+
+  // ---- Primary ----
+  --mat-sys-primary: var(--color-primary);
+  --mat-sys-on-primary: var(--color-on-primary);
+  --mat-sys-primary-container: var(--color-primary-container);
+  --mat-sys-on-primary-container: var(--color-on-primary-container);
+  --mat-sys-inverse-primary: var(--color-inverse-primary);
+
+  // ---- Secondary ----
+  --mat-sys-secondary: var(--color-secondary);
+  --mat-sys-on-secondary: var(--color-on-secondary);
+  --mat-sys-secondary-container: var(--color-secondary-container);
+  --mat-sys-on-secondary-container: var(--color-on-secondary-container);
+
+  // ---- Tertiary ----
+  --mat-sys-tertiary: var(--color-tertiary);
+  --mat-sys-on-tertiary: var(--color-on-tertiary);
+  --mat-sys-tertiary-container: var(--color-tertiary-container);
+  --mat-sys-on-tertiary-container: var(--color-on-tertiary-container);
+
+  // ---- Error ----
+  --mat-sys-error: var(--color-error);
+  --mat-sys-on-error: var(--color-on-error);
+  --mat-sys-error-container: var(--color-error-container);
+  --mat-sys-on-error-container: var(--color-on-error-container);
+
+  // ---- Surface ----
+  --mat-sys-surface: var(--color-surface);
+  --mat-sys-on-surface: var(--color-on-surface);
+  --mat-sys-on-surface-variant: var(--color-on-surface-variant);
+  --mat-sys-surface-dim: var(--color-surface-dim);
+  --mat-sys-surface-bright: var(--color-surface-bright);
+  --mat-sys-surface-container-lowest: var(--color-surface-container-lowest);
+  --mat-sys-surface-container-low: var(--color-surface-container-low);
+  --mat-sys-surface-container: var(--color-surface-container);
+  --mat-sys-surface-container-high: var(--color-surface-container-high);
+  --mat-sys-surface-container-highest: var(--color-surface-container-highest);
+  --mat-sys-surface-variant: var(--color-surface-variant);
+  --mat-sys-surface-tint: var(--color-surface-tint);
+  --mat-sys-inverse-surface: var(--color-inverse-surface);
+  --mat-sys-inverse-on-surface: var(--color-inverse-on-surface);
+
+  // ---- Outline ----
+  --mat-sys-outline: var(--color-outline);
+  --mat-sys-outline-variant: var(--color-outline-variant);
+
+  // ---- Background ----
+  --mat-sys-background: var(--color-background);
+  --mat-sys-on-background: var(--color-on-background);
+
+  // ---- Shape — sharp corners ----
+  --mat-sys-corner-none: 0px;
+  --mat-sys-corner-extra-small: 0px;
+  --mat-sys-corner-small: 0px;
+  --mat-sys-corner-medium: 0px;
+  --mat-sys-corner-large: 0px;
+  --mat-sys-corner-extra-large: 0px;
+  --mat-sys-corner-full: 0px;
 }
 
 body {
-  // Default the application to a light color theme. This can be changed to
-  // `dark` to enable the dark color theme, or to `light dark` to defer to the
-  // user's system settings.
   color-scheme: light;
-
-  // Set a default background, font and text colors for the application using
-  // Angular Material's system-level CSS variables. Learn more about these
-  // variables at https://material.angular.dev/guide/system-variables
   background-color: var(--mat-sys-surface);
   color: var(--mat-sys-on-surface);
-  font: var(--mat-sys-body-medium);
-
-  // Reset the user agent margin.
+  font-family: 'Poppins', ui-sans-serif, system-ui, sans-serif;
   margin: 0;
   height: 100%;
 }
