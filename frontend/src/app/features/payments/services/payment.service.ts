@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Payment, PaymentMethod } from '../types/payment.types';
@@ -7,7 +7,7 @@ import { Payment, PaymentMethod } from '../types/payment.types';
 export class PaymentService {
   private readonly API = '/api/payments';
 
-  constructor(private http: HttpClient) {}
+  private http = inject(HttpClient);
 
   getAll(): Observable<Payment[]> {
     return this.http.get<Payment[]>(this.API);

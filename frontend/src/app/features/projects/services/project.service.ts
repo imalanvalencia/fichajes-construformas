@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Project, ProjectFinancialSummary } from '../types/project.types';
@@ -7,7 +7,7 @@ import { Project, ProjectFinancialSummary } from '../types/project.types';
 export class ProjectService {
   private readonly API = '/api/projects';
 
-  constructor(private http: HttpClient) {}
+  private http = inject(HttpClient);
 
   getAll(): Observable<Project[]> {
     return this.http.get<Project[]>(this.API);

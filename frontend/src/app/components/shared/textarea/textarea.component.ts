@@ -1,11 +1,10 @@
 import { Component, input, model, forwardRef } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
-import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-textarea',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   template: `
     <div class="relative pt-4">
       @if (label()) {

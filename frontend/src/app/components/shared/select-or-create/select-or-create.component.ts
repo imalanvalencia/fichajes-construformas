@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, computed } from '@angular/core';
+import { Component, input, output, computed } from '@angular/core';
 import { SelectComponent, SelectOption } from '../select/select.component';
 import { InputComponent } from '../input/input.component';
 
@@ -12,14 +12,14 @@ import { InputComponent } from '../input/input.component';
   template: `
     <div class="relative pt-4">
       <app-select
-        [label]="label"
+        [label]="label()"
         [options]="selectOptions()"
-        [value]="toStr(value)"
-        [placeholder]="placeholder"
-        [disabled]="disabled"
+        [value]="toStr(value())"
+        [placeholder]="placeholder()"
+        [disabled]="disabled()"
         (valueChange)="onSelectChange($event)"
       />
-      @if (!disabled) {
+      @if (!disabled()) {
         <button
           type="button"
           (click)="showCreate = !showCreate"
@@ -51,15 +51,15 @@ import { InputComponent } from '../input/input.component';
   `,
 })
 export class SelectOrCreateComponent {
-  @Input() label = '';
-  @Input() items: Array<{ id?: number; name: string }> = [];
-  @Input() value: number | null = null;
-  @Input() placeholder = 'Seleccionar...';
-  @Input() required = false;
-  @Input() disabled = false;
+  label = input('');
+  items = input.required<Array<{ id?: number; name: string }>>();
+  value = input<number | null>(null);
+  placeholder = input('Seleccionar...');
+  required = input(false);
+  disabled = input(false);
 
-  @Output() valueChange = new EventEmitter<number>();
-  @Output() create = new EventEmitter<string>();
+  valueChange = output<number>();
+  create = output<string>();
 
   showCreate = false;
   newName = '';
@@ -70,7 +70,7 @@ export class SelectOrCreateComponent {
   }
 
   selectOptions = computed<SelectOption[]>(() =>
-    this.items.map((item) => ({
+    this.items().map((item) => ({
       value: String(item.id ?? 0),
       label: item.name,
     }))

@@ -1,4 +1,5 @@
-import { Component, signal } from '@angular/core';
+import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { UserService } from './services/user.service';
 import { User, UserRole } from './types/user.types';
 import { ButtonComponent } from '@shared-components/button/button.component';
@@ -47,16 +48,17 @@ export class UsersComponent {
   private loadVersion = 0;
   private filterVersion = 0;
 
-  constructor(
-    private userService: UserService,
-    private notifications: NotificationService,
-  ) {
+  private destroyRef = inject(DestroyRef);
+  private userService = inject(UserService);
+  private notifications = inject(NotificationService);
+
+  constructor() {
     this.loadUsers();
   }
 
   loadUsers(): void {
     const requestVersion = ++this.loadVersion;
-    this.userService.getAll().subscribe({
+    this.userService.getAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (data) => {
         if (requestVersion !== this.loadVersion) return;
         this.users.set(data);
@@ -69,7 +71,7 @@ export class UsersComponent {
     this.filterRole = role;
     const requestVersion = ++this.filterVersion;
     if (role) {
-      this.userService.getByRole(role as UserRole).subscribe({
+      this.userService.getByRole(role as UserRole).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
         next: (data) => {
           if (requestVersion !== this.filterVersion) return;
           this.filteredUsers.set(data);
@@ -107,14 +109,14 @@ export class UsersComponent {
     if (!this.editingUser && !this.formData.password?.trim()) return;
 
     if (this.editingUser?.id) {
-      this.userService.update(this.editingUser.id, this.formData as User).subscribe({
+      this.userService.update(this.editingUser.id, this.formData as User).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
         next: () => {
           this.loadUsers();
           this.closeModal();
         },
       });
     } else {
-      this.userService.create({ ...this.formData, active: true } as User).subscribe({
+      this.userService.create({ ...this.formData, active: true } as User).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
         next: (user) => {
           this.loadVersion++;
           const users = [...this.users(), user];
@@ -137,7 +139,7 @@ export class UsersComponent {
 
   deleteUser(id: number): void {
     if (!confirm('¿Estás seguro de eliminar este usuario?')) return;
-    this.userService.delete(id).subscribe({
+    this.userService.delete(id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => this.loadUsers(),
     });
   }

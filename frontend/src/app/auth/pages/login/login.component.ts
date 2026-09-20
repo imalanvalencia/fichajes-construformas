@@ -1,5 +1,5 @@
-import { Component, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
@@ -8,7 +8,7 @@ import { InputComponent } from '../../../components/shared/input/input.component
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, FormsModule, InputComponent],
+  imports: [FormsModule, InputComponent],
   template: `
     <div class="min-h-screen flex items-center justify-center bg-cement">
       <div class="w-full max-w-md bg-white border border-steel p-8">
@@ -113,10 +113,9 @@ export class LoginComponent {
   errorMessage = signal<string | null>(null);
   isLoading = signal(false);
 
-  constructor(
-    private authService: AuthService,
-    private router: Router,
-  ) {}
+  private destroyRef = inject(DestroyRef);
+  private authService = inject(AuthService);
+  private router = inject(Router);
 
   onSubmit(): void {
     this.errorMessage.set(null);
@@ -126,7 +125,7 @@ export class LoginComponent {
       ? { email: this.email, password: this.password }
       : { nie: this.nie, password: this.password };
 
-    this.authService.login(request).subscribe({
+    this.authService.login(request).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => {
         this.isLoading.set(false);
         this.router.navigate(['/']);

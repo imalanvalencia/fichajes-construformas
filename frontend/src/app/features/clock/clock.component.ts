@@ -1,4 +1,5 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ClockEntryService } from './services/clock-entry.service';
 import { ClockEntry, ClockType } from './types/clock.types';
@@ -56,7 +57,7 @@ import { ClockRegisterModalComponent } from '@components/clock/clock-register-mo
     </div>
   `,
 })
-export class ClockComponent implements OnInit {
+export class ClockComponent {
   entries = signal<ClockEntry[]>([]);
   filterUserId = 0;
   filterStart = '';
@@ -65,9 +66,10 @@ export class ClockComponent implements OnInit {
   registeringType: ClockType = 'ENTRY';
   newEntry: Partial<ClockEntry> = this.emptyForm();
 
-  constructor(private clockService: ClockEntryService) {}
+  private destroyRef = inject(DestroyRef);
+  private clockService = inject(ClockEntryService);
 
-  ngOnInit(): void {
+  constructor() {
     this.setDefaultDates();
   }
 
@@ -82,7 +84,7 @@ export class ClockComponent implements OnInit {
     if (!this.filterUserId || !this.filterStart || !this.filterEnd) return;
     const start = `${this.filterStart}T00:00:00`;
     const end = `${this.filterEnd}T23:59:59`;
-    this.clockService.getByUser(this.filterUserId, start, end).subscribe({
+    this.clockService.getByUser(this.filterUserId, start, end).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (data) => this.entries.set(data),
     });
   }
@@ -121,7 +123,7 @@ export class ClockComponent implements OnInit {
       notes: this.newEntry.notes as string | undefined,
     };
 
-    this.clockService.register(entry).subscribe({
+    this.clockService.register(entry).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => {
         this.closeModal();
         if (this.filterUserId) this.loadByUser();
@@ -131,7 +133,7 @@ export class ClockComponent implements OnInit {
 
   deleteEntry(id: number): void {
     if (!confirm('¿Estás seguro de eliminar este fichaje?')) return;
-    this.clockService.delete(id).subscribe({
+    this.clockService.delete(id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => {
         if (this.filterUserId) this.loadByUser();
       },

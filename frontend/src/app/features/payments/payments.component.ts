@@ -1,4 +1,5 @@
-import { Component, signal } from '@angular/core';
+import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { PaymentService } from './services/payment.service';
 import { ClientService } from '../clients/services/client.service';
 import { ProjectService } from '../projects/services/project.service';
@@ -72,25 +73,26 @@ export class PaymentsComponent {
   formData: Partial<Payment> = this.emptyForm();
   private loadVersion = 0;
 
-  constructor(
-    private paymentService: PaymentService,
-    private clientService: ClientService,
-    private projectService: ProjectService,
-    private notifications: NotificationService,
-  ) {
+  private destroyRef = inject(DestroyRef);
+  private paymentService = inject(PaymentService);
+  private clientService = inject(ClientService);
+  private projectService = inject(ProjectService);
+  private notifications = inject(NotificationService);
+
+  constructor() {
     this.loadPayments();
     this.loadMethods();
-    this.clientService.getAll().subscribe({
+    this.clientService.getAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (data) => this.clients.set(data),
     });
-    this.projectService.getAll().subscribe({
+    this.projectService.getAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (data) => this.projects.set(data),
     });
   }
 
   loadPayments(): void {
     const requestVersion = ++this.loadVersion;
-    this.paymentService.getAll().subscribe({
+    this.paymentService.getAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (data) => {
         if (requestVersion !== this.loadVersion) return;
         this.payments.set(data);
@@ -99,7 +101,7 @@ export class PaymentsComponent {
   }
 
   loadMethods(): void {
-    this.paymentService.getMethods().subscribe({
+    this.paymentService.getMethods().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (data) => this.paymentMethods.set(data),
     });
   }
@@ -127,7 +129,7 @@ export class PaymentsComponent {
     )
       return;
 
-    this.paymentService.create(this.formData as Payment).subscribe({
+    this.paymentService.create(this.formData as Payment).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (created) => {
         this.loadVersion++;
         this.payments.update((payments) => [...payments, this.toDisplayPayment(created)]);
@@ -141,7 +143,7 @@ export class PaymentsComponent {
   }
 
   onCreateClient(name: string): void {
-    this.clientService.create({ name, email: '', active: true }).subscribe({
+    this.clientService.create({ name, email: '', active: true }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (created) => {
         this.clients.update((prev) => [...prev, created]);
         this.formData.clientId = created.id!;
@@ -160,6 +162,7 @@ export class PaymentsComponent {
         status: 'PLANNED',
         active: true,
       })
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (created) => {
           this.projects.update((prev) => [...prev, created]);

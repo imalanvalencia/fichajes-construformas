@@ -1,6 +1,5 @@
 import { Component, input, model, forwardRef } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
-import { CommonModule } from '@angular/common';
 
 export interface SelectOption<T = string> {
   value: T;
@@ -10,7 +9,7 @@ export interface SelectOption<T = string> {
 @Component({
   selector: 'app-select',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   template: `
     <div class="relative pt-4">
       @if (label()) {

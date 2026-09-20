@@ -1,4 +1,5 @@
-import { Component, signal } from '@angular/core';
+import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '@app/auth/services/auth.service';
 import { BudgetService } from './services/budget.service';
@@ -78,15 +79,16 @@ export class BudgetsComponent {
   private loadVersion = 0;
   isAdmin = signal(false);
 
-  constructor(
-    private budgetService: BudgetService,
-    private projectService: ProjectService,
-    private notifications: NotificationService,
-    private authService: AuthService,
-  ) {
+  private destroyRef = inject(DestroyRef);
+  private budgetService = inject(BudgetService);
+  private projectService = inject(ProjectService);
+  private notifications = inject(NotificationService);
+  private authService = inject(AuthService);
+
+  constructor() {
     this.isAdmin.set(this.authService.hasRole('ADMIN'));
     this.loadBudgets();
-    this.projectService.getAll().subscribe({
+    this.projectService.getAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (data) => this.projects.set(data),
       error: (err) => console.error('Failed to load projects', err),
     });
@@ -94,7 +96,7 @@ export class BudgetsComponent {
 
   loadBudgets(): void {
     const requestVersion = ++this.loadVersion;
-    this.budgetService.getAll().subscribe({
+    this.budgetService.getAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (data) => {
         if (requestVersion !== this.loadVersion) return;
         this.budgets.set(data);
@@ -113,7 +115,7 @@ export class BudgetsComponent {
 
   onSaveBudget(changes: Partial<Budget>): void {
     if (!this.selectedBudget?.id) return;
-    this.budgetService.createNewVersion(this.selectedBudget.id, 1).subscribe({
+    this.budgetService.createNewVersion(this.selectedBudget.id, 1).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => {
         this.loadBudgets();
         alert('Borrador guardado.');
@@ -136,7 +138,7 @@ export class BudgetsComponent {
       return;
     }
     if (!confirm('¿Aprobar este presupuesto?')) return;
-    this.budgetService.approve(id).subscribe({
+    this.budgetService.approve(id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => this.loadBudgets(),
       error: (err) => {
         this.notifications.error(err.error?.message || err.message || 'Error al aprobar el presupuesto.');
@@ -146,7 +148,7 @@ export class BudgetsComponent {
 
   rejectBudget(id: number): void {
     if (!confirm('¿Rechazar este presupuesto?')) return;
-    this.budgetService.updateStatus(id, 'REJECTED').subscribe({
+    this.budgetService.updateStatus(id, 'REJECTED').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => this.loadBudgets(),
     });
   }
@@ -167,7 +169,7 @@ export class BudgetsComponent {
 
   createBudget(): void {
     if (!this.newBudget.projectId || !this.newBudget.budgetType) return;
-    this.budgetService.create(this.newBudget as Budget).subscribe({
+    this.budgetService.create(this.newBudget as Budget).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (created) => {
         const budget = this.toDisplayBudget(created);
         this.loadVersion++;
@@ -184,14 +186,14 @@ export class BudgetsComponent {
 
   openEditor(budget: Budget): void {
     this.selectedBudget = budget;
-    this.budgetService.getItems(budget.id!).subscribe({
+    this.budgetService.getItems(budget.id!).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (items) => this.budgetItems.set(items),
     });
   }
 
   addItem(item: Partial<BudgetItem>): void {
     if (!this.selectedBudget?.id) return;
-    this.budgetService.addItem(this.selectedBudget.id, item as BudgetItem).subscribe({
+    this.budgetService.addItem(this.selectedBudget.id, item as BudgetItem).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => this.viewItems(this.selectedBudget!),
       error: (err) => {
         console.error('Error adding item:', err);
@@ -204,7 +206,7 @@ export class BudgetsComponent {
     if (!confirm('¿Eliminar este item?')) return;
     if (!this.selectedBudget?.id) return;
 
-    this.budgetService.deleteItem(this.selectedBudget.id, id).subscribe({
+    this.budgetService.deleteItem(this.selectedBudget.id, id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => this.viewItems(this.selectedBudget!),
       error: (err) => {
         console.error('Error deleting item:', err);
@@ -216,7 +218,7 @@ export class BudgetsComponent {
   deleteBudget(id: number, confirmed?: boolean): void {
     if (confirmed === false) return;
     if (confirmed === undefined && !confirm('¿Estás seguro de eliminar este presupuesto?')) return;
-    this.budgetService.delete(id, true).subscribe({
+    this.budgetService.delete(id, true).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => {
         this.loadBudgets();
         this.notifications.success('Presupuesto eliminado correctamente.');
@@ -230,7 +232,7 @@ export class BudgetsComponent {
 
   updateBudget(id: number): void {
     if (!confirm('¿Estás seguro de crear una nueva versión de este presupuesto?')) return;
-    this.budgetService.createNewVersion(id, 1).subscribe({
+    this.budgetService.createNewVersion(id, 1).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => this.loadBudgets(),
       error: (err) => {
         alert('Error al crear nueva versión: ' + (err.error?.message || err.message));
@@ -249,6 +251,7 @@ export class BudgetsComponent {
         status: 'PLANNED',
         active: true,
       })
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (created) => {
           this.projects.update((prev) => [...prev, created]);

@@ -1,4 +1,5 @@
-import { Component, signal } from '@angular/core';
+import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuthService } from '../../auth/services/auth.service';
 import { ClientService } from '../clients/services/client.service';
 import { ProjectService } from '../projects/services/project.service';
@@ -54,21 +55,22 @@ export class DashboardComponent {
 
   recentActivities = signal<{ id: number; icon: string; description: string; time: string }[]>([]);
 
-  constructor(
-    private authService: AuthService,
-    private clientService: ClientService,
-    private projectService: ProjectService,
-  ) {
+  private destroyRef = inject(DestroyRef);
+  private authService = inject(AuthService);
+  private clientService = inject(ClientService);
+  private projectService = inject(ProjectService);
+
+  constructor() {
     const user = this.authService.getUser();
     this.userName.set(user?.name ?? 'Usuario');
 
-    this.clientService.getAll().subscribe({
+    this.clientService.getAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (clients) => {
         this.totalClients.set(clients.length);
       },
     });
 
-    this.projectService.getAll().subscribe({
+    this.projectService.getAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (projects) => {
         this.totalProjects.set(projects.length);
         this.activeBudgets.set(projects.filter(p => p.status === 'IN_PROGRESS').length);

@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Output } from '@angular/core';
+import { Component, inject, output } from '@angular/core';
 import { AuthService } from '@auth/services/auth.service';
 import { MatIconModule } from '@angular/material/icon';
 import { NavLinkComponent } from '@components/sidebar/nav-link/nav-link.component';
@@ -45,8 +45,9 @@ interface NavItem {
   `,
 })
 export class SidebarComponent {
-  @Output() toggle = new EventEmitter<void>();
+  toggle = output<void>();
 
+  private authService = inject(AuthService);
   private allNavItems: NavItem[] = [
     { icon: 'dashboard', label: 'Dashboard', route: '/' },
     { icon: 'groups', label: 'Clientes', route: '/clients' },
@@ -58,8 +59,6 @@ export class SidebarComponent {
     // { icon: 'home', label: 'Fichajes', route: '/clock' },
     { icon: 'user', label: 'Usuarios', route: '/users', adminOnly: true },
   ];
-
-  constructor(private authService: AuthService) {}
 
   get visibleNavItems(): NavItem[] {
     const user = this.authService.getUser();

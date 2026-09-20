@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { MatIcon } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatButtonModule } from '@angular/material/button';
@@ -20,7 +20,7 @@ import { LinkComponent } from "@app/components/shared";
   styles: ``,
 })
 export class UserComponenent {
-  constructor(private authService: AuthService) {}
+  private authService = inject(AuthService);
 
   onLogout(): void {
     this.authService.logout();

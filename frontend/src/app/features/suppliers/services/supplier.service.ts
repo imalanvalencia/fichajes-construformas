@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Supplier } from '../types/supplier.types';
@@ -7,7 +7,7 @@ import { Supplier } from '../types/supplier.types';
 export class SupplierService {
   private readonly API = '/api/suppliers';
 
-  constructor(private http: HttpClient) {}
+  private http = inject(HttpClient);
 
   getAll(): Observable<Supplier[]> {
     return this.http.get<Supplier[]>(this.API);

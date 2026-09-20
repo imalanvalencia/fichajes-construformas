@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Output } from '@angular/core';
+import { Component, inject, output } from '@angular/core';
 import { AuthService } from '@auth/services/auth.service';
 import { MatIcon } from '@angular/material/icon';
 import { InputComponent } from '@app/components/shared';
@@ -47,9 +47,9 @@ import { UserComponenent } from '@app/components/header/user/user.componenent';
   imports: [UserComponenent, MatIcon],
 })
 export class HeaderComponent {
-  @Output() menuToggle = new EventEmitter<void>();
+  menuToggle = output<void>();
 
-  constructor(private authService: AuthService) {}
+  private authService = inject(AuthService);
 
   get userName(): string {
     return this.authService.getUser()?.name ?? 'Usuario';

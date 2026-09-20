@@ -1,4 +1,5 @@
-import { Component, signal } from '@angular/core';
+import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { SupplierService } from './services/supplier.service';
 import { Supplier } from './types/supplier.types';
 import { ButtonComponent } from '@shared-components/button/button.component';
@@ -59,16 +60,17 @@ export class SuppliersComponent {
   formData: Partial<Supplier> = this.emptyForm();
   private loadVersion = 0;
 
-  constructor(
-    private supplierService: SupplierService,
-    private notifications: NotificationService,
-  ) {
+  private destroyRef = inject(DestroyRef);
+  private supplierService = inject(SupplierService);
+  private notifications = inject(NotificationService);
+
+  constructor() {
     this.loadSuppliers();
   }
 
   loadSuppliers(): void {
     const requestVersion = ++this.loadVersion;
-    this.supplierService.getAll().subscribe({
+    this.supplierService.getAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (data) => {
         if (requestVersion !== this.loadVersion) return;
         this.suppliers.set(data);
@@ -80,7 +82,7 @@ export class SuppliersComponent {
   onSearch(term: string): void {
     this.searchTerm = term;
     if (term.trim()) {
-      this.supplierService.search(term).subscribe({
+      this.supplierService.search(term).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
         next: (data) => this.filteredSuppliers.set(data),
       });
     } else {
@@ -114,14 +116,14 @@ export class SuppliersComponent {
     if (!this.formData.name?.trim()) return;
 
     if (this.editingSupplier?.id) {
-      this.supplierService.update(this.editingSupplier.id, this.formData as Supplier).subscribe({
+      this.supplierService.update(this.editingSupplier.id, this.formData as Supplier).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
         next: () => {
           this.loadSuppliers();
           this.closeModal();
         },
       });
     } else {
-      this.supplierService.create({ ...this.formData, active: true } as Supplier).subscribe({
+      this.supplierService.create({ ...this.formData, active: true } as Supplier).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
         next: (supplier) => {
           this.loadVersion++;
           this.suppliers.update((suppliers) => [...suppliers, supplier]);
@@ -140,7 +142,7 @@ export class SuppliersComponent {
 
   deleteSupplier(id: number): void {
     if (!confirm('¿Estás seguro de eliminar este proveedor?')) return;
-    this.supplierService.delete(id).subscribe({
+    this.supplierService.delete(id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => this.loadSuppliers(),
     });
   }

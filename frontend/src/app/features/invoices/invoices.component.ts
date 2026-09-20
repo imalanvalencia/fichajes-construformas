@@ -1,4 +1,5 @@
-import { Component, signal } from '@angular/core';
+import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { InvoiceService } from './services/invoice.service';
 import { ClientService } from '../clients/services/client.service';
 import { ProjectService } from '../projects/services/project.service';
@@ -62,24 +63,25 @@ export class InvoicesComponent {
   formData: Partial<Invoice> = this.emptyForm();
   private loadVersion = 0;
 
-  constructor(
-    private invoiceService: InvoiceService,
-    private clientService: ClientService,
-    private projectService: ProjectService,
-    private notifications: NotificationService,
-  ) {
+  private destroyRef = inject(DestroyRef);
+  private invoiceService = inject(InvoiceService);
+  private clientService = inject(ClientService);
+  private projectService = inject(ProjectService);
+  private notifications = inject(NotificationService);
+
+  constructor() {
     this.loadInvoices();
-    this.clientService.getAll().subscribe({
+    this.clientService.getAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (data) => this.clients.set(data),
     });
-    this.projectService.getAll().subscribe({
+    this.projectService.getAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (data) => this.projects.set(data),
     });
   }
 
   loadInvoices(): void {
     const requestVersion = ++this.loadVersion;
-    this.invoiceService.getAll().subscribe({
+    this.invoiceService.getAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (data) => {
         if (requestVersion !== this.loadVersion) return;
         this.invoices.set(data);
@@ -89,7 +91,7 @@ export class InvoicesComponent {
 
   issueInvoice(id: number): void {
     if (!confirm('¿Emitir esta factura?')) return;
-    this.invoiceService.issue(id).subscribe({
+    this.invoiceService.issue(id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => this.loadInvoices(),
     });
   }
@@ -136,14 +138,14 @@ export class InvoicesComponent {
     };
 
     if (this.editingInvoice?.id) {
-      this.invoiceService.update(this.editingInvoice.id, payload).subscribe({
+      this.invoiceService.update(this.editingInvoice.id, payload).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
         next: () => {
           this.loadInvoices();
           this.closeModal();
         },
       });
     } else {
-      this.invoiceService.create(payload).subscribe({
+      this.invoiceService.create(payload).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
         next: (created) => {
           this.loadVersion++;
           this.invoices.update((invoices) => [...invoices, this.toDisplayInvoice(created)]);
@@ -159,13 +161,13 @@ export class InvoicesComponent {
 
   deleteInvoice(id: number): void {
     if (!confirm('¿Estás seguro de eliminar esta factura?')) return;
-    this.invoiceService.delete(id).subscribe({
+    this.invoiceService.delete(id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => this.loadInvoices(),
     });
   }
 
   onCreateClient(name: string): void {
-    this.clientService.create({ name, email: '', active: true }).subscribe({
+    this.clientService.create({ name, email: '', active: true }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (created) => {
         this.clients.update((prev) => [...prev, created]);
         this.formData.clientId = created.id!;
@@ -184,6 +186,7 @@ export class InvoicesComponent {
         status: 'PLANNED',
         active: true,
       })
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (created) => {
           this.projects.update((prev) => [...prev, created]);

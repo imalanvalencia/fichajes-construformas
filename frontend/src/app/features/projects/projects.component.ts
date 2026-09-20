@@ -1,4 +1,5 @@
-import { Component, signal } from '@angular/core';
+import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ProjectService } from './services/project.service';
 import { ClientService } from '../clients/services/client.service';
 import { Project, ProjectFinancialSummary } from './types/project.types';
@@ -56,20 +57,21 @@ export class ProjectsComponent {
   formData: Partial<Project> = this.emptyForm();
   private loadVersion = 0;
 
-  constructor(
-    private projectService: ProjectService,
-    private clientService: ClientService,
-    private notifications: NotificationService,
-  ) {
+  private destroyRef = inject(DestroyRef);
+  private projectService = inject(ProjectService);
+  private clientService = inject(ClientService);
+  private notifications = inject(NotificationService);
+
+  constructor() {
     this.loadProjects();
-    this.clientService.getAll().subscribe({
+    this.clientService.getAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (data) => this.clients.set(data),
     });
   }
 
   loadProjects(): void {
     const requestVersion = ++this.loadVersion;
-    this.projectService.getAll().subscribe({
+    this.projectService.getAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (data) => {
         if (requestVersion !== this.loadVersion) return;
         this.projects.set(data);
@@ -79,7 +81,7 @@ export class ProjectsComponent {
 
   selectProject(project: Project): void {
     if (project.id) {
-      this.projectService.getFinancialSummary(project.id).subscribe({
+      this.projectService.getFinancialSummary(project.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
         next: (summary) => (this.financialSummary = summary),
       });
     }
@@ -127,14 +129,14 @@ export class ProjectsComponent {
     };
 
     if (this.editingProject?.id) {
-      this.projectService.update(this.editingProject.id, payload).subscribe({
+      this.projectService.update(this.editingProject.id, payload).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
         next: () => {
           this.loadProjects();
           this.closeModal();
         },
       });
     } else {
-      this.projectService.create(payload).subscribe({
+      this.projectService.create(payload).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
         next: (project) => {
           this.loadVersion++;
           this.projects.update((projects) => [...projects, project]);
@@ -150,7 +152,7 @@ export class ProjectsComponent {
 
   deleteProject(id: number): void {
     if (!confirm('¿Estás seguro de eliminar este proyecto?')) return;
-    this.projectService.delete(id).subscribe({
+    this.projectService.delete(id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => {
         this.loadProjects();
         this.financialSummary = null;
@@ -159,7 +161,7 @@ export class ProjectsComponent {
   }
 
   onCreateClient(name: string): void {
-    this.clientService.create({ name, email: '', active: true }).subscribe({
+    this.clientService.create({ name, email: '', active: true }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (created) => {
         this.clients.update((prev) => [...prev, created]);
         this.formData.clientId = created.id!;

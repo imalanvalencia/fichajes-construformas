@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { User, UserRole } from '../types/user.types';
@@ -7,7 +7,7 @@ import { User, UserRole } from '../types/user.types';
 export class UserService {
   private readonly API = '/api/users';
 
-  constructor(private http: HttpClient) {}
+  private http = inject(HttpClient);
 
   getAll(): Observable<User[]> {
     return this.http.get<User[]>(this.API);

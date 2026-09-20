@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Budget, BudgetItem, DocumentLifecycleEvent } from '../types/budget.types';
@@ -7,7 +7,7 @@ import { Budget, BudgetItem, DocumentLifecycleEvent } from '../types/budget.type
 export class BudgetService {
   private readonly API = '/api/budgets';
 
-  constructor(private http: HttpClient) {}
+  private http = inject(HttpClient);
 
   getAll(): Observable<Budget[]> {
     return this.http.get<Budget[]>(this.API);
