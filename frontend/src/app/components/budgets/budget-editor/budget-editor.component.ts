@@ -1,5 +1,6 @@
 import { Component, input, output, signal, computed, effect } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { MatIconModule } from '@angular/material/icon';
 import { Budget, BudgetItem } from '../../../features/budgets/types/budget.types';
 import { ButtonComponent } from '../../shared/button/button.component';
 import { CardComponent } from '../../shared/card/card.component';
@@ -15,7 +16,7 @@ interface EditableItem {
 @Component({
   selector: 'app-budget-editor',
   standalone: true,
-  imports: [FormsModule, ButtonComponent, CardComponent, BadgeComponent, InputComponent, TextareaComponent],
+  imports: [FormsModule, MatIconModule, ButtonComponent, CardComponent, BadgeComponent, InputComponent, TextareaComponent],
   template: `
     <div class="fixed inset-0 z-50 bg-white overflow-y-auto">
       <div class="max-w-6xl mx-auto px-6 py-6">
@@ -300,6 +301,14 @@ interface EditableItem {
           </app-card>
         </div>
 
+        <!-- Error Banner -->
+        @if (errorMessage()) {
+          <div class="mt-6 bg-red-50 border border-red-200 rounded-lg px-4 py-3 flex items-center gap-3">
+            <mat-icon class="text-construction-red">error_outline</mat-icon>
+            <span class="text-sm text-construction-red">{{ errorMessage() }}</span>
+          </div>
+        }
+
         <!-- Action Buttons -->
         <div class="mt-6 flex items-center justify-end gap-3 pb-8">
           <app-button variant="outlined" (click)="onClose.emit()">Cancelar</app-button>
@@ -318,6 +327,7 @@ export class BudgetEditorComponent {
   items = input<BudgetItem[]>([]);
   hasPrevious = input(false);
   hasNext = input(false);
+  errorMessage = input<string | null>(null);
 
   onClose = output<void>();
   onSave = output<Partial<Budget>>();

@@ -274,6 +274,18 @@ public class BudgetService {
 
     public BudgetItem addItem(Long budgetId, BudgetItem item) {
         Budget budget = findById(budgetId);
+
+        // Validate required fields
+        if (item.getDescription() == null || item.getDescription().trim().isBlank()) {
+            throw new IllegalArgumentException("La descripción es obligatoria");
+        }
+        if (item.getQuantity() == null || item.getQuantity().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("La cantidad debe ser mayor a 0");
+        }
+        if (item.getUnitPrice() == null || item.getUnitPrice().compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalArgumentException("El precio unitario no puede ser negativo");
+        }
+
         item.setBudget(budget);
         if (item.getOrderNum() == null) item.setOrderNum(0);
         return budgetItemRepository.save(item);

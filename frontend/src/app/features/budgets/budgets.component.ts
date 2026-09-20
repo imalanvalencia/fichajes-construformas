@@ -52,6 +52,7 @@ import { SidebarService } from '@app/services/sidebar.service';
           [items]="budgetItems()"
           [hasPrevious]="hasPreviousBudget()"
           [hasNext]="hasNextBudget()"
+          [errorMessage]="itemError()"
           (onClose)="closeItemsPanel()"
           (onSave)="onSaveBudget($event)"
           (onUpdateItem)="onUpdateItem($event)"
@@ -82,6 +83,7 @@ export class BudgetsComponent {
   newBudget: Partial<Budget> = this.emptyBudgetForm();
   private loadVersion = 0;
   isAdmin = signal(false);
+  itemError = signal<string | null>(null);
 
   private destroyRef = inject(DestroyRef);
   private budgetService = inject(BudgetService);
@@ -200,11 +202,16 @@ export class BudgetsComponent {
 
   addItem(item: Partial<BudgetItem>): void {
     if (!this.selectedBudget?.id) return;
+    this.itemError.set(null);
     this.budgetService.addItem(this.selectedBudget.id, item as BudgetItem).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: () => this.viewItems(this.selectedBudget!),
+      next: (saved) => {
+        // Optimistic update: add the saved item directly without reloading
+        this.budgetItems.update((items) => [...items, saved]);
+      },
       error: (err) => {
         console.error('Error adding item:', err);
-        alert('Error al agregar item: ' + (err.error?.message || err.message));
+        const message = err.error?.message || err.error?.error || err.message || 'Error al agregar item';
+        this.itemError.set(message);
       },
     });
   }
@@ -214,10 +221,14 @@ export class BudgetsComponent {
     if (!this.selectedBudget?.id) return;
 
     this.budgetService.deleteItem(this.selectedBudget.id, id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: () => this.viewItems(this.selectedBudget!),
+      next: () => {
+        // Optimistic update: remove the item directly
+        this.budgetItems.update((items) => items.filter((item) => item.id !== id));
+      },
       error: (err) => {
         console.error('Error deleting item:', err);
-        alert('Error al eliminar item: ' + (err.error?.message || err.message));
+        const message = err.error?.message || err.error?.error || err.message || 'Error al eliminar item';
+        this.notifications.error(message);
       },
     });
   }
