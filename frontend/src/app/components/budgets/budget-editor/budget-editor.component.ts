@@ -188,79 +188,80 @@ interface EditableItem {
                     </tr>
                   }
 
-                  <!-- Add Item Row -->
-                  <tr class="border-t-2 border-cement/50 bg-cement/30">
-                    <td class="py-2 px-3 font-mono text-xs text-steel">
-                      {{ editableItems().length + 1 }}
-                    </td>
-                    <td class="py-2 px-3">
-                      <app-input
-                        type="text"
-                        [value]="newItemDescription()"
-                        (valueChange)="newItemDescription.set($event)"
-                        (keydown.enter)="addItem()"
-                        placeholder="Nueva descripción *"
-                      />
-                    </td>
-                    <td class="py-2 px-3">
-                      <app-input
-                        type="text"
-                        [value]="newItemZone()"
-                        (valueChange)="newItemZone.set($event)"
-                        (keydown.enter)="addItem()"
-                        placeholder="Zona"
-                      />
-                    </td>
-                    <td class="py-2 px-3">
-                      <app-input
-                        type="text"
-                        [value]="newItemUnit()"
-                        (valueChange)="newItemUnit.set($event)"
-                        (keydown.enter)="addItem()"
-                        placeholder="Unidad"
-                      />
-                    </td>
-                    <td class="py-2 px-3">
-                      <app-input
-                        type="number"
-                        [value]="str(newItemQuantity())"
-                        (valueChange)="newItemQuantity.set(+$event || 1)"
-                        (keydown.enter)="addItem()"
-                        placeholder="1"
-                      />
-                    </td>
-                    <td class="py-2 px-3">
-                      <div class="flex items-center justify-end">
-                        <span class="font-mono text-xs text-steel mr-1">€</span>
-                        <app-input
-                          type="number"
-                          [value]="str(newItemPrice())"
-                          (valueChange)="newItemPrice.set(+$event || 0)"
-                          (keydown.enter)="addItem()"
-                          placeholder="0.00"
-                        />
-                      </div>
-                    </td>
-                    <td class="py-2 px-3 text-right font-mono text-sm text-steel">
-                      {{ formatCurrency(newItemQuantity() * newItemPrice()) }}
-                    </td>
-                    <td class="py-2 px-3 text-right">
-                      <app-button variant="filled" size="sm" (click)="addItem()"
-                        >+ Agregar</app-button
-                      >
-                    </td>
-                  </tr>
-
                   @if (editableItems().length === 0) {
                     <tr>
                       <td colspan="8" class="py-8 text-center text-steel">
-                        No hay partidas. Usa la fila inferior para agregar la primera.
+                        No hay partidas. Usa el formulario de abajo para agregar la primera.
                       </td>
                     </tr>
                   }
                 </tbody>
               </table>
             </div>
+          </app-card>
+        </div>
+
+        <!-- Add Item Form -->
+        <div class="mt-6">
+          <app-card category="Nueva" title="Agregar Partida">
+            <form (keydown.enter)="addItem(); $event.preventDefault()" class="grid grid-cols-1 sm:grid-cols-6 gap-4 items-end">
+              <div class="sm:col-span-3">
+                <app-input
+                  label="Descripción *"
+                  type="text"
+                  [value]="newItemDescription()"
+                  (valueChange)="newItemDescription.set($event); clearItemError('description')"
+                  [errorMessage]="itemErrors().description"
+                  placeholder="Ej: Demolición de muro"
+                />
+              </div>
+              <div>
+                <app-input
+                  label="Zona"
+                  type="text"
+                  [value]="newItemZone()"
+                  (valueChange)="newItemZone.set($event)"
+                  placeholder="Zona A"
+                />
+              </div>
+              <div>
+                <app-input
+                  label="Unidad"
+                  type="text"
+                  [value]="newItemUnit()"
+                  (valueChange)="newItemUnit.set($event)"
+                  placeholder="m²"
+                />
+              </div>
+              <div>
+                <app-input
+                  label="Cantidad *"
+                  type="number"
+                  [value]="str(newItemQuantity())"
+                  (valueChange)="newItemQuantity.set(+$event || 1); clearItemError('quantity')"
+                  [errorMessage]="itemErrors().quantity"
+                  placeholder="1"
+                />
+              </div>
+              <div>
+                <app-input
+                  label="Precio Unit. *"
+                  type="number"
+                  [value]="str(newItemPrice())"
+                  (valueChange)="newItemPrice.set(+$event || 0); clearItemError('unitPrice')"
+                  [errorMessage]="itemErrors().unitPrice"
+                  placeholder="0.00"
+                />
+              </div>
+              <div class="sm:col-span-2 flex items-center gap-3">
+                <span class="text-sm text-steel font-mono">Total:</span>
+                <span class="text-lg font-bold text-nero font-mono">{{ formatCurrency(newItemQuantity() * newItemPrice()) }}</span>
+              </div>
+              <div class="sm:col-span-4"></div>
+              <div class="sm:col-span-2 flex justify-end">
+                <app-button variant="filled" (click)="addItem()">+ Agregar Partida</app-button>
+              </div>
+            </form>
           </app-card>
         </div>
 
@@ -356,6 +357,17 @@ export class BudgetEditorComponent {
   newItemUnit = signal('');
   newItemQuantity = signal(1);
   newItemPrice = signal(0);
+
+  // --- Per-field errors for new item form ---
+  itemErrors = signal<{ description?: string; quantity?: string; unitPrice?: string }>({});
+
+  clearItemError(field: string): void {
+    this.itemErrors.update((e) => {
+      const next = { ...e };
+      delete next[field as keyof typeof next];
+      return next;
+    });
+  }
 
   // --- Terms & Conditions ---
   termsText = signal('');
@@ -457,11 +469,27 @@ export class BudgetEditorComponent {
 
   // --- Add new item ---
   addItem(): void {
+    // Validate
+    const errors: { description?: string; quantity?: string; unitPrice?: string } = {};
     const desc = this.newItemDescription().trim();
-    if (!desc) return;
+    if (!desc) {
+      errors.description = 'La descripción es obligatoria';
+    }
+    const qty = this.newItemQuantity();
+    if (!qty || qty <= 0) {
+      errors.quantity = 'La cantidad debe ser mayor a 0';
+    }
+    const price = this.newItemPrice();
+    if (price < 0) {
+      errors.unitPrice = 'El precio no puede ser negativo';
+    }
 
-    const qty = Math.max(1, this.newItemQuantity() || 1);
-    const price = this.newItemPrice() || 0;
+    if (Object.keys(errors).length > 0) {
+      this.itemErrors.set(errors);
+      return;
+    }
+
+    this.itemErrors.set({});
 
     this.onAddItem.emit({
       description: desc,
