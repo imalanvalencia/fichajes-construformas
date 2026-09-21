@@ -52,7 +52,7 @@ import { SidebarService } from '@app/services/sidebar.service';
           [items]="budgetItems()"
           [hasPrevious]="hasPreviousBudget()"
           [hasNext]="hasNextBudget()"
-          [errorMessage]="itemError()"
+          [isAddingItem]="addingItem()"
           (onClose)="closeItemsPanel()"
           (onSave)="onSaveBudget($event)"
           (onUpdateItem)="onUpdateItem($event)"
@@ -83,7 +83,7 @@ export class BudgetsComponent {
   newBudget: Partial<Budget> = this.emptyBudgetForm();
   private loadVersion = 0;
   isAdmin = signal(false);
-  itemError = signal<string | null>(null);
+  addingItem = signal(false);
 
   private destroyRef = inject(DestroyRef);
   private budgetService = inject(BudgetService);
@@ -202,16 +202,18 @@ export class BudgetsComponent {
 
   addItem(item: Partial<BudgetItem>): void {
     if (!this.selectedBudget?.id) return;
-    this.itemError.set(null);
+    this.addingItem.set(true);
     this.budgetService.addItem(this.selectedBudget.id, item as BudgetItem).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (saved) => {
-        // Optimistic update: add the saved item directly without reloading
         this.budgetItems.update((items) => [...items, saved]);
+        this.notifications.success('Partida agregada correctamente.');
+        this.addingItem.set(false);
       },
       error: (err) => {
         console.error('Error adding item:', err);
         const message = err.error?.message || err.error?.error || err.message || 'Error al agregar item';
-        this.itemError.set(message);
+        this.notifications.error(message);
+        this.addingItem.set(false);
       },
     });
   }

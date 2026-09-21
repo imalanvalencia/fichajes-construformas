@@ -62,14 +62,6 @@ interface EditableItem {
           </div>
         </div>
 
-        <!-- Error Banner — top of page, always visible -->
-        @if (errorMessage()) {
-          <div class="mb-6 bg-red-50 border border-red-200 rounded-lg px-4 py-3 flex items-center gap-3">
-            <mat-icon class="text-construction-red">error_outline</mat-icon>
-            <span class="text-sm text-construction-red">{{ errorMessage() }}</span>
-          </div>
-        }
-
         <!-- Client / Project Info -->
         @if (budget()?.project) {
           <app-card category="Proyecto" [title]="budget()!.project!.name">
@@ -259,7 +251,14 @@ interface EditableItem {
               </div>
               <div class="sm:col-span-4"></div>
               <div class="sm:col-span-2 flex justify-end">
-                <app-button variant="filled" (click)="addItem()">+ Agregar Partida</app-button>
+                <app-button variant="filled" (click)="addItem()" [disabled]="isAddingItem()">
+                  @if (isAddingItem()) {
+                    <mat-icon class="animate-spin mr-1" [style.font-size.px]="16">refresh</mat-icon>
+                    Agregando...
+                  } @else {
+                    + Agregar Partida
+                  }
+                </app-button>
               </div>
             </form>
           </app-card>
@@ -328,7 +327,7 @@ export class BudgetEditorComponent {
   items = input<BudgetItem[]>([]);
   hasPrevious = input(false);
   hasNext = input(false);
-  errorMessage = input<string | null>(null);
+  isAddingItem = input(false);
 
   onClose = output<void>();
   onSave = output<Partial<Budget>>();
