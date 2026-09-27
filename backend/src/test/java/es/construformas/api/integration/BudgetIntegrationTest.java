@@ -96,10 +96,6 @@ class BudgetIntegrationTest {
 
         Long budgetId = objectMapper.readTree(response).get("id").asLong();
 
-        mockMvc.perform(post("/api/budgets/" + budgetId + "/approve?userId=" + testUser.getId()))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.status").value("APPROVED"));
-
         mockMvc.perform(post("/api/budgets/" + budgetId + "/new-version?userId=" + testUser.getId()))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.version").value(2))

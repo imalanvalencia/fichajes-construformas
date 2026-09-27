@@ -72,6 +72,45 @@ class BudgetServiceTest {
     }
 
     @Test
+    @DisplayName("Create budget should derive client from the project")
+    void shouldDeriveClientFromProjectOnCreate() {
+        Client client = Client.builder().id(8L).build();
+        Project project = Project.builder().id(1L).client(client).build();
+        User user = User.builder().id(1L).build();
+        when(projectRepository.findById(1L)).thenReturn(Optional.of(project));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(budgetRepository.save(any(Budget.class))).thenAnswer(i -> i.getArgument(0));
+
+        BudgetRequest request = new BudgetRequest();
+        request.setProjectId(1L);
+        request.setCreatedById(1L);
+        Budget result = budgetService.create(request);
+
+        assertThat(result.getClient()).isSameAs(client);
+    }
+
+    @Test
+    @DisplayName("Create new version should copy client from the original budget")
+    void shouldCopyClientFromOriginalOnNewVersion() {
+        Client client = Client.builder().id(8L).build();
+        Project project = Project.builder().id(1L).build();
+        Budget original = Budget.builder().id(1L).version(1).status(BudgetStatus.APPROVED)
+                .project(project)
+                .client(client)
+                .build();
+
+        when(budgetRepository.findById(1L)).thenReturn(Optional.of(original));
+        when(invoiceRepository.existsByProjectIdAndStatus(1L, InvoiceStatus.ISSUED)).thenReturn(false);
+        User user = User.builder().id(1L).build();
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(budgetRepository.save(any(Budget.class))).thenAnswer(i -> i.getArgument(0));
+
+        Budget newVersion = budgetService.createNewVersion(1L, 1L);
+
+        assertThat(newVersion.getClient()).isSameAs(client);
+    }
+
+    @Test
     @DisplayName("Create new version should increment version and set DRAFT")
     void shouldCreateNewVersionWhenApproved() {
         Project project = Project.builder().id(1L).build();

@@ -45,6 +45,7 @@ public class BudgetService {
 
         Budget budget = Budget.builder()
                 .project(project)
+                .client(project.getClient())
                 .createdBy(creator)
                 .budgetType(budgetType)
                 .status(status)
@@ -131,6 +132,7 @@ public class BudgetService {
 
         Budget newVersion = Budget.builder()
                 .project(original.getProject())
+                .client(original.getClient())
                 .originalBudget(original.getOriginalBudget() != null ? original.getOriginalBudget() : original)
                 .version(original.getVersion() + 1)
                 .budgetType(BudgetType.VERSION)
