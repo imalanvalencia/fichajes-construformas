@@ -57,4 +57,8 @@ export class BudgetService {
   getLifecycle(id: number): Observable<DocumentLifecycleEvent[]> {
     return this.http.get<DocumentLifecycleEvent[]>(`${this.API}/${id}/lifecycle`);
   }
+
+  downloadBudgetPdf(id: number): Observable<Blob> {
+    return this.http.get(`${this.API}/${id}/pdf`, { responseType: 'blob' });
+  }
 }

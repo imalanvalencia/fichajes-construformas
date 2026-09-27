@@ -1,18 +1,17 @@
 import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { AuthService } from '@app/auth/services/auth.service';
 import { BudgetService } from './services/budget.service';
 import { ProjectService } from '../projects/services/project.service';
-import { Budget, BudgetItem } from './types/budget.types';
+import { Budget } from './types/budget.types';
 import { Project } from '../projects/types/project.types';
 import { ButtonComponent } from '@components/shared/button/button.component';
 import { BudgetsTableComponent } from '@components/budgets/budgets-table/budgets-table.component';
 import { BudgetSummaryComponent } from '@components/budgets/budget-summary/budget-summary.component';
-import { BudgetEditorComponent } from '@components/budgets/budget-editor/budget-editor.component';
 import { CreateBudgetModalComponent } from '@components/budgets/create-budget-modal/create-budget-modal.component';
 import { NotificationService } from '@app/services/notification.service';
-import { SidebarService } from '@app/services/sidebar.service';
 
 @Component({
   selector: 'app-budgets',
@@ -22,7 +21,6 @@ import { SidebarService } from '@app/services/sidebar.service';
     ButtonComponent,
     BudgetsTableComponent,
     BudgetSummaryComponent,
-    BudgetEditorComponent,
     CreateBudgetModalComponent,
   ],
   template: `
@@ -39,28 +37,12 @@ import { SidebarService } from '@app/services/sidebar.service';
       <app-budgets-table
         [budgets]="budgets()"
         [isAdmin]="isAdmin()"
-        (onViewItems)="viewItems($event)"
+        (onViewItems)="openEditor($event)"
         (onApprove)="approveBudget($event)"
         (onReject)="rejectBudget($event)"
         (onUpdate)="updateBudget($event)"
         (onDelete)="deleteBudget($event)"
       />
-
-      @if (selectedBudget) {
-        <app-budget-editor
-          [budget]="selectedBudget"
-          [items]="budgetItems()"
-          [hasPrevious]="hasPreviousBudget()"
-          [hasNext]="hasNextBudget()"
-          [isAddingItem]="addingItem()"
-          (onClose)="closeItemsPanel()"
-          (onSave)="onSaveBudget($event)"
-          (onUpdateItem)="onUpdateItem($event)"
-          (onDeleteItem)="deleteItem($event)"
-          (onAddItem)="addItem($event)"
-          (onNavigate)="navigateBudget($event)"
-        />
-      }
 
       <app-create-budget-modal
         [show]="showCreateModal()"
@@ -76,21 +58,18 @@ import { SidebarService } from '@app/services/sidebar.service';
 })
 export class BudgetsComponent {
   budgets = signal<Budget[]>([]);
-  budgetItems = signal<BudgetItem[]>([]);
   projects = signal<Project[]>([]);
-  selectedBudget: Budget | null = null;
   showCreateModal = signal(false);
   newBudget: Partial<Budget> = this.emptyBudgetForm();
   private loadVersion = 0;
   isAdmin = signal(false);
-  addingItem = signal(false);
 
   private destroyRef = inject(DestroyRef);
   private budgetService = inject(BudgetService);
   private projectService = inject(ProjectService);
   private notifications = inject(NotificationService);
   private authService = inject(AuthService);
-  private sidebarService = inject(SidebarService);
+  private router = inject(Router);
 
   constructor() {
     this.isAdmin.set(this.authService.hasRole('ADMIN'));
@@ -112,32 +91,8 @@ export class BudgetsComponent {
     });
   }
 
-  viewItems(budget: Budget): void {
-    this.openEditor(budget);
-  }
-
-  closeItemsPanel(): void {
-    this.selectedBudget = null;
-    this.sidebarService.show();
-  }
-
-  onSaveBudget(changes: Partial<Budget>): void {
-    if (!this.selectedBudget?.id) return;
-    this.budgetService.createNewVersion(this.selectedBudget.id, 1).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: () => {
-        this.loadBudgets();
-        alert('Borrador guardado.');
-      },
-      error: (err) => {
-        alert('Error al guardar: ' + (err.error?.message || err.message));
-      },
-    });
-  }
-
-  onUpdateItem(event: { id: number; changes: Partial<BudgetItem> }): void {
-    if (!this.selectedBudget?.id) return;
-    // TODO: Implement PUT /api/budgets/{budgetId}/items/{itemId} in the backend
-    console.log('Update item', event.id, event.changes);
+  openEditor(budget: Budget): void {
+    this.router.navigate(['/budgets', budget.id, 'editor']);
   }
 
   approveBudget(id: number): void {
@@ -179,58 +134,13 @@ export class BudgetsComponent {
     if (!this.newBudget.projectId || !this.newBudget.budgetType) return;
     this.budgetService.create(this.newBudget as Budget).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (created) => {
-        const budget = this.toDisplayBudget(created);
         this.loadVersion++;
-        this.budgets.update((budgets) => [...budgets, budget]);
         this.closeCreateModal();
-        this.openEditor(budget);
         this.notifications.success('Presupuesto creado correctamente.');
+        this.router.navigate(['/budgets', created.id, 'editor']);
       },
       error: () => {
         this.notifications.error('No se pudo crear el presupuesto. Inténtalo de nuevo.');
-      },
-    });
-  }
-
-  openEditor(budget: Budget): void {
-    this.selectedBudget = budget;
-    this.sidebarService.hide();
-    this.budgetService.getItems(budget.id!).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (items) => this.budgetItems.set(items),
-    });
-  }
-
-  addItem(item: Partial<BudgetItem>): void {
-    if (!this.selectedBudget?.id) return;
-    this.addingItem.set(true);
-    this.budgetService.addItem(this.selectedBudget.id, item as BudgetItem).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (saved) => {
-        this.budgetItems.update((items) => [...items, saved]);
-        this.notifications.success('Partida agregada correctamente.');
-        this.addingItem.set(false);
-      },
-      error: (err) => {
-        console.error('Error adding item:', err);
-        const message = err.error?.message || err.error?.error || err.message || 'Error al agregar item';
-        this.notifications.error(message);
-        this.addingItem.set(false);
-      },
-    });
-  }
-
-  deleteItem(id: number): void {
-    if (!confirm('¿Eliminar este item?')) return;
-    if (!this.selectedBudget?.id) return;
-
-    this.budgetService.deleteItem(this.selectedBudget.id, id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: () => {
-        // Optimistic update: remove the item directly
-        this.budgetItems.update((items) => items.filter((item) => item.id !== id));
-      },
-      error: (err) => {
-        console.error('Error deleting item:', err);
-        const message = err.error?.message || err.error?.error || err.message || 'Error al eliminar item';
-        this.notifications.error(message);
       },
     });
   }
@@ -280,28 +190,6 @@ export class BudgetsComponent {
       });
   }
 
-  // --- Navigation between budgets ---
-  hasPreviousBudget(): boolean {
-    if (!this.selectedBudget) return false;
-    const idx = this.budgets().findIndex((b) => b.id === this.selectedBudget!.id);
-    return idx > 0;
-  }
-
-  hasNextBudget(): boolean {
-    if (!this.selectedBudget) return false;
-    const idx = this.budgets().findIndex((b) => b.id === this.selectedBudget!.id);
-    return idx >= 0 && idx < this.budgets().length - 1;
-  }
-
-  navigateBudget(direction: 'prev' | 'next'): void {
-    if (!this.selectedBudget) return;
-    const idx = this.budgets().findIndex((b) => b.id === this.selectedBudget!.id);
-    const newIdx = direction === 'prev' ? idx - 1 : idx + 1;
-    if (newIdx >= 0 && newIdx < this.budgets().length) {
-      this.openEditor(this.budgets()[newIdx]);
-    }
-  }
-
   private emptyBudgetForm(): Partial<Budget> {
     return {
       projectId: 0,
@@ -314,16 +202,6 @@ export class BudgetsComponent {
       createdById: 1,
       includesMaterials: false,
       includesIva: false,
-    };
-  }
-
-  private toDisplayBudget(budget: Budget): Budget {
-    const project = this.projects().find((item) => item.id === budget.projectId);
-
-    return {
-      ...budget,
-      projectName: project?.name ?? budget.projectName,
-      project: project ?? budget.project,
     };
   }
 }

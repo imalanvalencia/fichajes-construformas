@@ -51,6 +51,7 @@ public class BudgetService {
                 .totalAmount(request.getTotalAmount() != null ? request.getTotalAmount() : BigDecimal.ZERO)
                 .discountAmount(request.getDiscountAmount() != null ? request.getDiscountAmount() : BigDecimal.ZERO)
                 .finalAmount(request.getFinalAmount() != null ? request.getFinalAmount() : BigDecimal.ZERO)
+                .includesIva(Boolean.TRUE.equals(request.getIncludesIva()))
                 .validUntil(parseDate(request.getValidUntil()))
                 .notes(request.getNotes())
                 .paymentTerms(request.getPaymentTerms())
@@ -137,6 +138,7 @@ public class BudgetService {
                 .totalAmount(original.getTotalAmount())
                 .discountAmount(original.getDiscountAmount())
                 .finalAmount(original.getFinalAmount())
+                .includesIva(original.isIncludesIva())
                 .validUntil(original.getValidUntil())
                 .notes(original.getNotes())
                 .paymentTerms(original.getPaymentTerms())
@@ -288,7 +290,9 @@ public class BudgetService {
 
         item.setBudget(budget);
         if (item.getOrderNum() == null) item.setOrderNum(0);
-        return budgetItemRepository.save(item);
+        BudgetItem saved = budgetItemRepository.save(item);
+        recalculateTotals(budgetId);
+        return saved;
     }
 
     public List<BudgetItem> getItems(Long budgetId) {

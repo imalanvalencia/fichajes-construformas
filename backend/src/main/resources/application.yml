@@ -38,3 +38,11 @@ springdoc:
 jwt:
   secret: ${JWT_SECRET:construformas-secret-key-that-is-long-enough-for-hs256-algorithm}
   expiration: 86400000
+
+app:
+  pdf:
+    company:
+      name: Construformas S.L.
+      logo-path: classpath:static/images/logo-placeholder.png
+      address: ""
+      tax-id: ""

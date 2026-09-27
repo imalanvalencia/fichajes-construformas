@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { of, Subject, throwError } from 'rxjs';
+import { Router } from '@angular/router';
 import { BudgetsComponent } from './budgets.component';
 import { BudgetService } from './services/budget.service';
 import { ProjectService } from '../projects/services/project.service';
@@ -15,12 +16,14 @@ describe('BudgetsComponent', () => {
   let budgetService: {
     getAll: ReturnType<typeof vi.fn>;
     create: ReturnType<typeof vi.fn>;
-    getItems: ReturnType<typeof vi.fn>;
     delete: ReturnType<typeof vi.fn>;
     approve: ReturnType<typeof vi.fn>;
+    updateStatus: ReturnType<typeof vi.fn>;
+    createNewVersion: ReturnType<typeof vi.fn>;
   };
   let notifications: { success: ReturnType<typeof vi.fn>; error: ReturnType<typeof vi.fn> };
   let authService: { hasRole: ReturnType<typeof vi.fn>; getUser: ReturnType<typeof vi.fn> };
+  let router: { navigate: ReturnType<typeof vi.fn> };
 
   const existingBudget: Budget = {
     id: 1,
@@ -54,12 +57,14 @@ describe('BudgetsComponent', () => {
     budgetService = {
       getAll: vi.fn().mockReturnValue(of([existingBudget])),
       create: vi.fn(),
-      getItems: vi.fn().mockReturnValue(of([])),
       delete: vi.fn(),
       approve: vi.fn().mockReturnValue(of(existingBudget)),
+      updateStatus: vi.fn().mockReturnValue(of(existingBudget)),
+      createNewVersion: vi.fn().mockReturnValue(of(existingBudget)),
     };
     notifications = { success: vi.fn(), error: vi.fn() };
     authService = { hasRole: vi.fn().mockReturnValue(false), getUser: vi.fn() };
+    router = { navigate: vi.fn().mockResolvedValue(true) };
 
     await TestBed.configureTestingModule({
       imports: [BudgetsComponent],
@@ -87,6 +92,7 @@ describe('BudgetsComponent', () => {
         },
         { provide: NotificationService, useValue: notifications },
         { provide: AuthService, useValue: authService },
+        { provide: Router, useValue: router },
       ],
     }).compileComponents();
 
@@ -95,7 +101,7 @@ describe('BudgetsComponent', () => {
     fixture.detectChanges();
   });
 
-  it('appends the confirmed budget with its project projection, closes the form, and opens its editor', () => {
+  it('closes the form, notifies, and navigates to the new budget editor on create', () => {
     const savedBudget = { ...existingBudget, id: 2 };
     budgetService.create.mockReturnValue(of(savedBudget));
     component.openCreateModal();
@@ -103,17 +109,19 @@ describe('BudgetsComponent', () => {
 
     component.createBudget();
 
-    const displayedBudget = {
-      ...savedBudget,
-      projectName: 'Proyecto Uno',
-      project: component.projects()[0],
-    };
-    expect(component.budgets()).toEqual([existingBudget, displayedBudget]);
+    expect(budgetService.create).toHaveBeenCalledWith(expect.objectContaining({ id: 2 }));
     expect(component.showCreateModal()).toBe(false);
-    expect(component.selectedBudget).toEqual(displayedBudget);
-    expect(budgetService.getItems).toHaveBeenCalledWith(2);
+    expect(router.navigate).toHaveBeenCalledWith(['/budgets', 2, 'editor']);
     expect(notifications.success).toHaveBeenCalledWith('Presupuesto creado correctamente.');
+    expect(component.budgets()).toEqual([existingBudget]);
     expect(budgetService.getAll).toHaveBeenCalledTimes(1);
+  });
+
+  it('openEditor navigates to the budget editor route', () => {
+    component.openEditor(existingBudget);
+
+    expect(router.navigate).toHaveBeenCalledWith(['/budgets', 1, 'editor']);
+    expect(budgetService.create).not.toHaveBeenCalled();
   });
 
   it('preserves the list and form on create error and notifies the user', () => {
@@ -127,14 +135,14 @@ describe('BudgetsComponent', () => {
     expect(component.budgets()).toEqual([existingBudget]);
     expect(component.showCreateModal()).toBe(true);
     expect(component.newBudget).toMatchObject(form);
-    expect(component.selectedBudget).toBeNull();
+    expect(router.navigate).not.toHaveBeenCalled();
     expect(notifications.error).toHaveBeenCalledWith(
       'No se pudo crear el presupuesto. Inténtalo de nuevo.',
     );
     expect(budgetService.delete).not.toHaveBeenCalled();
   });
 
-  it('does not let a stale list response overwrite a successful create', () => {
+  it('discards a stale list response after create bumps the load version', () => {
     const pendingLoad = new Subject<Budget[]>();
     const savedBudget = { ...existingBudget, id: 2 };
     budgetService.getAll.mockReturnValue(pendingLoad);
@@ -148,9 +156,8 @@ describe('BudgetsComponent', () => {
     component.createBudget();
     pendingLoad.next([existingBudget]);
 
-    expect(component.budgets()).toEqual([
-      { ...savedBudget, projectName: 'Proyecto Uno', project: component.projects()[0] },
-    ]);
+    expect(router.navigate).toHaveBeenCalledWith(['/budgets', 2, 'editor']);
+    expect(component.budgets()).toEqual([]);
   });
 
   it('confirmed deletion sends confirmed=true and reloads the list', () => {

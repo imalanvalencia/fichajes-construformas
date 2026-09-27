@@ -7,6 +7,7 @@ import { DashboardComponent } from './features/dashboard/dashboard.component';
 import { ClientsComponent } from './features/clients/clients.component';
 import { ProjectsComponent } from './features/projects/projects.component';
 import { BudgetsComponent } from './features/budgets/budgets.component';
+import { BudgetEditorPageComponent } from './features/budgets/pages/budget-editor-page/budget-editor-page.component';
 import { InvoicesComponent } from './features/invoices/invoices.component';
 import { SuppliersComponent } from './features/suppliers/suppliers.component';
 import { PaymentsComponent } from './features/payments/payments.component';
@@ -29,6 +30,7 @@ export const routes: Routes = [
       { path: 'clients', component: ClientsComponent },
       { path: 'projects', component: ProjectsComponent },
       { path: 'budgets', component: BudgetsComponent },
+      { path: 'budgets/:id/editor', component: BudgetEditorPageComponent },
       { path: 'invoices', component: InvoicesComponent },
       { path: 'ui', component: DesignSystem },
       // { path: 'suppliers', component: SuppliersComponent },

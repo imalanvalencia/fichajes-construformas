@@ -45,4 +45,15 @@ describe('BudgetService', () => {
 
     expect(http.delete).toHaveBeenCalledWith('/api/budgets/3');
   });
+
+  it('downloadBudgetPdf requests the PDF endpoint as a blob', () => {
+    const blob = new Blob(['%PDF-1.4']);
+    http.get.mockReturnValue(of(blob));
+
+    service.downloadBudgetPdf(42).subscribe((result) => {
+      expect(result).toBe(blob);
+    });
+
+    expect(http.get).toHaveBeenCalledWith('/api/budgets/42/pdf', { responseType: 'blob' });
+  });
 });

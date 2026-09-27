@@ -1,7 +1,9 @@
-import { Component, input, output, signal, computed, effect } from '@angular/core';
+import { Component, input, output, signal, computed, effect, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { Budget, BudgetItem } from '../../../features/budgets/types/budget.types';
+import { BudgetService } from '../../../features/budgets/services/budget.service';
+import { NotificationService } from '../../../services/notification.service';
 import { ButtonComponent } from '../../shared/button/button.component';
 import { CardComponent } from '../../shared/card/card.component';
 import { BadgeComponent } from '../../shared/badge/badge.component';
@@ -312,7 +314,7 @@ interface EditableItem {
         <!-- Action Buttons -->
         <div class="mt-6 flex items-center justify-end gap-3 pb-8">
           <app-button variant="outlined" (click)="onClose.emit()">Cancelar</app-button>
-          <app-button variant="tonal" [disabled]="true">Previsualizar PDF</app-button>
+          <app-button variant="tonal" (click)="onDownloadPdf()">Previsualizar PDF</app-button>
           <app-button variant="filled" (click)="saveDraft()">Guardar Borrador</app-button>
         </div>
       </div>
@@ -328,6 +330,9 @@ export class BudgetEditorComponent {
   hasPrevious = input(false);
   hasNext = input(false);
   isAddingItem = input(false);
+
+  private budgetService = inject(BudgetService);
+  private notifications = inject(NotificationService);
 
   onClose = output<void>();
   onSave = output<Partial<Budget>>();
@@ -511,6 +516,26 @@ export class BudgetEditorComponent {
   saveDraft(): void {
     this.onSave.emit({
       termsConditions: this.termsText(),
+    });
+  }
+
+  // --- Download PDF ---
+  onDownloadPdf(): void {
+    const id = this.budget()?.id;
+    if (!id) return;
+
+    this.budgetService.downloadBudgetPdf(id).subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `presupuesto-${id}.pdf`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+      },
+      error: () => {
+        this.notifications.error('No se pudo generar el PDF del presupuesto.');
+      },
     });
   }
 

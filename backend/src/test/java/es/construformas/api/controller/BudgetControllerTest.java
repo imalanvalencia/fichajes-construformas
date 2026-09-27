@@ -1,6 +1,7 @@
 package es.construformas.api.controller;
 
 import es.construformas.api.dto.BudgetRequest;
+import es.construformas.api.exception.BudgetNotFoundException;
 import es.construformas.api.model.*;
 import es.construformas.api.repository.UserRepository;
 import es.construformas.api.security.SecurityUtils;
@@ -44,6 +45,9 @@ class BudgetControllerTest {
 
     @MockitoBean
     private BudgetService budgetService;
+
+    @MockitoBean
+    private es.construformas.api.service.BudgetPdfService budgetPdfService;
 
     @MockitoBean
     private UserRepository userRepository;
@@ -327,5 +331,44 @@ class BudgetControllerTest {
         mockMvc.perform(get("/api/budgets/1/lifecycle"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray());
+    }
+
+    // --- PDF endpoint covering tests (verify CRITICAL scenarios 1-2) ---
+    private static final byte[] FAKE_PDF = "%PDF-1.4 fake".getBytes();
+
+    @Test @WithMockUser(roles = "ADMIN")
+    void getPdfAsAdminShouldReturnPdfWithHeaders() throws Exception {
+        when(budgetPdfService.generatePdf(1L)).thenReturn(FAKE_PDF);
+        mockMvc.perform(get("/api/budgets/1/pdf"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_PDF))
+                .andExpect(header().string("Content-Disposition", "attachment; filename=\"presupuesto-1.pdf\""))
+                .andExpect(content().bytes(FAKE_PDF));
+    }
+
+    @Test @WithMockUser(roles = "OPERATOR")
+    void getPdfAsOperatorShouldReturn200() throws Exception {
+        when(budgetPdfService.generatePdf(1L)).thenReturn(FAKE_PDF);
+        mockMvc.perform(get("/api/budgets/1/pdf"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_PDF));
+    }
+
+    @Test @WithMockUser(roles = "OPERATOR")
+    void getPdfAsUnassignedOperatorShouldReturn400AccessDenied() throws Exception {
+        when(budgetPdfService.generatePdf(1L))
+                .thenThrow(new IllegalArgumentException("Access denied: not assigned to this project"));
+        mockMvc.perform(get("/api/budgets/1/pdf"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Access denied: not assigned to this project"));
+    }
+
+    @Test @WithMockUser(roles = "ADMIN")
+    void getPdfForMissingBudgetShouldReturn404() throws Exception {
+        when(budgetPdfService.generatePdf(999L)).thenThrow(new BudgetNotFoundException(999L));
+        mockMvc.perform(get("/api/budgets/999/pdf"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.error").value("Budget not found: 999"));
     }
 }

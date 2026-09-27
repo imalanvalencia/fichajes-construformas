@@ -50,8 +50,12 @@ public class Budget {
     private BigDecimal discountAmount = BigDecimal.ZERO;
 
     @Builder.Default
-    @Column(nullable = false, precision = 12, scale = 2)
+    @Column(nullable = false)
     private BigDecimal finalAmount = BigDecimal.ZERO;
+
+    @Builder.Default
+    @Column(nullable = false)
+    private boolean includesIva = false;
 
     private LocalDate validUntil;
 

@@ -1,6 +1,12 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { describe, expect, it, beforeEach, vi } from 'vitest';
+import { throwError } from 'rxjs';
 import { BudgetEditorComponent } from './budget-editor.component';
+import { BudgetService } from '../../../features/budgets/services/budget.service';
+import { NotificationService } from '../../../services/notification.service';
+import { Budget } from '../../../features/budgets/types/budget.types';
+
+const pdfBudget = { id: 42, projectId: 1, version: 1, budgetType: 'ORIGINAL', status: 'DRAFT', totalAmount: 1000, discountAmount: 0, finalAmount: 1000, createdById: 1 } as Budget;
 
 describe('BudgetEditorComponent', () => {
   let component: BudgetEditorComponent;
@@ -69,5 +75,48 @@ describe('BudgetEditorComponent', () => {
 
     expect(onAddItem).toHaveBeenCalledWith(expect.objectContaining({ quantity: 1 }));
     expect(component.newItemQuantity()).toBe(1);
+  });
+});
+
+describe('BudgetEditorComponent onDownloadPdf', () => {
+  let component: BudgetEditorComponent;
+  let fixture: ComponentFixture<BudgetEditorComponent>;
+  let budgetService: { downloadBudgetPdf: ReturnType<typeof vi.fn> };
+  let notifications: { error: ReturnType<typeof vi.fn> };
+
+  beforeEach(async () => {
+    budgetService = { downloadBudgetPdf: vi.fn() };
+    notifications = { error: vi.fn() };
+    await TestBed.configureTestingModule({
+      imports: [BudgetEditorComponent],
+      providers: [
+        { provide: BudgetService, useValue: budgetService },
+        { provide: NotificationService, useValue: notifications },
+      ],
+    }).compileComponents();
+    fixture = TestBed.createComponent(BudgetEditorComponent);
+    component = fixture.componentInstance;
+    fixture.componentRef.setInput('budget', pdfBudget);
+  });
+
+  it('notifies and does not download when the service errors', () => {
+    budgetService.downloadBudgetPdf.mockReturnValue(throwError(() => ({ status: 500 })));
+    const createObjectURL = vi.fn();
+    window.URL.createObjectURL = createObjectURL;
+
+    component.onDownloadPdf();
+
+    expect(budgetService.downloadBudgetPdf).toHaveBeenCalledWith(42);
+    expect(notifications.error).toHaveBeenCalledWith('No se pudo generar el PDF del presupuesto.');
+    expect(createObjectURL).not.toHaveBeenCalled();
+  });
+
+  it('does nothing when no budget is loaded', () => {
+    fixture.componentRef.setInput('budget', null);
+
+    component.onDownloadPdf();
+
+    expect(budgetService.downloadBudgetPdf).not.toHaveBeenCalled();
+    expect(notifications.error).not.toHaveBeenCalled();
   });
 });

@@ -48,6 +48,7 @@ class AuthorizationIntegrationTest {
     @MockitoBean private ProjectService projectService;
     @MockitoBean private ClientService clientService;
     @MockitoBean private BudgetService budgetService;
+    @MockitoBean private BudgetPdfService budgetPdfService;
     @MockitoBean private InvoiceService invoiceService;
     @MockitoBean private PaymentService paymentService;
     @MockitoBean private SupplierService supplierService;

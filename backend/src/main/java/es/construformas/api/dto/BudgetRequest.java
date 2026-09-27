@@ -14,6 +14,7 @@ public class BudgetRequest {
     private BigDecimal totalAmount;
     private BigDecimal discountAmount;
     private BigDecimal finalAmount;
+    private Boolean includesIva;
     private String validUntil;
     private String notes;
     private String paymentTerms;
