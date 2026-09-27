@@ -42,3 +42,7 @@ frontend/.angular/
 *.bak
 NUL
 .atl/
+
+# AI assistants
+.openclaw/
+AGENTS.md
