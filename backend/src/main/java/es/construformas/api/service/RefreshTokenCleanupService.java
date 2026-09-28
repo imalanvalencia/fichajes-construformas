@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
@@ -15,6 +16,7 @@ public class RefreshTokenCleanupService {
 
     private final RefreshTokenRepository refreshTokenRepository;
 
+    @Transactional
     @Scheduled(fixedRate = 7 * 24 * 60 * 60 * 1000)
     public void cleanupExpiredTokens() {
         int deleted = refreshTokenRepository.deleteExpiredOrRevoked(LocalDateTime.now());
