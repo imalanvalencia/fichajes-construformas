@@ -1,13 +1,13 @@
 # ---- Build stage ----
 FROM node:26.8.1-alpine AS build
-RUN corepack enable
+RUN npm install -g pnpm@11.25.0
 WORKDIR /app
 
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile
 
 COPY . .
-RUN pnpm run build -- --configuration production
+RUN pnpm run build
 
 # ---- Runtime stage ----
 FROM nginx:alpine3.24
