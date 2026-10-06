@@ -40,12 +40,22 @@ management:
     web:
       base-path: /
       exposure:
-        include: health
+        include: health,metrics
   endpoint:
     health:
+      show-components: always
+      show-details: never
       probes:
         enabled: true
-      show-details: never
+      logging:
+        slow-indicator-threshold: 250ms
+      group:
+        internal:
+          show-details: always
+  metrics:
+    distribution:
+      percentiles:
+        http.server.requests: 0.5, 0.95, 0.99
 
 jwt:
   secret: ${JWT_SECRET:construformas-secret-key-that-is-long-enough-for-hs256-algorithm}

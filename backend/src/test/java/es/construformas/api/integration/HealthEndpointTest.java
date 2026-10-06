@@ -7,6 +7,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -32,11 +33,22 @@ class HealthEndpointTest {
     private MockMvc mockMvc;
 
     @Test
-    @DisplayName("GET /health should return 200 with status UP without authentication")
-    void getHealthShouldReturnUpWithoutAuthentication() throws Exception {
+    @DisplayName("GET /health should list every checked component without authentication")
+    void getHealthShouldListComponentsWithoutAuthentication() throws Exception {
         mockMvc.perform(get("/health"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("UP"));
+                .andExpect(jsonPath("$.status").value("UP"))
+                .andExpect(jsonPath("$.components.db.status").value("UP"))
+                .andExpect(jsonPath("$.components.diskSpace.status").value("UP"))
+                .andExpect(jsonPath("$.components.ping.status").value("UP"));
+    }
+
+    @Test
+    @DisplayName("GET /health should not leak infrastructure details without a token")
+    void getHealthShouldHideDetailsWithoutToken() throws Exception {
+        mockMvc.perform(get("/health"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.components.diskSpace.details").doesNotExist());
     }
 
     @Test
@@ -53,6 +65,43 @@ class HealthEndpointTest {
         mockMvc.perform(get("/health/readiness"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("UP"));
+    }
+
+    @Test
+    @DisplayName("GET /health/internal should require a token")
+    void healthInternalShouldRequireAuthentication() throws Exception {
+        mockMvc.perform(get("/health/internal"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("GET /health/internal should expose details to an authenticated caller")
+    void healthInternalShouldExposeDetailsWhenAuthenticated() throws Exception {
+        mockMvc.perform(get("/health/internal")
+                        .with(user("admin").roles("ADMIN")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("UP"))
+                .andExpect(jsonPath("$.components.db.status").value("UP"))
+                .andExpect(jsonPath("$.components.diskSpace.details.total").exists())
+                .andExpect(jsonPath("$.components.diskSpace.details.free").exists());
+    }
+
+    @Test
+    @DisplayName("GET /metrics should require a token")
+    void metricsShouldRequireAuthentication() throws Exception {
+        mockMvc.perform(get("/metrics"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("GET /metrics should serve latency and pool metrics to an authenticated caller")
+    void metricsShouldServeLatencyWhenAuthenticated() throws Exception {
+        mockMvc.perform(get("/metrics")
+                        .with(user("admin").roles("ADMIN")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.names").isArray())
+                .andExpect(jsonPath("$.names[?(@ == 'http.server.requests.active')]").exists())
+                .andExpect(jsonPath("$.names[?(@ == 'hikaricp.connections.active')]").exists());
     }
 
     @Test
