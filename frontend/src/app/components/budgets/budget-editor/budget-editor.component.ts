@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { Budget, BudgetItem } from '../../../features/budgets/types/budget.types';
 import { BudgetService } from '../../../features/budgets/services/budget.service';
+import { downloadBlob } from '../../../features/budgets/utils/download-blob';
 import { NotificationService } from '../../../services/notification.service';
 import { ButtonComponent } from '../../shared/button/button.component';
 import { CardComponent } from '../../shared/card/card.component';
@@ -525,14 +526,7 @@ export class BudgetEditorComponent {
     if (!id) return;
 
     this.budgetService.downloadBudgetPdf(id).subscribe({
-      next: (blob) => {
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `presupuesto-${id}.pdf`;
-        a.click();
-        window.URL.revokeObjectURL(url);
-      },
+      next: (blob) => downloadBlob(blob, `presupuesto-${id}.pdf`),
       error: () => {
         this.notifications.error('No se pudo generar el PDF del presupuesto.');
       },

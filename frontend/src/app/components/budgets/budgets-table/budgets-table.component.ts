@@ -47,6 +47,10 @@ import { BadgeComponent } from '../../shared/badge/badge.component';
                   {{ formatCurrency(budget.finalAmount) }}
                 </td>
                 <td class="py-3 px-4 text-right space-x-2">
+                  <app-button variant="text" size="sm" (click)="onDownloadPdf.emit(budget.id!)"
+                    >PDF</app-button
+                  >
+
                   @if (budget.status !== 'SUPERSEDED') {
                     <app-button variant="text" size="sm" (click)="onViewItems.emit(budget)"
                       >Items</app-button
@@ -93,6 +97,7 @@ export class BudgetsTableComponent {
   onReject = output<number>();
   onUpdate = output<number>();
   onDelete = output<number>();
+  onDownloadPdf = output<number>();
 
   formatCurrency(value: number): string {
     return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(value ?? 0);

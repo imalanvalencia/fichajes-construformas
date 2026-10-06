@@ -12,6 +12,7 @@ import { BudgetsTableComponent } from '@components/budgets/budgets-table/budgets
 import { BudgetSummaryComponent } from '@components/budgets/budget-summary/budget-summary.component';
 import { CreateBudgetModalComponent } from '@components/budgets/create-budget-modal/create-budget-modal.component';
 import { NotificationService } from '@app/services/notification.service';
+import { downloadBlob } from './utils/download-blob';
 
 @Component({
   selector: 'app-budgets',
@@ -42,6 +43,7 @@ import { NotificationService } from '@app/services/notification.service';
         (onReject)="rejectBudget($event)"
         (onUpdate)="updateBudget($event)"
         (onDelete)="deleteBudget($event)"
+        (onDownloadPdf)="downloadPdf($event)"
       />
 
       <app-create-budget-modal
@@ -167,6 +169,13 @@ export class BudgetsComponent {
       error: (err) => {
         alert('Error al crear nueva versión: ' + (err.error?.message || err.message));
       },
+    });
+  }
+
+  downloadPdf(id: number): void {
+    this.budgetService.downloadBudgetPdf(id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (blob) => downloadBlob(blob, `presupuesto-${id}.pdf`),
+      error: () => this.notifications.error('No se pudo generar el PDF del presupuesto.'),
     });
   }
 

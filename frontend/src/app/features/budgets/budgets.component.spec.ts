@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { of, Subject, throwError } from 'rxjs';
 import { Router } from '@angular/router';
 import { BudgetsComponent } from './budgets.component';
@@ -9,6 +9,18 @@ import { Budget } from './types/budget.types';
 import { NotificationService } from '@app/services/notification.service';
 import { AuthService } from '@app/auth/services/auth.service';
 import { AuthResponse } from '@app/auth/types/auth.types';
+
+type UrlMethodName = 'createObjectURL' | 'revokeObjectURL';
+
+/** jsdom does not implement URL.createObjectURL/revokeObjectURL, so tests stub them directly. */
+function restoreUrlMethod(name: UrlMethodName, original: unknown): void {
+  const url = window.URL as unknown as Record<string, unknown>;
+  if (original) {
+    url[name] = original;
+  } else {
+    delete url[name];
+  }
+}
 
 describe('BudgetsComponent', () => {
   let component: BudgetsComponent;
@@ -20,10 +32,16 @@ describe('BudgetsComponent', () => {
     approve: ReturnType<typeof vi.fn>;
     updateStatus: ReturnType<typeof vi.fn>;
     createNewVersion: ReturnType<typeof vi.fn>;
+    downloadBudgetPdf: ReturnType<typeof vi.fn>;
   };
   let notifications: { success: ReturnType<typeof vi.fn>; error: ReturnType<typeof vi.fn> };
   let authService: { hasRole: ReturnType<typeof vi.fn>; getUser: ReturnType<typeof vi.fn> };
   let router: { navigate: ReturnType<typeof vi.fn> };
+
+  let originalCreateObjectURL: unknown;
+  let originalRevokeObjectURL: unknown;
+  let originalAnchorClick: unknown;
+  let anchorHadOwnClick: boolean;
 
   const existingBudget: Budget = {
     id: 1,
@@ -61,6 +79,7 @@ describe('BudgetsComponent', () => {
       approve: vi.fn().mockReturnValue(of(existingBudget)),
       updateStatus: vi.fn().mockReturnValue(of(existingBudget)),
       createNewVersion: vi.fn().mockReturnValue(of(existingBudget)),
+      downloadBudgetPdf: vi.fn(),
     };
     notifications = { success: vi.fn(), error: vi.fn() };
     authService = { hasRole: vi.fn().mockReturnValue(false), getUser: vi.fn() };
@@ -99,6 +118,23 @@ describe('BudgetsComponent', () => {
     fixture = TestBed.createComponent(BudgetsComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
+  });
+
+  beforeEach(() => {
+    originalCreateObjectURL = window.URL.createObjectURL;
+    originalRevokeObjectURL = window.URL.revokeObjectURL;
+    originalAnchorClick = HTMLAnchorElement.prototype.click;
+    anchorHadOwnClick = Object.prototype.hasOwnProperty.call(HTMLAnchorElement.prototype, 'click');
+  });
+
+  afterEach(() => {
+    restoreUrlMethod('createObjectURL', originalCreateObjectURL);
+    restoreUrlMethod('revokeObjectURL', originalRevokeObjectURL);
+    if (anchorHadOwnClick) {
+      HTMLAnchorElement.prototype.click = originalAnchorClick as () => void;
+    } else {
+      delete (HTMLAnchorElement.prototype as { click?: () => void }).click;
+    }
   });
 
   it('closes the form, notifies, and navigates to the new budget editor on create', () => {
@@ -208,6 +244,54 @@ describe('BudgetsComponent', () => {
 
       expect(authService.hasRole).toHaveBeenCalledWith('ADMIN');
       expect(budgetService.approve).toHaveBeenCalledWith(1);
+    });
+  });
+
+  describe('downloadPdf', () => {
+    it('requests the PDF and downloads it as presupuesto-<id>.pdf', () => {
+      const blob = new Blob(['pdf-bytes'], { type: 'application/pdf' });
+      budgetService.downloadBudgetPdf.mockReturnValue(of(blob));
+
+      const createObjectURL = vi.fn().mockReturnValue('blob:mock-url');
+      const revokeObjectURL = vi.fn();
+      const click = vi.fn();
+      let clickedAnchor: HTMLAnchorElement | undefined;
+      window.URL.createObjectURL = createObjectURL;
+      window.URL.revokeObjectURL = revokeObjectURL;
+      HTMLAnchorElement.prototype.click = function (this: HTMLAnchorElement) {
+        clickedAnchor = this;
+        click();
+      };
+
+      component.downloadPdf(1);
+
+      expect(budgetService.downloadBudgetPdf).toHaveBeenCalledWith(1);
+      expect(createObjectURL).toHaveBeenCalledWith(blob);
+      expect(click).toHaveBeenCalledTimes(1);
+      expect(clickedAnchor?.download).toBe('presupuesto-1.pdf');
+      expect(revokeObjectURL).toHaveBeenCalledWith('blob:mock-url');
+    });
+
+    it('notifies the user and downloads nothing when the PDF request fails', () => {
+      budgetService.downloadBudgetPdf.mockReturnValue(
+        throwError(() => new Error('PDF generation failed')),
+      );
+
+      const createObjectURL = vi.fn();
+      const revokeObjectURL = vi.fn();
+      const click = vi.fn();
+      window.URL.createObjectURL = createObjectURL;
+      window.URL.revokeObjectURL = revokeObjectURL;
+      HTMLAnchorElement.prototype.click = click;
+
+      component.downloadPdf(1);
+
+      expect(notifications.error).toHaveBeenCalledWith(
+        'No se pudo generar el PDF del presupuesto.',
+      );
+      expect(createObjectURL).not.toHaveBeenCalled();
+      expect(click).not.toHaveBeenCalled();
+      expect(revokeObjectURL).not.toHaveBeenCalled();
     });
   });
 });
