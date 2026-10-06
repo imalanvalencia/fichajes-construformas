@@ -1,0 +1,2 @@
+org.springframework.context.ApplicationContextInitializer=\
+es.construformas.api.health.BufferingApplicationStartupInitializer

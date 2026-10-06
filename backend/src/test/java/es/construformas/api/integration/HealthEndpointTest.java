@@ -110,4 +110,39 @@ class HealthEndpointTest {
         mockMvc.perform(get("/api/clients"))
                 .andExpect(status().isForbidden());
     }
+
+    @Test
+    @DisplayName("GET /health should report applicationUptime status without details")
+    void getHealthShouldReportApplicationUptimeStatusWithoutDetails() throws Exception {
+        mockMvc.perform(get("/health"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.components.applicationUptime.status").value("UP"))
+                .andExpect(jsonPath("$.components.applicationUptime.details").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("GET /health/internal should expose applicationUptime details to an authenticated caller")
+    void healthInternalShouldExposeApplicationUptimeDetailsWhenAuthenticated() throws Exception {
+        mockMvc.perform(get("/health/internal")
+                        .with(user("admin").roles("ADMIN")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.components.applicationUptime.details.startedAt").exists())
+                .andExpect(jsonPath("$.components.applicationUptime.details.uptimeSeconds").exists())
+                .andExpect(jsonPath("$.components.applicationUptime.details.readiness").exists());
+    }
+
+    @Test
+    @DisplayName("GET /startup should require a token")
+    void startupShouldRequireAuthentication() throws Exception {
+        mockMvc.perform(get("/startup"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("GET /startup should serve the timeline to an authenticated caller")
+    void startupShouldServeTimelineWhenAuthenticated() throws Exception {
+        mockMvc.perform(get("/startup")
+                        .with(user("admin").roles("ADMIN")))
+                .andExpect(status().isOk());
+    }
 }
