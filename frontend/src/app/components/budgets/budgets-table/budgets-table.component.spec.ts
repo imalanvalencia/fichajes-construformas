@@ -47,22 +47,28 @@ describe('BudgetsTableComponent', () => {
     fixture.detectChanges();
   });
 
-  it('renders one PDF button per budget row, including SUPERSEDED rows', () => {
-    expect(pdfButtons()).toHaveLength(budgets.length);
-
+  it('renders a PDF button only on non-DRAFT rows', () => {
     const rows = fixture.nativeElement.querySelectorAll('tbody tr');
     expect(rows).toHaveLength(budgets.length);
-    const supersededRowButtons = Array.from<HTMLButtonElement>(
-      rows[2].querySelectorAll('button'),
-    ).map((b) => b.textContent?.trim());
-    expect(supersededRowButtons).toContain('PDF');
-    // Unlike Items, PDF is not gated by status
-    expect(supersededRowButtons).not.toContain('Items');
+
+    const buttonsOf = (row: Element): (string | undefined)[] =>
+      Array.from<HTMLButtonElement>(row.querySelectorAll('button')).map((b) =>
+        b.textContent?.trim(),
+      );
+
+    // Drafts are not exportable yet
+    expect(buttonsOf(rows[0])).not.toContain('PDF');
+    expect(pdfButtons()).toHaveLength(budgets.length - 1);
+
+    expect(buttonsOf(rows[1])).toContain('PDF');
+    // SUPERSEDED keeps the PDF export but loses the Items action
+    expect(buttonsOf(rows[2])).toContain('PDF');
+    expect(buttonsOf(rows[2])).not.toContain('Items');
   });
 
   it('places the PDF button as the first action button of the row', () => {
     const rows = fixture.nativeElement.querySelectorAll('tbody tr');
-    const firstAction = rows[0].querySelector('td:last-child button');
+    const firstAction = rows[1].querySelector('td:last-child button');
     expect(firstAction?.textContent?.trim()).toBe('PDF');
   });
 
@@ -72,7 +78,8 @@ describe('BudgetsTableComponent', () => {
     fixture.componentRef.instance.onDownloadPdf.subscribe(onDownloadPdf);
     fixture.componentRef.instance.onViewItems.subscribe(onViewItems);
 
-    pdfButtons()[1].click();
+    // First visible PDF button belongs to the APPROVED budget (id 2)
+    pdfButtons()[0].click();
 
     expect(onDownloadPdf).toHaveBeenCalledTimes(1);
     expect(onDownloadPdf).toHaveBeenCalledWith(2);
