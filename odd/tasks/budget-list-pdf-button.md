@@ -36,3 +36,5 @@ Delegated direct (writer trigger: 3+ non-trivial files). Exploration inline via 
 
 ## Progress
 - 2026-10-06: doc created after exploration (CodeGraph: budgets list, editor download, BudgetService).
+- 2026-10-06: T1–T5 COMPLETE. RED evidence: 5 new assertion failures observed before implementation (`downloadPdf` ×2 in `budgets.component.spec.ts`, PDF-button render/position/emission ×3 in the new `budgets-table.component.spec.ts`); suite baseline already had 2 pre-existing failures (`budget-editor` Enter + clamp). GREEN: `pnpm test --watch=false` = 161 tests / 159 passed / 2 failed (the same 2 pre-existing), `pnpm build` = success. Work-unit commit `8c75120` (7 files, +234/−9 = 243 authored lines → under the 400-line delivery budget, single work unit).
+- 2026-10-06: post-commit RDD assess (`--base-ref d4be204 --committed-only --agent opencode`) → risk `medium`, `review_due: true`, reason `slice_budget_reached` (33 files / 1225 lines accumulated since the last acknowledged boundary). Consent envelope relayed to the user; **outcome: `declined` for this candidate** (candidate-scoped — no review record, RDD stays enabled, ordinary repository policy owns delivery).
