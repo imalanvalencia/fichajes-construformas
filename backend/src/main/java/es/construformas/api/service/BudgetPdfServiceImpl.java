@@ -9,15 +9,21 @@ import es.construformas.api.model.BudgetItem;
 import es.construformas.api.repository.BudgetDiscountRepository;
 import es.construformas.api.repository.BudgetItemRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.DefaultResourceLoader;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StreamUtils;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.SpringTemplateEngine;
 
 import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.Base64;
 import java.util.List;
 import java.util.Locale;
 
@@ -27,6 +33,8 @@ public class BudgetPdfServiceImpl implements BudgetPdfService {
 
     private static final BigDecimal IVA_RATE = new BigDecimal("0.21");
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+    private static final String PNG_DATA_URI_PREFIX = "data:image/png;base64,";
+    private static final ResourceLoader RESOURCE_LOADER = new DefaultResourceLoader();
 
     private final SpringTemplateEngine pdfTemplateEngine;
     private final BudgetService budgetService;
@@ -66,6 +74,7 @@ public class BudgetPdfServiceImpl implements BudgetPdfService {
         context.setVariable("companyAddress", companyProperties.getAddress());
         context.setVariable("companyTaxId", companyProperties.getTaxId());
         context.setVariable("companyLogoPath", companyProperties.getLogoPath());
+        context.setVariable("companyLogoDataUri", resolveLogoDataUri());
         context.setVariable("subtotal", subtotal);
         context.setVariable("ivaAmount", ivaAmount);
         context.setVariable("includesIva", includesIva);
@@ -88,6 +97,34 @@ public class BudgetPdfServiceImpl implements BudgetPdfService {
                 throw new BudgetNotFoundException(budgetId);
             }
             throw e;
+        }
+    }
+
+    /**
+     * Reads the configured company logo and inlines it as a base64 PNG data URI.
+     *
+     * <p>OpenHTMLtoPDF resolves {@code data:} URIs natively but has no idea about Spring's
+     * {@code classpath:} scheme, so the resource must be embedded in the HTML instead of
+     * referenced by path. Returns {@code null} when the logo is unconfigured, missing or
+     * unreadable so a broken asset can never break PDF generation.
+     */
+    String resolveLogoDataUri() {
+        String logoPath = companyProperties.getLogoPath();
+        if (logoPath == null || logoPath.isBlank()) {
+            return null;
+        }
+        try {
+            Resource resource = RESOURCE_LOADER.getResource(logoPath);
+            if (!resource.exists()) {
+                return null;
+            }
+            try (InputStream in = resource.getInputStream()) {
+                byte[] bytes = StreamUtils.copyToByteArray(in);
+                return PNG_DATA_URI_PREFIX + Base64.getEncoder().encodeToString(bytes);
+            }
+        } catch (Exception e) {
+            // Missing, unreadable or malformed resource: fall back to the initials placeholder.
+            return null;
         }
     }
 

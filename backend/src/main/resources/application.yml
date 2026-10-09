@@ -61,6 +61,6 @@ app:
   pdf:
     company:
       name: Construformas S.L.
-      logo-path: classpath:static/images/logo-placeholder.png
+      logo-path: classpath:static/images/logo-horizontal.png
       address: ""
       tax-id: ""

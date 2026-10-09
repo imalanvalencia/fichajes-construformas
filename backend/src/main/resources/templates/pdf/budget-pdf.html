@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
 <head>
   <meta charset="UTF-8"/>
   <title th:text="'Presupuesto #' + ${budget.id}">Presupuesto</title>
@@ -34,6 +34,13 @@
     .logo-block {
       display: flex;
       align-items: center;
+    }
+
+    .logo-img {
+      height: 48px;
+      width: auto;
+      display: block;
+      margin-right: 10px;
     }
 
     .logo-placeholder {
@@ -257,9 +264,12 @@
 <!-- Header -->
 <div class="header">
   <div class="logo-block">
-    <!-- Logo placeholder: styled block with company initials until a real logo asset exists -->
-    <div class="logo-placeholder"
-         th:text="${companyName != null and !companyName.isEmpty()} ? ${companyName.substring(0,1)} : 'C'">C</div>
+    <!-- Real logo inlined as a base64 data URI; th:unless = initials fallback when unavailable -->
+    <img class="logo-img" th:if="${companyLogoDataUri != null}" th:src="${companyLogoDataUri}" alt=""/>
+    <div class="logo-placeholder" th:unless="${companyLogoDataUri != null}"
+         th:text="${companyName != null and !companyName.isEmpty()} ? ${companyName.substring(0,1)} : 'C'">
+      <img src="" alt="">
+    </div>
     <div>
       <div class="company-name" th:text="${companyName ?: 'Construformas'}">Construformas</div>
       <div class="company-meta" th:if="${companyTaxId != null and !companyTaxId.isEmpty()}">

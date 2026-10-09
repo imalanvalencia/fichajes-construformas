@@ -191,6 +191,119 @@ class BudgetPdfServiceImplTest {
         assertThat(budget.getFinalAmount()).isEqualByComparingTo("500");
     }
 
+    // --- Company logo (real PNG asset inlined as a base64 data URI) ---
+
+    /** Minimal context mirroring generatePdf, so the pdf template can be processed in isolation. */
+    private String processTemplate(String logoDataUri) {
+        org.thymeleaf.context.Context context = new org.thymeleaf.context.Context(Locale.forLanguageTag("es"));
+        Budget budget = budgetWithIva(new BigDecimal("1000.00"), BigDecimal.ZERO,
+                new BigDecimal("1000.00"), false);
+        context.setVariable("budget", budget);
+        context.setVariable("client", budget.getClient());
+        context.setVariable("project", budget.getProject());
+        context.setVariable("items", List.of());
+        context.setVariable("discounts", List.of());
+        context.setVariable("companyName", "Construformas S.L.");
+        context.setVariable("companyLogoDataUri", logoDataUri);
+        context.setVariable("subtotal", new BigDecimal("1000.00"));
+        context.setVariable("ivaAmount", BigDecimal.ZERO);
+        context.setVariable("includesIva", false);
+        context.setVariable("discountTotal", BigDecimal.ZERO);
+        context.setVariable("grandTotal", new BigDecimal("1000.00"));
+        context.setVariable("generationDate", "01/01/2026");
+        context.setVariable("validUntilFormatted", null);
+        return new ThymeleafPdfConfig().pdfTemplateEngine().process("budget-pdf", context);
+    }
+
+    @Test
+    void templateRendersLogoImgWhenDataUriPresent() {
+        String html = processTemplate("data:image/png;base64,iVBORw0KGgo=");
+
+        assertThat(html).contains("<img").contains("data:image/png;base64,");
+        assertThat(html).doesNotContain("<div class=\"logo-placeholder\"");
+    }
+
+    @Test
+    void templateFallsBackToInitialsPlaceholderWhenLogoMissing() {
+        String html = processTemplate(null);
+
+        assertThat(html).doesNotContain("<img");
+        assertThat(html).contains("<div class=\"logo-placeholder\"");
+    }
+
+    @Test
+    void logoResourceResolvesToPngDataUri() {
+        CompanyProperties props = new CompanyProperties();
+        props.setLogoPath("classpath:static/images/logo-horizontal.png");
+        BudgetPdfServiceImpl logoService = new BudgetPdfServiceImpl(
+                new ThymeleafPdfConfig().pdfTemplateEngine(),
+                budgetService, budgetItemRepository, budgetDiscountRepository, props);
+
+        assertThat(logoService.resolveLogoDataUri())
+                .startsWith("data:image/png;base64,")
+                .hasSizeGreaterThan("data:image/png;base64,".length());
+    }
+
+    @Test
+    void missingLogoResourceYieldsNullWithoutThrowing() {
+        CompanyProperties props = new CompanyProperties();
+        props.setLogoPath("classpath:static/images/does-not-exist.png");
+        BudgetPdfServiceImpl logoService = new BudgetPdfServiceImpl(
+                new ThymeleafPdfConfig().pdfTemplateEngine(),
+                budgetService, budgetItemRepository, budgetDiscountRepository, props);
+
+        assertThat(logoService.resolveLogoDataUri()).isNull();
+    }
+
+    @Test
+    void unconfiguredLogoPathYieldsNullWithoutThrowing() {
+        assertThat(service.resolveLogoDataUri()).isNull();
+    }
+
+    private int renderAndCountImages(BudgetPdfServiceImpl target) throws Exception {
+        when(budgetService.findById(42L)).thenReturn(budgetWithIva(new BigDecimal("1000.00"),
+                BigDecimal.ZERO, new BigDecimal("1000.00"), false));
+        when(budgetItemRepository.findByBudgetIdOrderByOrderNum(42L)).thenReturn(List.of());
+        when(budgetDiscountRepository.findByBudgetId(42L)).thenReturn(List.of());
+        try (PDDocument doc = PDDocument.load(target.generatePdf(42L))) {
+            return imageCount(doc);
+        }
+    }
+
+    @Test
+    void generatePdfEmbedsLogoImageObject() throws Exception {
+        CompanyProperties props = new CompanyProperties();
+        props.setName("Construformas S.L.");
+        props.setLogoPath("classpath:static/images/logo-horizontal.png");
+        BudgetPdfServiceImpl logoService = new BudgetPdfServiceImpl(
+                new ThymeleafPdfConfig().pdfTemplateEngine(),
+                budgetService, budgetItemRepository, budgetDiscountRepository, props);
+
+        assertThat(renderAndCountImages(logoService)).isGreaterThanOrEqualTo(1);
+        // Non-vacuity: without a resolvable logo the same render embeds no image at all.
+        assertThat(renderAndCountImages(service)).isZero();
+    }
+
+    private static int imageCount(PDDocument doc) {
+        int count = 0;
+        for (org.apache.pdfbox.pdmodel.PDPage page : doc.getPages()) {
+            org.apache.pdfbox.pdmodel.PDResources resources = page.getResources();
+            if (resources == null) {
+                continue;
+            }
+            for (org.apache.pdfbox.cos.COSName name : resources.getXObjectNames()) {
+                try {
+                    if (resources.getXObject(name) instanceof org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject) {
+                        count++;
+                    }
+                } catch (Exception e) {
+                    throw new IllegalStateException(e);
+                }
+            }
+        }
+        return count;
+    }
+
     private Budget budgetWithIva(BigDecimal total, BigDecimal discount, BigDecimal finalAmount, boolean includesIva) {
         return Budget.builder().id(42L).version(1)
                 .client(Client.builder().name("Acme Corp").build())
