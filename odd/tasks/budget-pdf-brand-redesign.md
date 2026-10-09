@@ -34,7 +34,7 @@ Current PDF design is bland ("soso"); brand direction exists but the PDF ignores
 - [x] T1: RED — observed: 4 template/font test failures + compilation error for missing CompanyProperties getters
 - [x] T2: GREEN — Poppins Regular/SemiBold/Bold + OFL downloaded (verified TrueType), embedded via FSSupplier<InputStream> (fat-jar-safe, graceful Helvetica fallback), CompanyProperties +phone/email/website, template table-only redesign (0 flexbox), footer contact zone, company-name block beside logo removed
 - [x] T3: Verification — targeted 24/24 green (parent spot-check EXIT=0); full suite 250/250 green; 0 css-parse flex warnings; preview regenerated at /tmp/opencode/budget-preview.pdf
-- [ ] T4: Work-unit commit on `dev`
+- [x] T4: Work-unit commit on `dev` — `51083cc feat(budget-pdf): redesign layout with brand system and embedded Poppins`
 
 ## Verification
 - `cd backend && ./mvnw -q test -Dtest='BudgetPdfServiceImplTest,CompanyPropertiesBindingTest'`
@@ -46,5 +46,9 @@ Current PDF design is bland ("soso"); brand direction exists but the PDF ignores
 - Gotchas: `text-transform: uppercase` alters PDF text extraction (tests rely on untransformed cells); subset=true keeps ToUnicode working; sample-data terms spill to page 2 (content, not layout).
 - Design mapping: table.header (4px Nero heavy rule), table.info-row, nested totals table; red only on grand total/negatives; Cement zone rows; Steel 1px dividers; sharp 0px corners; 8px rhythm.
 
+## Review outcome
+- RDD assess (base-ref `origin/dev`, committed-only): medium, 13 paths, 1084 lines, `slice_budget_reached`.
+- Consent v3 relayed natively; user chose "Omitir esta vez" → `action: declined`, `consent: declined_this_candidate` for target `sha256:67ea97…5120f5`. No review record created; reviews stay enabled; delivery follows ordinary repo policy (not pushed).
+
 ## Next step
-- T4: commit (only feature files; user's unrelated dirty files excluded)
+- None pending. Optional: supply real company phone/email/website in `application.yml` (`app.pdf.company`), review `/tmp/opencode/budget-preview.pdf`, push when ready.
