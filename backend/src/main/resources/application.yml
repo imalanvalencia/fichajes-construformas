@@ -64,3 +64,6 @@ app:
       logo-path: classpath:static/images/logo-horizontal.png
       address: ""
       tax-id: ""
+      phone: ""
+      email: ""
+      website: ""

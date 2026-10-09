@@ -16,4 +16,7 @@ public class CompanyProperties {
     private String logoPath;
     private String address;
     private String taxId;
+    private String phone;
+    private String email;
+    private String website;
 }

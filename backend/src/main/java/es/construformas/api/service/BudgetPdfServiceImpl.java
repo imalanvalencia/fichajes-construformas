@@ -1,5 +1,7 @@
 package es.construformas.api.service;
 
+import com.openhtmltopdf.extend.FSSupplier;
+import com.openhtmltopdf.outputdevice.helper.BaseRendererBuilder.FontStyle;
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 import es.construformas.api.config.CompanyProperties;
 import es.construformas.api.exception.BudgetNotFoundException;
@@ -9,6 +11,7 @@ import es.construformas.api.model.BudgetItem;
 import es.construformas.api.repository.BudgetDiscountRepository;
 import es.construformas.api.repository.BudgetItemRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
@@ -17,6 +20,7 @@ import org.springframework.util.StreamUtils;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.SpringTemplateEngine;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.math.BigDecimal;
@@ -27,6 +31,7 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Locale;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class BudgetPdfServiceImpl implements BudgetPdfService {
@@ -34,6 +39,7 @@ public class BudgetPdfServiceImpl implements BudgetPdfService {
     private static final BigDecimal IVA_RATE = new BigDecimal("0.21");
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private static final String PNG_DATA_URI_PREFIX = "data:image/png;base64,";
+    private static final String FONT_FAMILY = "Poppins";
     private static final ResourceLoader RESOURCE_LOADER = new DefaultResourceLoader();
 
     private final SpringTemplateEngine pdfTemplateEngine;
@@ -73,6 +79,9 @@ public class BudgetPdfServiceImpl implements BudgetPdfService {
         context.setVariable("companyName", companyProperties.getName());
         context.setVariable("companyAddress", companyProperties.getAddress());
         context.setVariable("companyTaxId", companyProperties.getTaxId());
+        context.setVariable("companyPhone", companyProperties.getPhone());
+        context.setVariable("companyEmail", companyProperties.getEmail());
+        context.setVariable("companyWebsite", companyProperties.getWebsite());
         context.setVariable("companyLogoPath", companyProperties.getLogoPath());
         context.setVariable("companyLogoDataUri", resolveLogoDataUri());
         context.setVariable("subtotal", subtotal);
@@ -132,12 +141,54 @@ public class BudgetPdfServiceImpl implements BudgetPdfService {
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
             PdfRendererBuilder builder = new PdfRendererBuilder();
             builder.useFastMode();
+            registerFonts(builder);
             builder.withHtmlContent(html, null);
             builder.toStream(baos);
             builder.run();
             return baos.toByteArray();
         } catch (Exception e) {
             throw new IllegalStateException("Failed to generate budget PDF", e);
+        }
+    }
+
+    /**
+     * Registers the Poppins family used by the budget template: Regular (400), SemiBold (600)
+     * and Bold (700).
+     */
+    private void registerFonts(PdfRendererBuilder builder) {
+        registerFont(builder, "fonts/poppins/Poppins-Regular.ttf", 400);
+        registerFont(builder, "fonts/poppins/Poppins-SemiBold.ttf", 600);
+        registerFont(builder, "fonts/poppins/Poppins-Bold.ttf", 700);
+    }
+
+    /**
+     * Registers a single font face from the classpath through an {@link FSSupplier} of streams.
+     *
+     * <p>A {@code java.io.File} path cannot be used here: inside a packaged fat JAR the font is
+     * not a real file, so {@code useFont(File, ...)} would break in production while still working
+     * from the IDE. The supplier hands the renderer a fresh in-memory stream on every call.
+     *
+     * <p>Font setup must never break PDF generation: a missing, empty or unreadable resource is
+     * skipped and the renderer falls back to the Helvetica/Arial stack declared in the template.
+     */
+    private void registerFont(PdfRendererBuilder builder, String location, int weight) {
+        try {
+            Resource resource = RESOURCE_LOADER.getResource("classpath:" + location);
+            if (!resource.exists()) {
+                return;
+            }
+            byte[] data;
+            try (InputStream in = resource.getInputStream()) {
+                data = StreamUtils.copyToByteArray(in);
+            }
+            if (data.length == 0) {
+                return;
+            }
+            FSSupplier<InputStream> supplier = () -> new ByteArrayInputStream(data);
+            builder.useFont(supplier, FONT_FAMILY, weight, FontStyle.NORMAL, true);
+        } catch (Exception e) {
+            // Degrade to the template's Helvetica fallback instead of failing the render.
+            log.warn("Skipping PDF font {} (weight {}): {}", location, weight, e.toString());
         }
     }
 }

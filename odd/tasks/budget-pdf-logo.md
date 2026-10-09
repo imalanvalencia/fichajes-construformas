@@ -27,7 +27,10 @@ Out of scope: SVG support (would require `openhtmltopdf-svg-support` dependency)
 - [x] T1: RED — failing tests observed (template `<img>` assertion failed; helper symbol compilation error) before implementation
 - [x] T2: GREEN — PNG copied (md5 identical to source), `logo-path` updated, `resolveLogoDataUri()` implemented (null-safe), `<img th:if>` + `th:unless` initials fallback in template
 - [x] T3: Verification — targeted: `Tests run: 17, Failures: 0` (BudgetPdfServiceImplTest + CompanyPropertiesBindingTest); full suite: `Tests run: 243, Failures: 0, Errors: 0` / BUILD SUCCESS; parent spot-check re-ran targeted command → EXIT=0
-- [ ] T4: Work-unit commit on `dev` (Conventional Commit, only feature files)
+- [x] T4: Work-unit commit `17e4b5f` on `dev` — `feat(budget-pdf): render company logo from classpath as data URI` (6 files, 213+/5-; unrelated dirty files excluded)
+
+## Review assessment (RDD)
+- `gentle-ai review assess --base-ref origin/dev --committed-only` (untracked-scope=exclude): risk `medium`, `review_due: false`, reason `under_budget` → review stays pending in this slice until the ~400-line budget is reached.
 
 ## Acceptance criteria
 - Budget PDF header shows `logo-horizontal.png` via `<img src="data:image/png;base64,...">`.

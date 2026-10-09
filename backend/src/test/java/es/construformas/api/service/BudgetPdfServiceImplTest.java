@@ -195,6 +195,14 @@ class BudgetPdfServiceImplTest {
 
     /** Minimal context mirroring generatePdf, so the pdf template can be processed in isolation. */
     private String processTemplate(String logoDataUri) {
+        return processTemplate(logoDataUri, Map.of());
+    }
+
+    /**
+     * Same minimal context plus optional extras (e.g. company contact variables). The template must
+     * be null-safe: extras left out stay undefined and their guarded cells must not render.
+     */
+    private String processTemplate(String logoDataUri, Map<String, Object> extra) {
         org.thymeleaf.context.Context context = new org.thymeleaf.context.Context(Locale.forLanguageTag("es"));
         Budget budget = budgetWithIva(new BigDecimal("1000.00"), BigDecimal.ZERO,
                 new BigDecimal("1000.00"), false);
@@ -212,6 +220,7 @@ class BudgetPdfServiceImplTest {
         context.setVariable("grandTotal", new BigDecimal("1000.00"));
         context.setVariable("generationDate", "01/01/2026");
         context.setVariable("validUntilFormatted", null);
+        extra.forEach(context::setVariable);
         return new ThymeleafPdfConfig().pdfTemplateEngine().process("budget-pdf", context);
     }
 
@@ -260,12 +269,115 @@ class BudgetPdfServiceImplTest {
         assertThat(service.resolveLogoDataUri()).isNull();
     }
 
-    private int renderAndCountImages(BudgetPdfServiceImpl target) throws Exception {
+    // --- Brand redesign (Structural Precision / frontend/DESIGN.md) ---
+
+    @Test
+    void templateUsesPoppinsAndTableBasedLayout() {
+        String html = processTemplate("data:image/png;base64,iVBORw0KGgo=");
+
+        // Typography: Poppins is the workhorse face, with the Helvetica stack kept as fallback.
+        assertThat(html).contains("font-family: Poppins, Helvetica, Arial, sans-serif");
+        // Numeric columns stay on the Helvetica stack (Poppins is for text only).
+        assertThat(html).contains(".num { font-family: Helvetica, Arial, sans-serif;");
+        // OpenHTMLtoPDF ignores flexbox: every layout zone must be a table.
+        assertThat(html).doesNotContain("display: flex");
+        assertThat(html).contains("<table class=\"header\"");
+        assertThat(html).contains("<table class=\"info-row\"");
+        assertThat(html).contains("<table class=\"totals-wrap\"");
+        // Palette: Nero + Construction Red (accents) + Steel Grey (dividers) + Cement Grey (fills).
+        assertThat(html).contains("#1C1C1D", "#E22D2D", "#ACB4B6", "#E1E5E7");
+        // The logo already carries name + isotipo + eslogan: no duplicated text beside it.
+        assertThat(html).doesNotContain("class=\"company-name\"", "company-meta");
+    }
+
+    @Test
+    void footerRendersCompanyContactWhenVariablesProvided() {
+        String html = processTemplate(null, Map.of(
+                "companyTaxId", "B00000000",
+                "companyAddress", "C/ Obra 12, Madrid",
+                "companyPhone", "+34 600 123 456",
+                "companyEmail", "hola@construformas.es",
+                "companyWebsite", "https://construformas.es"));
+
+        assertThat(html).contains("class=\"footer-phone\"", "+34 600 123 456");
+        assertThat(html).contains("class=\"footer-email\"", "hola@construformas.es");
+        assertThat(html).contains("class=\"footer-web\"", "https://construformas.es");
+        assertThat(html).contains("B00000000", "C/ Obra 12, Madrid");
+    }
+
+    @Test
+    void footerOmitsContactCellsWhenVariablesAreNull() {
+        // Minimal context: companyPhone/companyEmail/companyWebsite are simply not defined.
+        String html = processTemplate(null);
+
+        assertThat(html).doesNotContain("class=\"footer-phone\"", "class=\"footer-email\"",
+                "class=\"footer-web\"");
+        assertThat(html).doesNotContain("+34 600 123 456", "hola@construformas.es",
+                "https://construformas.es");
+        assertThat(html).contains("class=\"footer\"", "Documento generado el");
+    }
+
+    // --- Poppins embedding (classpath-safe font registration) ---
+
+    @Test
+    void poppinsFontResourcesAreResolvableFromClasspath() {
+        for (String resource : List.of("fonts/poppins/Poppins-Regular.ttf",
+                "fonts/poppins/Poppins-SemiBold.ttf",
+                "fonts/poppins/Poppins-Bold.ttf",
+                "fonts/poppins/OFL.txt")) {
+            assertThat(getClass().getClassLoader().getResource(resource))
+                    .as("classpath resource %s", resource)
+                    .isNotNull();
+        }
+    }
+
+    @Test
+    void generatePdfEmbedsPoppinsFamilyAndLogo() throws Exception {
+        CompanyProperties props = new CompanyProperties();
+        props.setName("Construformas S.L.");
+        props.setLogoPath("classpath:static/images/logo-horizontal.png");
+        BudgetPdfServiceImpl logoService = new BudgetPdfServiceImpl(
+                new ThymeleafPdfConfig().pdfTemplateEngine(),
+                budgetService, budgetItemRepository, budgetDiscountRepository, props);
+
+        try (PDDocument doc = PDDocument.load(renderBytes(logoService))) {
+            assertThat(fontNames(doc)).anyMatch(name -> name.contains("Poppins"));
+            assertThat(imageCount(doc)).isGreaterThanOrEqualTo(1);
+        }
+    }
+
+    @Test
+    void generatePdfInjectsCompanyContactIntoFooter() throws Exception {
+        CompanyProperties props = new CompanyProperties();
+        props.setName("Construformas S.L.");
+        props.setTaxId("B00000000");
+        props.setAddress("C/ Obra 12, Madrid");
+        props.setPhone("+34 600 123 456");
+        props.setEmail("hola@construformas.es");
+        props.setWebsite("https://construformas.es");
+        BudgetPdfServiceImpl contactService = new BudgetPdfServiceImpl(
+                new ThymeleafPdfConfig().pdfTemplateEngine(),
+                budgetService, budgetItemRepository, budgetDiscountRepository, props);
+
+        try (PDDocument doc = PDDocument.load(renderBytes(contactService))) {
+            assertThat(text(doc)).contains("Construformas S.L.", "B00000000", "C/ Obra 12, Madrid",
+                    "+34 600 123 456", "hola@construformas.es", "https://construformas.es");
+        }
+    }
+
+    /** Mocks an authorized empty budget and renders it with the given service instance. */
+    private byte[] renderBytes(BudgetPdfServiceImpl target) throws Exception {
         when(budgetService.findById(42L)).thenReturn(budgetWithIva(new BigDecimal("1000.00"),
                 BigDecimal.ZERO, new BigDecimal("1000.00"), false));
         when(budgetItemRepository.findByBudgetIdOrderByOrderNum(42L)).thenReturn(List.of());
         when(budgetDiscountRepository.findByBudgetId(42L)).thenReturn(List.of());
-        try (PDDocument doc = PDDocument.load(target.generatePdf(42L))) {
+        byte[] pdf = target.generatePdf(42L);
+        assertThat(pdf).startsWith("%PDF".getBytes());
+        return pdf;
+    }
+
+    private int renderAndCountImages(BudgetPdfServiceImpl target) throws Exception {
+        try (PDDocument doc = PDDocument.load(renderBytes(target))) {
             return imageCount(doc);
         }
     }
@@ -282,6 +394,27 @@ class BudgetPdfServiceImplTest {
         assertThat(renderAndCountImages(logoService)).isGreaterThanOrEqualTo(1);
         // Non-vacuity: without a resolvable logo the same render embeds no image at all.
         assertThat(renderAndCountImages(service)).isZero();
+    }
+
+    /** BaseFont names of every font embedded in the document (subset names keep the family name). */
+    private static List<String> fontNames(PDDocument doc) {
+        List<String> names = new ArrayList<>();
+        for (org.apache.pdfbox.pdmodel.PDPage page : doc.getPages()) {
+            org.apache.pdfbox.pdmodel.PDResources resources = page.getResources();
+            if (resources == null) {
+                continue;
+            }
+            for (org.apache.pdfbox.cos.COSName name : resources.getFontNames()) {
+                try {
+                    org.apache.pdfbox.pdmodel.font.PDFont font = resources.getFont(name);
+                    String baseFont = font.getCOSObject().getNameAsString(org.apache.pdfbox.cos.COSName.BASE_FONT);
+                    names.add(baseFont != null ? baseFont : font.toString());
+                } catch (Exception e) {
+                    throw new IllegalStateException(e);
+                }
+            }
+        }
+        return names;
     }
 
     private static int imageCount(PDDocument doc) {

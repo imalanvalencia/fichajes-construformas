@@ -21,13 +21,30 @@ class CompanyPropertiesBindingTest {
                 .withPropertyValues("app.pdf.company.name=Construformas S.L.",
                         "app.pdf.company.tax-id=B12345678",
                         "app.pdf.company.address=C/ Ejemplo 12",
-                        "app.pdf.company.logo-path=classpath:logo.png")
+                        "app.pdf.company.logo-path=classpath:logo.png",
+                        "app.pdf.company.phone=+34 600 123 456",
+                        "app.pdf.company.email=hola@construformas.es",
+                        "app.pdf.company.website=https://construformas.es")
                 .run(ctx -> {
                     CompanyProperties p = ctx.getBean(CompanyProperties.class);
                     assertThat(p.getName()).isEqualTo("Construformas S.L.");
                     assertThat(p.getTaxId()).isEqualTo("B12345678");
                     assertThat(p.getAddress()).isEqualTo("C/ Ejemplo 12");
                     assertThat(p.getLogoPath()).isEqualTo("classpath:logo.png");
+                    assertThat(p.getPhone()).isEqualTo("+34 600 123 456");
+                    assertThat(p.getEmail()).isEqualTo("hola@construformas.es");
+                    assertThat(p.getWebsite()).isEqualTo("https://construformas.es");
+                });
+    }
+
+    @Test
+    void contactKeysDefaultToNullWhenUnconfigured() {
+        new ApplicationContextRunner().withUserConfiguration(Config.class)
+                .run(ctx -> {
+                    CompanyProperties p = ctx.getBean(CompanyProperties.class);
+                    assertThat(p.getPhone()).isNull();
+                    assertThat(p.getEmail()).isNull();
+                    assertThat(p.getWebsite()).isNull();
                 });
     }
 }

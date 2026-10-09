@@ -4,6 +4,13 @@
   <meta charset="UTF-8"/>
   <title th:text="'Presupuesto #' + ${budget.id}">Presupuesto</title>
   <style>
+    /*
+      Structural Precision (frontend/DESIGN.md), adapted to OpenHTMLtoPDF:
+      - flexbox is ignored by the renderer, so every layout zone is a table
+      - sharp corners only (border-radius 0), 8px spacing rhythm
+      - Nero #1C1C1D anchors, Construction Red #E22D2D only for critical amounts,
+        Steel Grey #ACB4B6 for 1px dividers, Cement Grey #E1E5E7 for zone fills
+    */
     @page {
       size: A4;
       margin: 18mm 15mm;
@@ -11,36 +18,50 @@
 
     * {
       box-sizing: border-box;
+      border-radius: 0;
     }
 
     body {
-      font-family: Helvetica, Arial, sans-serif;
+      font-family: Poppins, Helvetica, Arial, sans-serif;
       font-size: 11pt;
       color: #1C1C1D;
       margin: 0;
       padding: 0;
     }
 
-    /* --- Header --- */
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      border-bottom: 2px solid #E22D2D;
-      padding-bottom: 10px;
-      margin-bottom: 16px;
+    /* Numeric and price columns stay on the Helvetica stack. */
+    .num { font-family: Helvetica, Arial, sans-serif; text-align: right; white-space: nowrap; }
+
+    .negative {
+      color: #E22D2D;
     }
 
-    .logo-block {
-      display: flex;
-      align-items: center;
+    /* --- Header (table layout) --- */
+    table.header {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 24px;
+    }
+
+    table.header td {
+      border-bottom: 4px solid #1C1C1D;
+      padding: 0 0 8px 0;
+      vertical-align: top;
+    }
+
+    td.header-brand {
+      width: 60%;
+    }
+
+    td.header-doc {
+      width: 40%;
+      text-align: right;
     }
 
     .logo-img {
       height: 48px;
       width: auto;
       display: block;
-      margin-right: 10px;
     }
 
     .logo-placeholder {
@@ -52,75 +73,76 @@
       font-weight: bold;
       text-align: center;
       line-height: 48px;
-      margin-right: 10px;
     }
 
-    .company-name {
-      font-size: 16pt;
-      font-weight: bold;
-      color: #1C1C1D;
-    }
-
-    .company-meta {
-      font-size: 9pt;
-      color: #555555;
-      margin-top: 2px;
-    }
-
-    .doc-title {
-      text-align: right;
-    }
-
-    .doc-title h1 {
+    h1.doc-title {
       font-size: 18pt;
+      font-weight: 700;
+      letter-spacing: -0.5px;
       margin: 0;
       color: #1C1C1D;
       text-transform: uppercase;
     }
 
-    .doc-title .doc-number {
-      font-size: 11pt;
-      color: #555555;
-      margin-top: 4px;
-    }
-
-    /* --- Info blocks --- */
-    .info-row {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 14px;
-    }
-
-    .info-box {
-      width: 48%;
-      border: 1px solid #ACB4B6;
-      padding: 8px 10px;
-    }
-
-    .info-box h2 {
+    .doc-number {
       font-size: 9pt;
+      color: #46474A;
+      margin-top: 8px;
+    }
+
+    /* --- Client / project (table layout) --- */
+    table.info-row {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 24px;
+    }
+
+    td.info-box {
+      width: 47%;
+      border: 1px solid #ACB4B6;
+      border-top: 4px solid #1C1C1D;
+      background-color: #F3FBFD;
+      padding: 0;
+      vertical-align: top;
+    }
+
+    td.info-gap {
+      width: 6%;
+      border: none;
+      padding: 0;
+    }
+
+    .info-heading {
+      background-color: #E1E5E7;
+      color: #1C1C1D;
+      font-size: 8.5pt;
+      font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 1px;
-      color: #E22D2D;
-      margin: 0 0 6px 0;
-      font-weight: bold;
+      padding: 8px 16px;
+      margin-bottom: 8px;
     }
 
-    .info-box p {
-      margin: 2px 0;
-      font-size: 10pt;
+    .info-body {
+      padding: 0 16px 16px 16px;
+    }
+
+    .info-body p {
+      margin: 4px 0;
+      font-size: 9.5pt;
     }
 
     .info-label {
-      color: #555555;
-      font-size: 9pt;
+      color: #46474A;
+      font-size: 8.5pt;
+      font-weight: 600;
     }
 
     /* --- Items table --- */
     table.items {
       width: 100%;
       border-collapse: collapse;
-      margin-bottom: 14px;
+      margin-bottom: 16px;
     }
 
     table.items thead {
@@ -134,209 +156,239 @@
     table.items th {
       background-color: #1C1C1D;
       color: #FFFFFF;
-      font-size: 8.5pt;
+      font-size: 8pt;
+      font-weight: 600;
       text-transform: uppercase;
-      padding: 6px 6px;
+      letter-spacing: 0.5px;
+      padding: 8px 6px;
       text-align: left;
-      font-weight: bold;
     }
 
     table.items td {
-      border-bottom: 1px solid #E0E0E0;
-      padding: 5px 6px;
-      font-size: 10pt;
+      border-bottom: 1px solid #ACB4B6;
+      padding: 8px 6px;
+      font-size: 9.5pt;
       vertical-align: top;
     }
 
-    table.items .num {
-      text-align: right;
-      white-space: nowrap;
-    }
-
     .zone-row td {
-      background-color: #F3F4F5;
-      font-weight: bold;
-      font-size: 9pt;
+      background-color: #E1E5E7;
+      color: #1C1C1D;
+      font-weight: 600;
+      font-size: 8.5pt;
       text-transform: uppercase;
-      color: #555555;
+      letter-spacing: 0.5px;
       border-bottom: 1px solid #ACB4B6;
     }
 
     .empty-state {
+      background-color: #E1E5E7;
+      color: #46474A;
       text-align: center;
-      color: #555555;
-      padding: 16px 0;
-      font-style: italic;
-    }
-
-    /* --- Totals --- */
-    .totals-wrap {
-      display: flex;
-      justify-content: flex-end;
-      margin-bottom: 16px;
-    }
-
-    .totals {
-      width: 260px;
-    }
-
-    .totals .line {
-      display: flex;
-      justify-content: space-between;
-      padding: 4px 0;
-      font-size: 10pt;
-    }
-
-    .totals .line.grand {
-      border-top: 2px solid #1C1C1D;
-      margin-top: 4px;
-      padding-top: 8px;
-      font-size: 12pt;
-      font-weight: bold;
-    }
-
-    .negative {
-      color: #E22D2D;
+      padding: 16px;
+      font-size: 9.5pt;
     }
 
     /* --- Discounts --- */
     h3.section-title {
       font-size: 10pt;
+      font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 1px;
       color: #1C1C1D;
       border-bottom: 1px solid #ACB4B6;
-      padding-bottom: 4px;
-      margin: 14px 0 8px 0;
+      padding-bottom: 8px;
+      margin: 24px 0 8px 0;
     }
 
     table.discounts {
       width: 100%;
       border-collapse: collapse;
-      margin-bottom: 10px;
+      margin-bottom: 16px;
     }
 
     table.discounts th {
-      background-color: #F3F4F5;
-      font-size: 8.5pt;
+      background-color: #1C1C1D;
+      color: #FFFFFF;
+      font-size: 8pt;
+      font-weight: 600;
       text-transform: uppercase;
-      padding: 5px 6px;
+      letter-spacing: 0.5px;
+      padding: 8px 6px;
       text-align: left;
-      border-bottom: 1px solid #ACB4B6;
     }
 
     table.discounts td {
-      padding: 4px 6px;
-      font-size: 10pt;
-      border-bottom: 1px solid #E0E0E0;
+      border-bottom: 1px solid #ACB4B6;
+      padding: 8px 6px;
+      font-size: 9.5pt;
     }
 
-    table.discounts .num {
-      text-align: right;
-      white-space: nowrap;
+    /* --- Totals: right-aligned through a spacer column (flexbox is ignored) --- */
+    table.totals-wrap {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 24px;
+      page-break-inside: avoid;
+    }
+
+    td.totals-pad {
+      width: 56%;
+      border: none;
+      padding: 0;
+    }
+
+    td.totals {
+      width: 44%;
+      padding: 0;
+      vertical-align: top;
+    }
+
+    table.totals-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .totals-table td {
+      padding: 8px 16px;
+      font-size: 10pt;
+      border-bottom: 1px solid #ACB4B6;
+    }
+
+    .totals-table tr.grand td {
+      border-top: 2px solid #1C1C1D;
+      background-color: #F3FBFD;
+      font-weight: 600;
+      font-size: 12pt;
+    }
+
+    .totals-table tr.grand .num {
+      color: #E22D2D;
     }
 
     /* --- Terms --- */
     .terms {
       page-break-inside: avoid;
-      margin-top: 10px;
+      margin-top: 8px;
     }
 
     .terms p {
       font-size: 9.5pt;
-      color: #333333;
-      margin: 4px 0 10px 0;
+      color: #1C1C1D;
+      margin: 8px 0 16px 0;
       white-space: pre-wrap;
     }
 
+    /* --- Company footer (legal + contact, injected from config) --- */
     .footer {
-      margin-top: 18px;
+      margin-top: 24px;
       padding-top: 8px;
       border-top: 1px solid #ACB4B6;
-      font-size: 8.5pt;
-      color: #777777;
-      text-align: center;
+      font-size: 8pt;
+      color: #46474A;
+      page-break-inside: avoid;
+    }
+
+    table.footer-info {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 8px;
+    }
+
+    .footer-info td {
+      padding: 4px 16px 4px 0;
+      font-size: 8pt;
+      vertical-align: top;
+    }
+
+    .footer-info .f-brand {
+      color: #1C1C1D;
+      font-weight: 600;
     }
   </style>
 </head>
 <body>
 
-<!-- Header -->
-<div class="header">
-  <div class="logo-block">
-    <!-- Real logo inlined as a base64 data URI; th:unless = initials fallback when unavailable -->
-    <img class="logo-img" th:if="${companyLogoDataUri != null}" th:src="${companyLogoDataUri}" alt=""/>
-    <div class="logo-placeholder" th:unless="${companyLogoDataUri != null}"
-         th:text="${companyName != null and !companyName.isEmpty()} ? ${companyName.substring(0,1)} : 'C'">
-      <img src="" alt="">
-    </div>
-    <div>
-      <div class="company-name" th:text="${companyName ?: 'Construformas'}">Construformas</div>
-      <div class="company-meta" th:if="${companyTaxId != null and !companyTaxId.isEmpty()}">
-        CIF/NIF: <span th:text="${companyTaxId}">B00000000</span>
+<!-- Header: logo already carries name + isotipo + eslogan, so no text sits beside it -->
+<table class="header">
+  <tbody>
+  <tr>
+    <td class="header-brand">
+      <!-- Real logo inlined as a base64 data URI; th:unless = initials fallback when unavailable -->
+      <img class="logo-img" th:if="${companyLogoDataUri != null}" th:src="${companyLogoDataUri}" alt=""/>
+      <div class="logo-placeholder" th:unless="${companyLogoDataUri != null}"
+           th:text="${companyName != null and !companyName.isEmpty()} ? ${companyName.substring(0,1)} : 'C'">
+        <img src="" alt="">
       </div>
-      <div class="company-meta" th:if="${companyAddress != null and !companyAddress.isEmpty()}">
-        <span th:text="${companyAddress}">Dirección</span>
+    </td>
+    <td class="header-doc">
+      <h1 class="doc-title">Presupuesto</h1>
+      <div class="doc-number">
+        N.º <span th:text="${budget.id}">1</span>
+        — v<span th:text="${budget.version}">1</span>
       </div>
-    </div>
-  </div>
-  <div class="doc-title">
-    <h1>Presupuesto</h1>
-    <div class="doc-number">
-      N.º <span th:text="${budget.id}">1</span>
-      — v<span th:text="${budget.version}">1</span>
-    </div>
-    <div class="doc-number" th:if="${validUntilFormatted != null}">
-      Válido hasta: <span th:text="${validUntilFormatted}">31/12/2026</span>
-    </div>
-    <div class="doc-number">
-      Fecha: <span th:text="${generationDate}">01/01/2026</span>
-    </div>
-  </div>
-</div>
+      <div class="doc-number" th:if="${validUntilFormatted != null}">
+        Válido hasta: <span th:text="${validUntilFormatted}">31/12/2026</span>
+      </div>
+      <div class="doc-number">
+        Fecha: <span th:text="${generationDate}">01/01/2026</span>
+      </div>
+    </td>
+  </tr>
+  </tbody>
+</table>
 
 <!-- Client / Project -->
-<div class="info-row">
-  <div class="info-box">
-    <h2>Cliente</h2>
-    <p th:if="${client != null}">
-      <strong th:text="${client.name}">Cliente</strong>
-    </p>
-    <p th:if="${client != null and client.address != null}">
-      <span class="info-label">Dirección:</span>
-      <span th:text="${client.address}">—</span>
-    </p>
-    <p th:if="${client != null and client.city != null}">
-      <span class="info-label">Ciudad:</span>
-      <span th:text="${client.city}">—</span>
-      <span th:if="${client.postalCode != null}">
-        (<span th:text="${client.postalCode}">—</span>)
-      </span>
-    </p>
-    <p th:if="${client != null and client.email != null}">
-      <span class="info-label">Email:</span>
-      <span th:text="${client.email}">—</span>
-    </p>
-    <p th:if="${client != null and client.phone != null}">
-      <span class="info-label">Teléfono:</span>
-      <span th:text="${client.phone}">—</span>
-    </p>
-  </div>
-  <div class="info-box">
-    <h2>Proyecto</h2>
-    <p th:if="${project != null}">
-      <strong th:text="${project.name}">Proyecto</strong>
-    </p>
-    <p th:if="${project != null and project.address != null}">
-      <span class="info-label">Dirección:</span>
-      <span th:text="${project.address}">—</span>
-    </p>
-    <p th:if="${project != null and project.city != null}">
-      <span class="info-label">Ciudad:</span>
-      <span th:text="${project.city}">—</span>
-    </p>
-  </div>
-</div>
+<table class="info-row">
+  <tbody>
+  <tr>
+    <td class="info-box">
+      <div class="info-heading">Cliente</div>
+      <div class="info-body">
+        <p th:if="${client != null}">
+          <strong th:text="${client.name}">Cliente</strong>
+        </p>
+        <p th:if="${client != null and client.address != null}">
+          <span class="info-label">Dirección:</span>
+          <span th:text="${client.address}">—</span>
+        </p>
+        <p th:if="${client != null and client.city != null}">
+          <span class="info-label">Ciudad:</span>
+          <span th:text="${client.city}">—</span>
+          <span th:if="${client.postalCode != null}">
+            (<span th:text="${client.postalCode}">—</span>)
+          </span>
+        </p>
+        <p th:if="${client != null and client.email != null}">
+          <span class="info-label">Email:</span>
+          <span th:text="${client.email}">—</span>
+        </p>
+        <p th:if="${client != null and client.phone != null}">
+          <span class="info-label">Teléfono:</span>
+          <span th:text="${client.phone}">—</span>
+        </p>
+      </div>
+    </td>
+    <td class="info-gap"></td>
+    <td class="info-box">
+      <div class="info-heading">Proyecto</div>
+      <div class="info-body">
+        <p th:if="${project != null}">
+          <strong th:text="${project.name}">Proyecto</strong>
+        </p>
+        <p th:if="${project != null and project.address != null}">
+          <span class="info-label">Dirección:</span>
+          <span th:text="${project.address}">—</span>
+        </p>
+        <p th:if="${project != null and project.city != null}">
+          <span class="info-label">Ciudad:</span>
+          <span th:text="${project.city}">—</span>
+        </p>
+      </div>
+    </td>
+  </tr>
+  </tbody>
+</table>
 
 <!-- Items -->
 <h3 class="section-title">Partidas</h3>
@@ -399,27 +451,36 @@
 </div>
 
 <!-- Totals -->
-<div class="totals-wrap">
-  <div class="totals">
-    <div class="line">
-      <span>Subtotal</span>
-      <span th:text="${#numbers.formatDecimal(subtotal, 1, 'POINT', 2, 'COMMA')} + ' €'">0,00 €</span>
-    </div>
-    <div class="line" th:if="${includesIva}">
-      <span>IVA 21%</span>
-      <span th:text="${#numbers.formatDecimal(ivaAmount, 1, 'POINT', 2, 'COMMA')} + ' €'">0,00 €</span>
-    </div>
-    <div class="line" th:if="${discountTotal != null and discountTotal.signum() > 0}">
-      <span>Descuento</span>
-      <span class="negative"
-            th:text="'-' + ${#numbers.formatDecimal(discountTotal, 1, 'POINT', 2, 'COMMA')} + ' €'">-0,00 €</span>
-    </div>
-    <div class="line grand">
-      <span>Total Final</span>
-      <span th:text="${#numbers.formatDecimal(grandTotal, 1, 'POINT', 2, 'COMMA')} + ' €'">0,00 €</span>
-    </div>
-  </div>
-</div>
+<table class="totals-wrap">
+  <tbody>
+  <tr>
+    <td class="totals-pad"></td>
+    <td class="totals">
+      <table class="totals-table">
+        <tbody>
+        <tr>
+          <td>Subtotal</td>
+          <td class="num" th:text="${#numbers.formatDecimal(subtotal, 1, 'POINT', 2, 'COMMA')} + ' €'">0,00 €</td>
+        </tr>
+        <tr th:if="${includesIva}">
+          <td>IVA 21%</td>
+          <td class="num" th:text="${#numbers.formatDecimal(ivaAmount, 1, 'POINT', 2, 'COMMA')} + ' €'">0,00 €</td>
+        </tr>
+        <tr th:if="${discountTotal != null and discountTotal.signum() > 0}">
+          <td>Descuento</td>
+          <td class="num negative"
+              th:text="'-' + ${#numbers.formatDecimal(discountTotal, 1, 'POINT', 2, 'COMMA')} + ' €'">-0,00 €</td>
+        </tr>
+        <tr class="grand">
+          <td>Total Final</td>
+          <td class="num" th:text="${#numbers.formatDecimal(grandTotal, 1, 'POINT', 2, 'COMMA')} + ' €'">0,00 €</td>
+        </tr>
+        </tbody>
+      </table>
+    </td>
+  </tr>
+  </tbody>
+</table>
 
 <!-- Terms -->
 <div class="terms">
@@ -437,9 +498,41 @@
   </div>
 </div>
 
+<!-- Company legal/contact info, injected from app.pdf.company.* (empty values are skipped) -->
 <div class="footer">
-  <span th:text="${companyName ?: 'Construformas'}">Construformas</span>
-  — Documento generado el <span th:text="${generationDate}">01/01/2026</span>
+  <table class="footer-info">
+    <tbody>
+    <tr th:if="${(companyName != null and !companyName.isEmpty())
+                 or (companyTaxId != null and !companyTaxId.isEmpty())
+                 or (companyAddress != null and !companyAddress.isEmpty())}">
+      <td class="f-brand" th:if="${companyName != null and !companyName.isEmpty()}">
+        <span th:text="${companyName}">Construformas</span>
+      </td>
+      <td th:if="${companyTaxId != null and !companyTaxId.isEmpty()}">
+        CIF/NIF: <span th:text="${companyTaxId}">B00000000</span>
+      </td>
+      <td th:if="${companyAddress != null and !companyAddress.isEmpty()}">
+        <span th:text="${companyAddress}">Dirección</span>
+      </td>
+    </tr>
+    <tr th:if="${(companyPhone != null and !companyPhone.isEmpty())
+                 or (companyEmail != null and !companyEmail.isEmpty())
+                 or (companyWebsite != null and !companyWebsite.isEmpty())}">
+      <td class="footer-phone" th:if="${companyPhone != null and !companyPhone.isEmpty()}">
+        Tel.: <span th:text="${companyPhone}">+34 600 123 456</span>
+      </td>
+      <td class="footer-email" th:if="${companyEmail != null and !companyEmail.isEmpty()}">
+        Email: <span th:text="${companyEmail}">hola@construformas.es</span>
+      </td>
+      <td class="footer-web" th:if="${companyWebsite != null and !companyWebsite.isEmpty()}">
+        Web: <span th:text="${companyWebsite}">https://construformas.es</span>
+      </td>
+    </tr>
+    </tbody>
+  </table>
+  <div class="footer-gen">
+    Documento generado el <span th:text="${generationDate}">01/01/2026</span>
+  </div>
 </div>
 
 </body>
