@@ -112,7 +112,7 @@ corrections component spec.
 | T1 | S1, S3 | inline | done | `ClockEntryControllerTest` 5/5; full backend suite 270/0 |
 | T2 | S2 | inline | done | `ClockEntryServiceTest` 11/11, `AuthServiceTest` 8/8; full backend suite 270/0 |
 | T3 | S7 | inline | done | `ClockCorrectionControllerTest` 5/5, `ClockCorrectionServiceTest` 5/5; full backend suite 271/0 |
-| T4 | S4, S5 | inline | pending | — |
+| T4 | S4, S5 | inline | done | `clock.component.spec.ts` 9/9; frontend suite 174 passed, 2 pre-existing `budget-editor` failures verified at baseline; commit c3461dd |
 | T5 | S7 | inline | pending | — |
 | T6 | S6 | inline | pending | — |
 | T7 | S1-S7 | inline | pending | final verification |
@@ -120,6 +120,13 @@ corrections component spec.
 Route evidence: delegation to `gentle-ai-explore`/`gentle-ai-worker` failed at launch
 with a provider error ("OpenCode's free tier can only be used from within OpenCode"), so
 every task runs inline in the parent session.
+
+## Known environmental failures
+
+- `frontend/src/app/components/budgets/budget-editor/budget-editor.component.spec.ts` has 2
+  failing tests ("defaults and clamps a new item quantity to one" and a related DOM assertion).
+  Verified pre-existing: running that spec with every clock change stashed
+  (`git stash push -u -- <clock paths>`) fails identically, so it is not caused by this feature.
 
 ## Log
 
@@ -166,7 +173,23 @@ previously let any caller submit `APPROVED` and self-approve. Full backend suite
 `Tests run: 271, Failures: 0, Errors: 0`.
 
 L8 (2026-10-13) — Delivery: the user chose "PRs encadenados (feature-branch-chain)". Structure:
-tracker `feat/clock-rework` (doc commit `852bae6`, merged into `dev` at the end), child
 `feat/clock-rework-01-entry-contract` (T1+T2, 258 changed lines), child
 `feat/clock-rework-02-corrections-contract` (T3). Remaining slices: T4 frontend rework, then
 T5+T6 (corrections UI + route/sidebar). No push and no PR have been created yet.
+
+L9 (2026-10-13) — Slice #2 review (RDD): `gentle-ai review assess` returned `risk: high`
+(hot path, security lens territory) and presented the candidate consent envelope; the user
+declined it (`consent: declined_this_candidate`), so T3's commit ships under ordinary
+repository policy with no review receipt. Decline is candidate-scoped and does not disable
+RDD for later slices.
+
+L10 (2026-10-13) — T4 (frontend rework) implemented under strict TDD. RED first: 8 assertions
+failed in `clock.component.spec.ts`. GREEN after: new `GeolocationService`
+(`frontend/src/app/features/clock/services/geolocation.service.ts`) wrapping the browser
+geolocation API (S4), `ClockComponent` reworked with a real project selector loaded from the
+active projects endpoint and no typed user ID or coordinate inputs (S4), flat
+`clock.types.ts` DTOs matching the backend mapper, and `AuthResponse.id` made optional.
+`clock.component.spec.ts` 9/9. Full frontend suite: 174 passed with 2 pre-existing
+`budget-editor.component.spec.ts` failures, verified as baseline by re-running that spec with
+every clock change stashed. Untracked files left out of this slice (parallel PDF work):
+`ProjectFinancialSummaryDTO.java`, `budget-pdf-new.html`, `favicon.ico`.
