@@ -97,6 +97,10 @@ corrections with reason, corrected time and original fichaje, plus approve/rejec
 actions. `ClockCorrectionDTO` must be flat (no nested `user`/`project`/`reviewedBy`
 entities) for the same reason as S1.
 
+Contract notes: `PUT /{id}/approve` and `PUT /{id}/reject` take no `reviewerId` parameter —
+the reviewer is the authenticated ADMIN; correction creation derives its target user with
+S2's rule; a client may not set `status` on creation (the service assigns `PENDING`).
+
 Acceptance: ADMIN sees pending corrections and can approve and reject them; OPERATOR
 sees no approve/reject controls. Check: `ClockCorrectionControllerTest`,
 corrections component spec.
@@ -107,7 +111,7 @@ corrections component spec.
 |----|-------|-------|--------|----------|
 | T1 | S1, S3 | inline | done | `ClockEntryControllerTest` 5/5; full backend suite 270/0 |
 | T2 | S2 | inline | done | `ClockEntryServiceTest` 11/11, `AuthServiceTest` 8/8; full backend suite 270/0 |
-| T3 | S7 | inline | pending | — |
+| T3 | S7 | inline | done | `ClockCorrectionControllerTest` 5/5, `ClockCorrectionServiceTest` 5/5; full backend suite 271/0 |
 | T4 | S4, S5 | inline | pending | — |
 | T5 | S7 | inline | pending | — |
 | T6 | S6 | inline | pending | — |
@@ -149,3 +153,20 @@ L6 (2026-10-13) — Spec correction, not a scope change: S5's original acceptanc
 shows `[value]`/`(valueChange)` IS the current idiom of `app-input`/`app-select`. S5's acceptance
 criteria were rewritten to the real gaps: `NotificationService` feedback instead of `confirm()` and
 silent `subscribe`, and rendered state as signals like `UsersComponent`.
+
+L7 (2026-10-13) — T3 (corrections) implemented under strict TDD, RED on the `approve`/`reject`
+signature compile error, GREEN after: `ClockCorrectionDTO` wired end to end with a new
+`ClockCorrectionMapper`, so no `user`/`project`/`originalEntry`/`reviewedBy` entity leaks into a
+correction response; the reviewer is now resolved from the authenticated session instead of the
+`reviewerId` query parameter (that parameter was removed from both endpoints); `requestCorrection`
+resolves its target user with the same `SecurityUtils.resolveTargetUser` rule as clock-ins (S2's
+principle applied to a sibling endpoint, recorded here as an assumption-driven extension rather
+than a new requirement); and the client can no longer set a correction's `status`, which
+previously let any caller submit `APPROVED` and self-approve. Full backend suite after T3:
+`Tests run: 271, Failures: 0, Errors: 0`.
+
+L8 (2026-10-13) — Delivery: the user chose "PRs encadenados (feature-branch-chain)". Structure:
+tracker `feat/clock-rework` (doc commit `852bae6`, merged into `dev` at the end), child
+`feat/clock-rework-01-entry-contract` (T1+T2, 258 changed lines), child
+`feat/clock-rework-02-corrections-contract` (T3). Remaining slices: T4 frontend rework, then
+T5+T6 (corrections UI + route/sidebar). No push and no PR have been created yet.
