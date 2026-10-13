@@ -114,7 +114,7 @@ corrections component spec.
 | T3 | S7 | inline | done | `ClockCorrectionControllerTest` 5/5, `ClockCorrectionServiceTest` 5/5; full backend suite 271/0 |
 | T4 | S4, S5 | inline | done | `clock.component.spec.ts` 9/9; frontend suite 174 passed, 2 pre-existing `budget-editor` failures verified at baseline; commit c3461dd |
 | T5 | S7 | inline | done | `clock-corrections.component.spec.ts` 7/7; frontend suite 182 passed, 2 pre-existing `budget-editor` failures |
-| T6 | S6 | inline | pending | — |
+| T6 | S6 | inline | done | `app.routes.spec.ts` 1/1, `sidebar.component.spec.ts` 3/3 (RED observed 4F); frontend suite 186 passed, 2 pre-existing `budget-editor` failures |
 | T7 | S1-S7 | inline | pending | final verification |
 
 Route evidence: delegation to `gentle-ai-explore`/`gentle-ai-worker` failed at launch
@@ -206,3 +206,17 @@ triggers the ADMIN-only pending endpoint. `clock-corrections.component.spec.ts` 
 Full frontend suite: 182 passed, 2 pre-existing `budget-editor` failures unchanged. Design
 note: `reject` sends an empty body because the backend endpoint takes no observation
 parameter — recording one would be a new requirement, not part of S7.
+
+L12 (2026-10-14) — T6 (S6 route + sidebar) implemented under strict TDD. RED first: 4
+assertions failed (clock route commented out; no "Fichajes" nav item for any role). GREEN
+after: `app.routes.ts` line 38 uncommented (`{ path: 'clock', component: ClockComponent }`
+inside the authenticated shell), and the sidebar entry re-enabled as
+`{ icon: 'schedule', label: 'Fichajes', route: '/clock', roles: ['ADMIN', 'OPERATOR'] }` —
+a real clock icon instead of the `home` placeholder. NavItem gained an optional `roles`
+filter applied through `AuthService.hasRole`, so an ADMIN or OPERATOR sees the entry while
+roles outside the API's `hasAnyRole('ADMIN','OPERATOR')` scope do not; the existing
+`adminOnly` filter is untouched. New specs: `app.routes.spec.ts` 1/1,
+`sidebar.component.spec.ts` 3/3. Full frontend suite: 186 passed, the same 2 pre-existing
+`budget-editor` failures. Observation (not a change): `visibleNavItems` still gates the
+`adminOnly` "Usuarios" entry with `roles.includes('ROLE_ADMIN')` while login responses
+return unprefixed `ADMIN` — pre-existing, outside S6's scope, left alone.
