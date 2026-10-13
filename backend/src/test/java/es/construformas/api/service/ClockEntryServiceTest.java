@@ -19,10 +19,12 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -39,10 +41,80 @@ class ClockEntryServiceTest {
         SecurityContextHolder.clearContext();
     }
 
+    /** Puts a user in the security context, mirroring what JwtAuthFilter does at runtime. */
+    private User authenticate(User user, String roleName) {
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(
+                        user.getEmail(), null,
+                        List.of(new SimpleGrantedAuthority("ROLE_" + roleName))));
+        when(userRepository.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
+        return user;
+    }
+
+    @Test
+    @DisplayName("Register without a userId should clock in the authenticated caller")
+    void shouldClockInForCallerWhenUserIdOmitted() {
+        User caller = authenticate(
+                User.builder().id(1L).email("worker@test.com").build(), "OPERATOR");
+        Project project = Project.builder()
+                .id(1L).latitude(40.0).longitude(-3.0).allowedRadiusMeters(50).build();
+        ClockEntry entry = ClockEntry.builder()
+                .user(null).project(project)
+                .clockType(ClockType.ENTRY)
+                .userLatitude(40.0001).userLongitude(-3.0).build();
+
+        when(projectRepository.findById(1L)).thenReturn(Optional.of(project));
+        when(clockEntryRepository.save(any(ClockEntry.class))).thenAnswer(i -> i.getArgument(0));
+
+        ClockEntry result = clockEntryService.register(entry);
+
+        assertThat(result.getUser()).isEqualTo(caller);
+    }
+
+    @Test
+    @DisplayName("An OPERATOR clocking in for another user should be denied")
+    void shouldRejectOperatorClockingForAnotherUser() {
+        authenticate(User.builder().id(1L).email("worker@test.com").build(), "OPERATOR");
+        Project project = Project.builder()
+                .id(1L).latitude(40.0).longitude(-3.0).allowedRadiusMeters(50).build();
+        ClockEntry entry = ClockEntry.builder()
+                .user(User.builder().id(2L).build()).project(project)
+                .clockType(ClockType.ENTRY)
+                .userLatitude(40.0001).userLongitude(-3.0).build();
+
+        assertThatThrownBy(() -> clockEntryService.register(entry))
+                .isInstanceOf(org.springframework.security.access.AccessDeniedException.class)
+                .hasMessageContaining("themselves");
+        verify(clockEntryRepository, never()).save(any(ClockEntry.class));
+    }
+
+    @Test
+    @DisplayName("An ADMIN should be allowed to clock in for another user")
+    void shouldLetAdminClockInForAnotherUser() {
+        authenticate(User.builder().id(1L).email("admin@test.com")
+                .roles(Set.of(Role.builder().id(1L).name("ADMIN").build())).build(), "ADMIN");
+        User other = User.builder().id(2L).email("other@test.com").build();
+        Project project = Project.builder()
+                .id(1L).latitude(40.0).longitude(-3.0).allowedRadiusMeters(50).build();
+        ClockEntry entry = ClockEntry.builder()
+                .user(other).project(project)
+                .clockType(ClockType.ENTRY)
+                .userLatitude(40.0001).userLongitude(-3.0).build();
+
+        when(userRepository.findById(2L)).thenReturn(Optional.of(other));
+        when(projectRepository.findById(1L)).thenReturn(Optional.of(project));
+        when(clockEntryRepository.save(any(ClockEntry.class))).thenAnswer(i -> i.getArgument(0));
+
+        ClockEntry result = clockEntryService.register(entry);
+
+        assertThat(result.getUser()).isEqualTo(other);
+    }
+
     @Test
     @DisplayName("Register clock entry within radius should succeed")
     void shouldRegisterClockEntrySuccessfully() {
-        User user = User.builder().id(1L).build();
+        User user = authenticate(
+                User.builder().id(1L).email("worker@test.com").build(), "OPERATOR");
         Project project = Project.builder()
                 .id(1L).latitude(40.0).longitude(-3.0).allowedRadiusMeters(50).build();
         ClockEntry entry = ClockEntry.builder()
@@ -50,7 +122,6 @@ class ClockEntryServiceTest {
                 .clockType(ClockType.ENTRY)
                 .userLatitude(40.0001).userLongitude(-3.0).build();
 
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(projectRepository.findById(1L)).thenReturn(Optional.of(project));
         when(clockEntryRepository.save(any(ClockEntry.class))).thenAnswer(i -> i.getArgument(0));
 
@@ -64,7 +135,8 @@ class ClockEntryServiceTest {
     @Test
     @DisplayName("Register clock entry outside radius should throw")
     void shouldRejectClockEntryOutsideRadius() {
-        User user = User.builder().id(1L).build();
+        User user = authenticate(
+                User.builder().id(1L).email("worker@test.com").build(), "OPERATOR");
         Project project = Project.builder()
                 .id(1L).latitude(40.0).longitude(-3.0).allowedRadiusMeters(50).build();
         ClockEntry entry = ClockEntry.builder()
@@ -72,7 +144,6 @@ class ClockEntryServiceTest {
                 .clockType(ClockType.ENTRY)
                 .userLatitude(48.8566).userLongitude(2.3522).build();
 
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(projectRepository.findById(1L)).thenReturn(Optional.of(project));
 
         assertThatThrownBy(() -> clockEntryService.register(entry))
@@ -83,6 +154,8 @@ class ClockEntryServiceTest {
     @Test
     @DisplayName("Register with non-existent user should throw")
     void shouldRejectNonExistentUser() {
+        authenticate(User.builder().id(1L).email("admin@test.com")
+                .roles(Set.of(Role.builder().id(1L).name("ADMIN").build())).build(), "ADMIN");
         Project project = Project.builder()
                 .id(1L).latitude(40.0).longitude(-3.0).allowedRadiusMeters(50).build();
         ClockEntry entry = ClockEntry.builder()
@@ -100,13 +173,13 @@ class ClockEntryServiceTest {
     @Test
     @DisplayName("Register with non-existent project should throw")
     void shouldRejectNonExistentProject() {
-        User user = User.builder().id(1L).build();
+        User user = authenticate(
+                User.builder().id(1L).email("worker@test.com").build(), "OPERATOR");
         ClockEntry entry = ClockEntry.builder()
                 .user(user).project(Project.builder().id(99L).build())
                 .clockType(ClockType.ENTRY)
                 .userLatitude(40.0).userLongitude(-3.0).build();
 
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(projectRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> clockEntryService.register(entry))
