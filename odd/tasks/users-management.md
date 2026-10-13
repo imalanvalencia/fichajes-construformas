@@ -30,7 +30,8 @@ Strict TDD is active: RED observed before GREEN on every behavior change.
     `password` and `availability`.
   - `UserAvailability` = `AVAILABLE|ON_SITE|PARTIALLY_AVAILABLE|UNAVAILABLE`; the UI offers
     `AVAILABLE|ON_LEAVE|INACTIVE`.
-  - `UserService.findById()` throws `IllegalArgumentException` → HTTP 500, not 404.
+  - `UserService.findById()` throws `IllegalArgumentException` → HTTP 400 (not 500, not 404;
+    corrected below in the Log after reading `GlobalExceptionHandler`).
   - `UserController.getById` is `hasAnyRole('ADMIN','OPERATOR')` with no ownership check.
   - `UserRepository.findByRole(UserRole)` is `@Deprecated` and derives from the transient field.
   - `spring.jpa.open-in-view: true`, so the LAZY `currentProject` serializes.
@@ -120,7 +121,10 @@ whenever no user currently holds a role (e.g. nobody is ADMIN yet, so nobody cou
       165 passed / 2 failed — both failures are in `budget-editor.component.spec.ts` and were
       proven pre-existing by re-running the suite with my changes stashed (159 passed, same 2
       failed). `ng build` succeeds.
-- [ ] T5 Verification (S8): full backend + frontend suites; record results and work-unit commits.
+- [x] T5 Verification (S8): backend `./mvnw test` 266/266 green; frontend `ng test` 165 passed /
+      2 failed (both pre-existing in `budget-editor.component.spec.ts`, proven by stash);
+      `ng build` succeeds. Three work-unit commits on `dev`: `29bd6d1` (API contract fixes),
+      `5d8e3c3` (role catalog), `ca10575` (frontend module).
 
 ## Log (running)
 - 2026-10-13 — feature doc created on `dev`. Forecast ~750 authored lines (>400). Delivery
