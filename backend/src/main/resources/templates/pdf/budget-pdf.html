@@ -13,7 +13,29 @@
     */
     @page {
       size: A4;
-      margin: 18mm 15mm;
+      margin: 26mm 15mm 24mm 15mm;
+
+      @top-left {
+        content: element(runningHeader);
+      }
+
+      @bottom-left {
+        content: element(runningFooter);
+      }
+
+      @bottom-right {
+        content: "Página " counter(page) " de " counter(pages);
+        font-family: Poppins, Helvetica, Arial, sans-serif;
+        font-size: 8pt;
+        color: #46474A;
+      }
+    }
+
+    /* Page 1 keeps the full brand header below: suppress the running header on :first only. */
+    @page :first {
+      @top-left {
+        content: none;
+      }
     }
 
     * {
@@ -305,9 +327,81 @@
       color: #1C1C1D;
       font-weight: 600;
     }
+
+    /* --- Running header / footer: repeated in @page margin boxes on pages 2+ --- */
+    .running-header {
+      position: running(runningHeader);
+      width: 180mm;
+      font-size: 8.5pt;
+      color: #1C1C1D;
+      border-bottom: 1px solid #ACB4B6;
+      padding-bottom: 4px;
+    }
+
+    .running-footer {
+      position: running(runningFooter);
+      width: 140mm;
+      font-size: 7.5pt;
+      color: #46474A;
+      border-top: 1px solid #ACB4B6;
+      padding-top: 4px;
+    }
+
+    table.rh-table,
+    table.rf-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .rh-table td,
+    .rf-table td {
+      padding: 0 8px 0 0;
+      vertical-align: middle;
+    }
+
+    .rh-table td.rh-doc {
+      text-align: right;
+      padding-right: 0;
+      white-space: nowrap;
+    }
   </style>
 </head>
 <body>
+
+<!-- Running header/footer: hoisted into @page margin boxes on pages 2+; page 1 keeps the full header below -->
+<div class="running-header">
+  <table class="rh-table">
+    <tbody>
+    <tr>
+      <td class="rh-brand">
+        <img th:if="${companyLogoDataUri != null}" th:src="${companyLogoDataUri}" alt="" style="width: 34mm; display: block;"/>
+        <span th:unless="${companyLogoDataUri != null}"
+              th:text="${companyName != null and !companyName.isEmpty()} ? ${companyName} : 'Construformas'">Construformas</span>
+      </td>
+      <td class="rh-doc"
+          th:text="'Presupuesto N.º ' + ${budget.id} + ' — v' + ${budget.version}">Presupuesto N.º 1 — v1</td>
+    </tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="running-footer">
+  <table class="rf-table">
+    <tbody>
+    <tr>
+      <!-- Single compact run: several <td> cells force each field into a narrow column, which wraps
+           mid-token ("clientes@construformas." / "es"). One expression keeps tokens contiguous. -->
+      <td class="rf-line"
+          th:text="${(companyName != null and !companyName.isEmpty() ? companyName : '')
+                      + (companyTaxId != null and !companyTaxId.isEmpty() ? ' · CIF ' + companyTaxId : '')
+                      + (companyAddress != null and !companyAddress.isEmpty() ? ' · ' + companyAddress : '')
+                      + (companyPhone != null and !companyPhone.isEmpty() ? ' · ' + companyPhone : '')
+                      + (companyEmail != null and !companyEmail.isEmpty() ? ' · ' + companyEmail : '')
+                      + (companyWebsite != null and !companyWebsite.isEmpty() ? ' · ' + companyWebsite : '')}">Construformas S.L.</td>
+    </tr>
+    </tbody>
+  </table>
+</div>
 
 <!-- Header: logo already carries name + isotipo + eslogan, so no text sits beside it -->
 <table class="header">

@@ -62,8 +62,8 @@ app:
     company:
       name: Construformas S.L.
       logo-path: classpath:static/images/logo-horizontal.png
-      address: ""
+      address: "Calle del Plus Ultra 3, 03012 Alicante"
       tax-id: ""
-      phone: ""
-      email: ""
-      website: ""
+      phone: "+34641419483"
+      email: "clientes@construformas.es"
+      website: "www.construformas.es"

@@ -97,6 +97,90 @@ class BudgetPdfServiceImplTest {
         }
     }
 
+    // --- Running header / footer (repeats on every page; page 1 keeps the full brand header) ---
+
+    /** Text of a single rendered page, including @page margin-box content. */
+    private static String pageText(PDDocument doc, int pageNumber) throws Exception {
+        PDFTextStripper stripper = new PDFTextStripper();
+        stripper.setStartPage(pageNumber);
+        stripper.setEndPage(pageNumber);
+        return stripper.getText(doc);
+    }
+
+    @Test
+    void runningHeaderAndPageCounterRepeatFromPageTwoOnwards() throws Exception {
+        String[] zones = {"Cocina", "Baño", "Salón", "Exterior"};
+        List<BudgetItem> items = new ArrayList<>();
+        for (int i = 1; i <= 35; i++) {
+            items.add(BudgetItem.builder().id((long) i).description("Item " + i)
+                    .zone(zones[(i - 1) % 4]).quantity(BigDecimal.ONE)
+                    .unitPrice(BigDecimal.ONE).totalPrice(BigDecimal.ONE).orderNum(i).build());
+        }
+        try (PDDocument doc = render(items, List.of())) {
+            assertThat(doc.getNumberOfPages()).isGreaterThan(1);
+            String page1 = pageText(doc, 1);
+            String page2 = pageText(doc, 2);
+            // Page 2+ carry the compact running header (budget reference) and the page counter.
+            assertThat(page2).contains("Presupuesto N.º 42");
+            assertThat(page2).containsPattern("P[áa]gina 2 de \\d+");
+            // Page 1 keeps the full brand header (doc-number date row) and no running header on top.
+            assertThat(page1).contains("Fecha:");
+            assertThat(page1).doesNotContain("Presupuesto N.º 42");
+        }
+    }
+
+    @Test
+    void runningFooterKeepsCompanyContactFieldsOnOneLine() throws Exception {
+        CompanyProperties props = new CompanyProperties();
+        props.setName("Construformas S.L.");
+        props.setTaxId("B00000000");
+        props.setAddress("Calle del Plus Ultra 3, 03012 Alicante");
+        props.setPhone("+34641419483");
+        props.setEmail("clientes@construformas.es");
+        props.setWebsite("www.construformas.es");
+        BudgetPdfServiceImpl serviceWithContact = new BudgetPdfServiceImpl(
+                new ThymeleafPdfConfig().pdfTemplateEngine(),
+                budgetService, budgetItemRepository, budgetDiscountRepository, props);
+
+        Budget budget = budgetWithIva(new BigDecimal("1000.00"), BigDecimal.ZERO,
+                new BigDecimal("1000.00"), false);
+        List<BudgetItem> items = new ArrayList<>();
+        for (int i = 1; i <= 35; i++) {
+            items.add(BudgetItem.builder().id((long) i).description("Item " + i)
+                    .zone("Cocina").quantity(BigDecimal.ONE)
+                    .unitPrice(BigDecimal.ONE).totalPrice(BigDecimal.ONE).orderNum(i).build());
+        }
+        when(budgetService.findById(42L)).thenReturn(budget);
+        when(budgetItemRepository.findByBudgetIdOrderByOrderNum(42L)).thenReturn(items);
+        when(budgetDiscountRepository.findByBudgetId(42L)).thenReturn(List.of());
+
+        try (PDDocument doc = PDDocument.load(serviceWithContact.generatePdf(42L))) {
+            String page2 = pageText(doc, 2);
+            // One contact field per footer cell wraps mid-token ("construformas." / "es"); a single
+            // compact run stays intact and only breaks on separators, if at all.
+            assertThat(page2).contains("clientes@construformas.es");
+            assertThat(page2).contains("www.construformas.es");
+        }
+    }
+
+    @Test
+    void templateDeclaresRunningHeaderFooterMarginBoxContract() {
+        String html = processTemplate("data:image/png;base64,iVBORw0KGgo=");
+
+        // @page margin boxes inject the running blocks; margins leave room for both boxes.
+        assertThat(html).contains("margin: 26mm 15mm 24mm 15mm");
+        assertThat(html).contains("content: element(runningHeader)", "content: element(runningFooter)");
+        assertThat(html).contains("counter(page)", "counter(pages)");
+        // Page 1 keeps the full brand header: the running header is suppressed on :first only.
+        assertThat(html).contains("@page :first", "content: none");
+        // The blocks are running elements with explicit widths (no collision with @bottom-right).
+        assertThat(html).contains("position: running(runningHeader)", "position: running(runningFooter)");
+        assertThat(html).contains("width: 180mm", "width: 140mm");
+        // Markup: both blocks exist and the budget reference lives in the running header.
+        assertThat(html).contains("class=\"running-header\"", "class=\"running-footer\"");
+        assertThat(html).contains("Presupuesto N.º ");
+    }
+
     @Test
     void generatePdfDeniesOperatorWithoutProjectAssignment() {
         when(budgetService.findById(42L))
@@ -288,6 +372,15 @@ class BudgetPdfServiceImplTest {
         assertThat(html).contains("#1C1C1D", "#E22D2D", "#ACB4B6", "#E1E5E7");
         // The logo already carries name + isotipo + eslogan: no duplicated text beside it.
         assertThat(html).doesNotContain("class=\"company-name\"", "company-meta");
+    }
+
+    @Test
+    void templateKeepsNegativeAmountRulesetParseable() {
+        String html = processTemplate("data:image/png;base64,iVBORw0KGgo=");
+
+        // OpenHTMLtoPDF skips a malformed ruleset with a css-parse WARNING, silently dropping
+        // the Construction Red accent on negative amounts instead of failing loudly.
+        assertThat(html).contains(".negative {");
     }
 
     @Test
