@@ -3,6 +3,7 @@ package es.construformas.api.controller;
 import es.construformas.api.model.User;
 import es.construformas.api.model.UserAvailability;
 import es.construformas.api.model.UserRole;
+import es.construformas.api.exception.UserNotFoundException;
 import es.construformas.api.service.UserService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
@@ -53,9 +54,65 @@ class UserControllerTest {
                 .id(1L)
                 .name("John Doe")
                 .email("john@test.com")
+                .password("raw-secret")
                 .role(UserRole.OPERATOR)
                 .active(true)
                 .build();
+    }
+
+    @Test
+    @DisplayName("S1: POST /api/users should never return the password field")
+    void createShouldNotLeakPassword() throws Exception {
+        when(userService.create(any(User.class))).thenReturn(sampleUser());
+
+        mockMvc.perform(post("/api/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(sampleUser())))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.password").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("S1: GET /api/users should never return the password field")
+    void getAllShouldNotLeakPassword() throws Exception {
+        when(userService.findAll()).thenReturn(List.of(sampleUser()));
+
+        mockMvc.perform(get("/api/users"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].password").doesNotExist())
+                .andExpect(jsonPath("$[0].name").value("John Doe"));
+    }
+
+    @Test
+    @DisplayName("S1: GET /api/users/{id} should never return the password field")
+    void getByIdShouldNotLeakPassword() throws Exception {
+        when(userService.findByIdForCaller(1L)).thenReturn(sampleUser());
+
+        mockMvc.perform(get("/api/users/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.password").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("S1: PUT /api/users/{id} should never return the password field")
+    void updateShouldNotLeakPassword() throws Exception {
+        when(userService.update(eq(1L), any(User.class))).thenReturn(sampleUser());
+
+        mockMvc.perform(put("/api/users/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(sampleUser())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.password").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("S3: GET /api/users/{id} should return 404 for an unknown id")
+    void getByIdShouldReturn404WhenNotFound() throws Exception {
+        when(userService.findByIdForCaller(99L))
+                .thenThrow(new UserNotFoundException(99L));
+
+        mockMvc.perform(get("/api/users/99"))
+                .andExpect(status().isNotFound());
     }
 
     @Test
@@ -76,7 +133,7 @@ class UserControllerTest {
     @Test
     @DisplayName("GET /api/users/{id} should return user")
     void getByIdShouldReturnUser() throws Exception {
-        when(userService.findById(1L)).thenReturn(sampleUser());
+        when(userService.findByIdForCaller(1L)).thenReturn(sampleUser());
 
         mockMvc.perform(get("/api/users/1"))
                 .andExpect(status().isOk())

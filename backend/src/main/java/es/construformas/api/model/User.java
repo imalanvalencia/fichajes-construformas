@@ -2,6 +2,7 @@ package es.construformas.api.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
@@ -29,6 +30,12 @@ public class User {
     @Column(unique = true)
     private String nie;
 
+    /**
+     * Write-only: the hash is accepted in request bodies but never serialized back.
+     * UserController returns the entity directly, so without this the BCrypt hash of
+     * every user travels in the response of GET /api/users.
+     */
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     @Column(nullable = false)
     private String password;
 

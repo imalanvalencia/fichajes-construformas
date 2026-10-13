@@ -2,15 +2,21 @@ package es.construformas.api.service;
 
 import es.construformas.api.model.Role;
 import es.construformas.api.model.User;
+import es.construformas.api.model.UserAvailability;
 import es.construformas.api.model.UserRole;
+import es.construformas.api.exception.UserNotFoundException;
 import es.construformas.api.repository.RoleRepository;
 import es.construformas.api.repository.UserRepository;
+import org.springframework.security.access.AccessDeniedException;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.List;
 import java.util.Optional;
@@ -19,6 +25,7 @@ import java.util.Set;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -29,6 +36,17 @@ class UserServiceTest {
     @Mock private RoleRepository roleRepository;
     @Mock private org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
     @InjectMocks private UserService userService;
+
+    /** This is a pure Mockito unit test, so the security context is set by hand. */
+    private void authenticateAs(String email) {
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(email, null, List.of()));
+    }
+
+    @AfterEach
+    void clearSecurityContext() {
+        SecurityContextHolder.clearContext();
+    }
 
     @Test
     @DisplayName("Create user should save and return")
@@ -107,13 +125,13 @@ class UserServiceTest {
     }
 
     @Test
-    @DisplayName("Find by ID should throw when not found")
+    @DisplayName("S3: Find by ID should throw UserNotFoundException when not found")
     void shouldThrowWhenNotFound() {
         when(userRepository.findById(999L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> userService.findById(999L))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("User not found");
+                .isInstanceOf(UserNotFoundException.class)
+                .hasMessageContaining("999");
     }
 
     @Test
@@ -157,6 +175,87 @@ class UserServiceTest {
         assertThat(result.getPhone()).isEqualTo("222");
         assertThat(result.getNie()).isEqualTo("B");
         assertThat(result.isActive()).isFalse();
+    }
+
+    @Test
+    @DisplayName("S2: Update should apply email, roles and availability")
+    void shouldApplyEmailRolesAndAvailabilityOnUpdate() {
+        Role admin = Role.builder().id(1L).name("ADMIN").build();
+        Role operator = Role.builder().id(2L).name("OPERATOR").build();
+        User existing = User.builder().id(1L).name("Old").email("old@test.com")
+                .password("encoded").roles(Set.of(operator))
+                .availability(UserAvailability.AVAILABLE).active(true).build();
+        User updated = User.builder().name("New").email("new@test.com")
+                .roles(Set.of(admin, operator))
+                .availability(UserAvailability.ON_SITE).active(true).build();
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(existing));
+        when(userRepository.existsByEmail("new@test.com")).thenReturn(false);
+        when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
+
+        User result = userService.update(1L, updated);
+
+        assertThat(result.getEmail()).isEqualTo("new@test.com");
+        assertThat(result.getRoles()).containsExactlyInAnyOrder(admin, operator);
+        assertThat(result.getAvailability()).isEqualTo(UserAvailability.ON_SITE);
+        assertThat(result.getPassword()).isEqualTo("encoded");
+    }
+
+    @Test
+    @DisplayName("S2: Update to an email owned by another user should be rejected")
+    void shouldRejectDuplicateEmailOnUpdate() {
+        User existing = User.builder().id(1L).name("Old").email("old@test.com").active(true).build();
+        User updated = User.builder().email("taken@test.com").active(true).build();
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(existing));
+        when(userRepository.existsByEmail("taken@test.com")).thenReturn(true);
+
+        assertThatThrownBy(() -> userService.update(1L, updated))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Email already exists");
+
+        verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    @DisplayName("S3: findByIdForCaller should return any user for an ADMIN")
+    void findByIdForCallerShouldAllowAdmin() {
+        authenticateAs("admin@test.com");
+        User adminCaller = User.builder().id(9L).email("admin@test.com")
+                .roles(Set.of(Role.builder().id(1L).name("ADMIN").build())).build();
+        User target = User.builder().id(1L).name("Target").build();
+
+        when(userRepository.findByEmail("admin@test.com")).thenReturn(Optional.of(adminCaller));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(target));
+
+        assertThat(userService.findByIdForCaller(1L)).isSameAs(target);
+    }
+
+    @Test
+    @DisplayName("S3: findByIdForCaller should reject an OPERATOR reading another user")
+    void findByIdForCallerShouldRejectOperatorReadingOtherUser() {
+        authenticateAs("op@test.com");
+        User operatorCaller = User.builder().id(9L).email("op@test.com")
+                .roles(Set.of(Role.builder().id(2L).name("OPERATOR").build())).build();
+
+        when(userRepository.findByEmail("op@test.com")).thenReturn(Optional.of(operatorCaller));
+
+        assertThatThrownBy(() -> userService.findByIdForCaller(1L))
+                .isInstanceOf(AccessDeniedException.class);
+        verify(userRepository, never()).findById(any());
+    }
+
+    @Test
+    @DisplayName("S3: findByIdForCaller should let an OPERATOR read its own record")
+    void findByIdForCallerShouldAllowOperatorOwnRecord() {
+        authenticateAs("op@test.com");
+        User operatorCaller = User.builder().id(9L).email("op@test.com")
+                .roles(Set.of(Role.builder().id(2L).name("OPERATOR").build())).build();
+
+        when(userRepository.findByEmail("op@test.com")).thenReturn(Optional.of(operatorCaller));
+        when(userRepository.findById(9L)).thenReturn(Optional.of(operatorCaller));
+
+        assertThat(userService.findByIdForCaller(9L)).isSameAs(operatorCaller);
     }
 
     @Test
