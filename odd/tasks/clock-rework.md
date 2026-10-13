@@ -115,7 +115,7 @@ corrections component spec.
 | T4 | S4, S5 | inline | done | `clock.component.spec.ts` 9/9; frontend suite 174 passed, 2 pre-existing `budget-editor` failures verified at baseline; commit c3461dd |
 | T5 | S7 | inline | done | `clock-corrections.component.spec.ts` 7/7; frontend suite 182 passed, 2 pre-existing `budget-editor` failures |
 | T6 | S6 | inline | done | `app.routes.spec.ts` 1/1, `sidebar.component.spec.ts` 3/3 (RED observed 4F); frontend suite 186 passed, 2 pre-existing `budget-editor` failures |
-| T7 | S1-S7 | inline | pending | final verification |
+| T7 | S1-S7 | inline | done | final verification: backend `Tests run: 271, Failures: 0`; frontend 186 passed, 2 pre-existing `budget-editor` failures |
 
 Route evidence: delegation to `gentle-ai-explore`/`gentle-ai-worker` failed at launch
 with a provider error ("OpenCode's free tier can only be used from within OpenCode"), so
@@ -220,3 +220,11 @@ roles outside the API's `hasAnyRole('ADMIN','OPERATOR')` scope do not; the exist
 `budget-editor` failures. Observation (not a change): `visibleNavItems` still gates the
 `adminOnly` "Usuarios" entry with `roles.includes('ROLE_ADMIN')` while login responses
 return unprefixed `ADMIN` — pre-existing, outside S6's scope, left alone.
+
+L13 (2026-10-14) — T7 (final verification): backend `./mvnw -o test` → `Tests run: 271,
+Failures: 0, Errors: 0, Skipped: 0`, BUILD SUCCESS; frontend `ng test` → 186 passed with
+only the 2 documented pre-existing `budget-editor` failures. All specs S1-S7 are covered by
+their checks. RDD assess on the work-unit commits: `3f26020`→`bdef49d` and
+`bdef49d`→`70ee0d5` both returned `medium / under_budget` — no review due, boundaries
+advanced. Slice #2 (`02b6b4d`) was `high` with consent declined (L9). Remaining: push +
+feature-branch-chain PRs, which are the user's decision.
