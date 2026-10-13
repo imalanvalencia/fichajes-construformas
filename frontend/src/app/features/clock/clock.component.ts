@@ -14,6 +14,7 @@ import { CardComponent } from '@shared-components/card/card.component';
 import { SelectOption } from '@shared-components/select/select.component';
 import { ClockTableComponent } from '@components/clock/clock-table/clock-table.component';
 import { ClockRegisterModalComponent, LocationState } from '@components/clock/clock-register-modal/clock-register-modal.component';
+import { ClockCorrectionsComponent } from './clock-corrections/clock-corrections.component';
 
 @Component({
   selector: 'app-clock',
@@ -25,6 +26,7 @@ import { ClockRegisterModalComponent, LocationState } from '@components/clock/cl
     CardComponent,
     ClockTableComponent,
     ClockRegisterModalComponent,
+    ClockCorrectionsComponent,
   ],
   template: `
     <div class="space-y-6">
@@ -52,6 +54,8 @@ import { ClockRegisterModalComponent, LocationState } from '@components/clock/cl
         (onDelete)="deleteEntry($event)"
       />
 
+      <app-clock-corrections [isAdmin]="isAdmin()" />
+
       <app-clock-register-modal
         [show]="showModal()"
         [registeringType]="registeringType"
@@ -71,6 +75,7 @@ export class ClockComponent {
   entries = signal<ClockEntry[]>([]);
   projects = signal<Project[]>([]);
   showModal = signal(false);
+  isAdmin = signal(false);
   locationState = signal<LocationState>('idle');
   locationText = signal('');
   registeringType: ClockType = 'ENTRY';
@@ -101,6 +106,7 @@ export class ClockComponent {
   constructor() {
     this.setDefaultDates();
     this.filterUserId = this.auth.getUser()?.id ?? 0;
+    this.isAdmin.set(this.auth.hasRole('ADMIN'));
     this.loadProjects();
   }
 
