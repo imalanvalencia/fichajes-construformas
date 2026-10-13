@@ -88,6 +88,12 @@ with the route enabled.
 Both full suites pass: `cd backend && ./mvnw test` and `cd frontend && pnpm test`, plus
 `pnpm build`.
 
+### S9 — Role catalog endpoint (added during T3, see Log)
+`GET /api/roles` MUST return the role catalog (`{id, name, description}`) to an ADMIN and 403 to
+an OPERATOR. Rationale: `roles` is a many-to-many entity set, so the UI needs real role ids to
+build the payload; without this endpoint the multi-select would have to guess ids, which fails
+whenever no user currently holds a role (e.g. nobody is ADMIN yet, so nobody could be promoted).
+
 ## Assumptions (flagged, not silent)
 - A1 — Role editing is multi-select because the backend is many-to-many by design (V9 junction
   table, JWT `roles` claim, sidebar `roles.includes`). This follows the existing architecture
@@ -105,9 +111,15 @@ Both full suites pass: `cd backend && ./mvnw test` and `cd frontend && pnpm test
       "$.password" but found: 'raw-secret'`.
 - [x] T2 Backend, GREEN: implement S1, S2, S3. Target classes GREEN 28/28, then full backend
       suite GREEN 264/264 (`./mvnw test`, BUILD SUCCESS).
-- [ ] T3 Frontend, RED: rewrite `user.types.ts`, `user.service.ts`, `users-table`,
+- [x] T6 Backend, roles catalog (S9): RED `RoleControllerTest` (ADMIN 200, OPERATOR 403), then
+      GREEN — `RoleController` + `RoleService` exposing `GET /api/roles`.
+- [x] T3 Frontend, RED: rewrite `user.types.ts`, `user.service.ts`, `users-table`,
       `user-form-modal`, `users-filters`, `users.component` for S4, S5, S6; tests for each.
-- [ ] T4 Frontend, GREEN: enable the route (S7); make `pnpm test` and `pnpm build` pass.
+      RED observed as TS2305/TS2561 compile failures (`Role` not exported, `roles` not in `User`).
+- [x] T4 Frontend, GREEN: enable the route (S7); make the test suite and build pass. Result:
+      165 passed / 2 failed — both failures are in `budget-editor.component.spec.ts` and were
+      proven pre-existing by re-running the suite with my changes stashed (159 passed, same 2
+      failed). `ng build` succeeds.
 - [ ] T5 Verification (S8): full backend + frontend suites; record results and work-unit commits.
 
 ## Log (running)
@@ -123,3 +135,18 @@ Both full suites pass: `cd backend && ./mvnw test` and `cd frontend && pnpm test
   `User.role` (the `@Deprecated @Transient` phantom that always serializes as `null`) was left
   untouched on purpose: removing it changes a public response contract nobody asked to change.
   Flagged for the user instead.
+- 2026-10-13 — scope addition, decided and disclosed: added `GET /api/roles` (S9) plus
+  `RoleService`/`RoleControllerTest`. The many-to-many `roles` payload needs real role ids and
+  the frontend had no way to obtain them; guessing ids (V9 seeds ADMIN then OPERATOR) breaks as
+  soon as no user currently holds a role. Additive endpoint, not a new requirement.
+- 2026-10-13 — scope addition, decided and disclosed: added `app-checkbox` to
+  `components/shared/`. S6 requires a multi-select for roles and the design system had no
+  checkbox primitive; `app-select` is single-value only. Built as an application-owned
+  ControlValueAccessor matching the other `app-*` primitives, per the frontend-ui-abstraction
+  contract, rather than dropping a raw native control into the modal.
+- 2026-10-13 — pre-existing failure documented, not fixed (out of scope):
+  `budget-editor.component.spec.ts` has 2 failing tests. Proven pre-existing by stashing my
+  changes and re-running: 159 passed / 2 failed before, 165 passed / 2 failed after.
+- 2026-10-13 — pre-existing condition documented: `ng build` reports the initial bundle over its
+  750 kB budget (897.50 kB before this feature, 909.56 kB after — about 12 kB added by the
+  users module). Not caused by this change; not addressed here.

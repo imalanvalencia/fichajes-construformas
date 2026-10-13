@@ -2,6 +2,7 @@ export * from './button/button.component';
 export * from './link/link.component';
 export * from './card/card.component';
 export * from './input/input.component';
+export * from './checkbox/checkbox.component';
 export * from './select/select.component';
 export * from './textarea/textarea.component';
 export * from './metric-card/metric-card.component';

@@ -1,6 +1,6 @@
 import { Component, input, output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { User, UserRole } from '../../../features/users/types/user.types';
+import { User } from '../../../features/users/types/user.types';
 import { ButtonComponent } from '../../shared/button/button.component';
 import { CardComponent } from '../../shared/card/card.component';
 import { BadgeComponent } from '../../shared/badge/badge.component';
@@ -33,7 +33,11 @@ import { BadgeComponent } from '../../shared/badge/badge.component';
                 <td class="py-3 px-4 text-steel">{{ user.phone || '—' }}</td>
                 <td class="py-3 px-4 text-steel font-mono">{{ user.nie || '—' }}</td>
                 <td class="py-3 px-4">
-                  <app-badge [status]="user.role" />
+                  @for (role of user.roles; track role.id) {
+                    <app-badge [status]="role.name" />
+                  } @empty {
+                    <span class="text-steel">—</span>
+                  }
                 </td>
                 <td class="py-3 px-4 text-steel">{{ formatAvailability(user.availability) }}</td>
                 <td class="py-3 px-4">

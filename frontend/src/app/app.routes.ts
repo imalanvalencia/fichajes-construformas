@@ -36,7 +36,7 @@ export const routes: Routes = [
       // { path: 'suppliers', component: SuppliersComponent },
       // { path: 'payments', component: PaymentsComponent },
       // { path: 'clock', component: ClockComponent },
-      // { path: 'users', component: UsersComponent },
+      { path: 'users', component: UsersComponent },
     ],
   },
   { path: '**', redirectTo: '' },

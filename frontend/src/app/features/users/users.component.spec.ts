@@ -3,17 +3,22 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { of, Subject, throwError } from 'rxjs';
 import { UsersComponent } from './users.component';
 import { UserService } from './services/user.service';
-import { User } from './types/user.types';
+import { Role, User } from './types/user.types';
 import { NotificationService } from '@app/services/notification.service';
+
+const OPERATOR_ROLE: Role = { id: 2, name: 'OPERATOR', description: 'Field operator' };
+const ADMIN_ROLE: Role = { id: 1, name: 'ADMIN', description: 'Administrator' };
 
 describe('UsersComponent', () => {
   let component: UsersComponent;
   let fixture: ComponentFixture<UsersComponent>;
   let userService: {
     getAll: ReturnType<typeof vi.fn>;
-    getByRole: ReturnType<typeof vi.fn>;
+    getRoles: ReturnType<typeof vi.fn>;
     create: ReturnType<typeof vi.fn>;
     update: ReturnType<typeof vi.fn>;
+    updateAvailability: ReturnType<typeof vi.fn>;
+    delete: ReturnType<typeof vi.fn>;
   };
   let notifications: { success: ReturnType<typeof vi.fn>; error: ReturnType<typeof vi.fn> };
 
@@ -21,7 +26,7 @@ describe('UsersComponent', () => {
     id: 1,
     name: 'Ana Uno',
     email: 'ana@example.com',
-    role: 'OPERATOR',
+    roles: [OPERATOR_ROLE],
     availability: 'AVAILABLE',
     active: true,
   };
@@ -29,9 +34,11 @@ describe('UsersComponent', () => {
   beforeEach(async () => {
     userService = {
       getAll: vi.fn().mockReturnValue(of([existingUser])),
-      getByRole: vi.fn().mockReturnValue(of([existingUser])),
+      getRoles: vi.fn().mockReturnValue(of([ADMIN_ROLE, OPERATOR_ROLE])),
       create: vi.fn(),
       update: vi.fn(),
+      updateAvailability: vi.fn().mockReturnValue(of('ON_SITE')),
+      delete: vi.fn().mockReturnValue(of(undefined)),
     };
     notifications = { success: vi.fn(), error: vi.fn() };
 
@@ -48,12 +55,84 @@ describe('UsersComponent', () => {
     fixture.detectChanges();
   });
 
+  it('renders one badge per role taken from the roles set, not the removed single role', () => {
+    component.filteredUsers.set([{ ...existingUser, roles: [ADMIN_ROLE, OPERATOR_ROLE] }]);
+    fixture.detectChanges();
+
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain('ADMIN');
+    expect(text).toContain('OPERATOR');
+  });
+
+  it('sends the many-to-many roles payload on create (S6)', () => {
+    userService.create.mockReturnValue(of({ ...existingUser, id: 2 }));
+    component.openCreateModal();
+    component.onFormChange({
+      name: 'Ana Dos',
+      email: 'ana2@example.com',
+      password: 'secreta',
+      roles: [OPERATOR_ROLE],
+      availability: 'AVAILABLE',
+    });
+
+    component.saveUser();
+
+    expect(userService.create).toHaveBeenCalledWith(
+      expect.objectContaining({ roles: [OPERATOR_ROLE] }),
+    );
+  });
+
+  it('persists availability through the dedicated endpoint, not the update body (S5)', () => {
+    userService.update.mockReturnValue(of({ ...existingUser, availability: 'ON_SITE' }));
+    component.openEditModal(existingUser);
+    component.onFormChange({ availability: 'ON_SITE' });
+
+    component.saveUser();
+
+    expect(userService.updateAvailability).toHaveBeenCalledWith(1, 'ON_SITE');
+    expect(userService.update).toHaveBeenCalledWith(
+      1,
+      expect.not.objectContaining({ availability: 'ON_SITE' }),
+    );
+  });
+
+  it('does not call the availability endpoint when availability is unchanged (S5)', () => {
+    userService.update.mockReturnValue(of(existingUser));
+    component.openEditModal(existingUser);
+    component.onFormChange({ name: 'Ana Editada' });
+
+    component.saveUser();
+
+    expect(userService.updateAvailability).not.toHaveBeenCalled();
+  });
+
+  it('filters by role client-side over the roles set (S4)', () => {
+    const admin = { ...existingUser, id: 3, name: 'Beto', roles: [ADMIN_ROLE] };
+    userService.getAll.mockReturnValue(of([existingUser, admin]));
+    component.loadUsers();
+
+    component.onFilterChange('ADMIN');
+
+    expect(component.filteredUsers()).toEqual([admin]);
+  });
+
+  it('restores the full list when the role filter is cleared (S4)', () => {
+    const admin = { ...existingUser, id: 3, name: 'Beto', roles: [ADMIN_ROLE] };
+    userService.getAll.mockReturnValue(of([existingUser, admin]));
+    component.loadUsers();
+
+    component.onFilterChange('ADMIN');
+    component.onFilterChange('');
+
+    expect(component.filteredUsers()).toEqual([existingUser, admin]);
+  });
+
   it('appends the confirmed user once to canonical and unfiltered visible state', () => {
     const savedUser = {
       ...existingUser,
       id: 2,
-      role: 'MANAGER' as const,
-      availability: 'ON_LEAVE' as const,
+      roles: [ADMIN_ROLE],
+      availability: 'ON_SITE' as const,
     };
     userService.create.mockReturnValue(of(savedUser));
     component.openCreateModal();
@@ -69,15 +148,15 @@ describe('UsersComponent', () => {
   });
 
   it('respects the active role filter when appending a confirmed user', () => {
-    const manager = { ...existingUser, id: 2, role: 'MANAGER' as const };
-    userService.create.mockReturnValue(of(manager));
+    const admin = { ...existingUser, id: 2, roles: [ADMIN_ROLE] };
+    userService.create.mockReturnValue(of(admin));
     component.onFilterChange('OPERATOR');
     component.openCreateModal();
-    component.onFormChange({ ...manager, password: 'secreta' });
+    component.onFormChange({ ...admin, password: 'secreta' });
 
     component.saveUser();
 
-    expect(component.users()).toEqual([existingUser, manager]);
+    expect(component.users()).toEqual([existingUser, admin]);
     expect(component.filteredUsers()).toEqual([existingUser]);
   });
 
@@ -115,21 +194,12 @@ describe('UsersComponent', () => {
     expect(component.filteredUsers()).toEqual([savedUser]);
   });
 
-  it('keeps role and availability on the existing update flow', () => {
-    const updatedUser = {
-      ...existingUser,
-      role: 'MANAGER' as const,
-      availability: 'ON_LEAVE' as const,
-    };
-    userService.update.mockReturnValue(of(updatedUser));
-    component.openEditModal(updatedUser);
+  it('asks for confirmation before deleting a user', () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
 
-    component.saveUser();
+    component.deleteUser(1);
 
-    expect(userService.update).toHaveBeenCalledWith(
-      1,
-      expect.objectContaining({ role: 'MANAGER', availability: 'ON_LEAVE' }),
-    );
-    expect(userService.create).not.toHaveBeenCalled();
+    expect(userService.delete).toHaveBeenCalledWith(1);
+    confirmSpy.mockRestore();
   });
 });

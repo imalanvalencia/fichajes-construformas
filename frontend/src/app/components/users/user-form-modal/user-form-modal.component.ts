@@ -1,14 +1,21 @@
 import { Component, input, output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { User } from '../../../features/users/types/user.types';
+import {
+  AVAILABILITY_LABELS,
+  Role,
+  User,
+  UserAvailability,
+  roleLabel,
+} from '../../../features/users/types/user.types';
 import { ButtonComponent } from '../../shared/button/button.component';
+import { CheckboxComponent } from '../../shared/checkbox/checkbox.component';
 import { InputComponent } from '../../shared/input/input.component';
 import { SelectComponent } from '../../shared/select/select.component';
 
 @Component({
   selector: 'app-user-form-modal',
   standalone: true,
-  imports: [FormsModule, ButtonComponent, InputComponent, SelectComponent],
+  imports: [FormsModule, ButtonComponent, CheckboxComponent, InputComponent, SelectComponent],
   template: `
     @if (show()) {
       <div class="fixed inset-0 z-50 flex items-center justify-center">
@@ -25,13 +32,23 @@ import { SelectComponent } from '../../shared/select/select.component';
             <app-input label="Contraseña *" type="password" [value]="form().password ?? ''" (valueChange)="updateField('password', $event)" />
           }
 
-          <app-select
-            label="Rol *"
-            [options]="roleOptions"
-            [value]="form().role"
-            (valueChange)="updateField('role', $event!)"
-            [required]="true"
-          />
+          <fieldset class="pt-2">
+            <legend class="font-mono text-xs font-medium text-steel">Roles *</legend>
+            <div class="flex flex-col gap-2 pt-2">
+              @for (role of roleCatalog(); track role.id) {
+                <app-checkbox
+                  [label]="roleLabel(role.name)"
+                  [checked]="hasRole(role)"
+                  (checkedChange)="toggleRole(role, $event)"
+                />
+              } @empty {
+                <span class="font-mono text-xs text-steel">No hay roles disponibles.</span>
+              }
+            </div>
+            @if (rolesError()) {
+              <div class="font-mono text-xs text-construction-red mt-1">{{ rolesError() }}</div>
+            }
+          </fieldset>
 
           <app-select
             label="Disponibilidad"
@@ -55,22 +72,32 @@ export class UserFormModalComponent {
   show = input(false);
   form = input<Partial<User>>({});
   isEditing = input(false);
+  /** Role catalog with real ids, loaded from GET /api/roles. */
+  roleCatalog = input<Role[]>([]);
+  rolesError = input('');
 
   onClose = output<void>();
   onSave = output<void>();
   onFormChange = output<Partial<User>>();
 
-  readonly roleOptions = [
-    { value: 'ADMIN', label: 'Administrador' },
-    { value: 'OPERATOR', label: 'Operador' },
-    { value: 'MANAGER', label: 'Gerente' },
-  ];
+  readonly roleLabel = roleLabel;
 
-  readonly availabilityOptions = [
-    { value: 'AVAILABLE', label: 'Disponible' },
-    { value: 'ON_LEAVE', label: 'En Permiso' },
-    { value: 'INACTIVE', label: 'Inactivo' },
-  ];
+  readonly availabilityOptions = Object.entries(AVAILABILITY_LABELS).map(([value, label]) => ({
+    value: value as UserAvailability,
+    label,
+  }));
+
+  hasRole(role: Role): boolean {
+    return (this.form().roles ?? []).some((r) => r.id === role.id);
+  }
+
+  toggleRole(role: Role, checked: boolean): void {
+    const current = this.form().roles ?? [];
+    const next = checked
+      ? [...current.filter((r) => r.id !== role.id), role]
+      : current.filter((r) => r.id !== role.id);
+    this.onFormChange.emit({ roles: next });
+  }
 
   updateField(field: keyof User, value: string): void {
     this.onFormChange.emit({ [field]: value });
