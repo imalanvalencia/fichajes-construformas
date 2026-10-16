@@ -228,3 +228,16 @@ their checks. RDD assess on the work-unit commits: `3f26020`→`bdef49d` and
 `bdef49d`→`70ee0d5` both returned `medium / under_budget` — no review due, boundaries
 advanced. Slice #2 (`02b6b4d`) was `high` with consent declined (L9). Remaining: push +
 feature-branch-chain PRs, which are the user's decision.
+
+L14 (2026-10-16) — Delivery: the four branches were pushed and the chain was structured as
+six PRs (draft tracker + five children) to honor the chained-pr 400-line review budget.
+Branch `feat/clock-rework-03-frontend-rework` was split by task boundary into
+`...-03-clock-screen` (T4), `...-04-corrections-ui` (T5) and `...-05-route-sidebar`
+(T6+T7) without rewriting any commit (same SHAs); the old remote name was deleted as part
+of the rename, and the unrelated PDF files remain untouched. PRs: #3 tracker (draft,
+`feat/clock-rework` → `dev`, 151), #4 (T1+T2, 258 → #3), #5 (T3, 274 → #4), #6 (T4, 442 →
+#5), #7 (T5, 327 → #6), #8 (T6+T7, 114 + this entry → #7). PR #6 (T4) exceeds the
+400-line budget by 42 lines: T4 is a single TDD unit whose 179-line spec ships with the
+code it verifies, and the only splits would ship an untested intermediate commit or
+separate tests from their unit, so `size:exception` is recommended and pending maintainer
+acceptance.
