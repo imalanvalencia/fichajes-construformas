@@ -113,7 +113,7 @@ corrections component spec.
 | T2 | S2 | inline | done | `ClockEntryServiceTest` 11/11, `AuthServiceTest` 8/8; full backend suite 270/0 |
 | T3 | S7 | inline | done | `ClockCorrectionControllerTest` 5/5, `ClockCorrectionServiceTest` 5/5; full backend suite 271/0 |
 | T4 | S4, S5 | inline | done | `clock.component.spec.ts` 9/9; frontend suite 174 passed, 2 pre-existing `budget-editor` failures verified at baseline; commit c3461dd |
-| T5 | S7 | inline | pending | — |
+| T5 | S7 | inline | done | `clock-corrections.component.spec.ts` 7/7; frontend suite 182 passed, 2 pre-existing `budget-editor` failures |
 | T6 | S6 | inline | pending | — |
 | T7 | S1-S7 | inline | pending | final verification |
 
@@ -193,3 +193,16 @@ active projects endpoint and no typed user ID or coordinate inputs (S4), flat
 `budget-editor.component.spec.ts` failures, verified as baseline by re-running that spec with
 every clock change stashed. Untracked files left out of this slice (parallel PDF work):
 `ProjectFinancialSummaryDTO.java`, `budget-pdf-new.html`, `favicon.ico`.
+
+L11 (2026-10-14) — T5 (S7 corrections approval UI) implemented under strict TDD. RED first:
+the spec did not compile (missing component and service). GREEN after: new
+`ClockCorrectionService` (`/api/clock-corrections` with `getPending`/`approve`/`reject`, no
+`reviewerId` ever sent) and `ClockCorrectionsComponent`, an ADMIN-only pending-corrections
+table (reason, corrected time, original fichaje badge, Aprobar/Rechazar) rendered from
+signals with `NotificationService` feedback. The panel is gated by an `isAdmin` signal input
+on `ClockComponent` (`auth.hasRole('ADMIN')`), so an OPERATOR never renders the controls nor
+triggers the ADMIN-only pending endpoint. `clock-corrections.component.spec.ts` 7/7 (6 ADMIN
++ 1 OPERATOR gating), `clock.component.spec.ts` 10/10 including a new OPERATOR gating test.
+Full frontend suite: 182 passed, 2 pre-existing `budget-editor` failures unchanged. Design
+note: `reject` sends an empty body because the backend endpoint takes no observation
+parameter — recording one would be a new requirement, not part of S7.
