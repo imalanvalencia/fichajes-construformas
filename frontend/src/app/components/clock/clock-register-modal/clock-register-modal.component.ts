@@ -3,11 +3,14 @@ import { FormsModule } from '@angular/forms';
 import { ClockType } from '../../../features/clock/types/clock.types';
 import { ButtonComponent } from '../../shared/button/button.component';
 import { InputComponent } from '../../shared/input/input.component';
+import { SelectComponent, SelectOption } from '../../shared/select/select.component';
+
+export type LocationState = 'idle' | 'locating' | 'ready' | 'error';
 
 @Component({
   selector: 'app-clock-register-modal',
   standalone: true,
-  imports: [FormsModule, ButtonComponent, InputComponent],
+  imports: [FormsModule, ButtonComponent, InputComponent, SelectComponent],
   template: `
     @if (show()) {
       <div class="fixed inset-0 z-50 flex items-center justify-center">
@@ -17,20 +20,42 @@ import { InputComponent } from '../../shared/input/input.component';
             {{ registeringType() === 'ENTRY' ? 'Fichar Entrada' : 'Fichar Salida' }}
           </h2>
 
-          <app-input label="Usuario ID *" type="number" [value]="form().userId?.toString() ?? ''" (valueChange)="updateField('userId', +$event)" />
+          <div class="font-mono text-xs text-steel">Ficha por: {{ currentUserLabel() }}</div>
 
-          <app-input label="Proyecto ID *" type="number" [value]="form().projectId?.toString() ?? ''" (valueChange)="updateField('projectId', +$event)" />
+          <app-select
+            label="Proyecto *"
+            [options]="projectOptions()"
+            [value]="form().projectId"
+            (valueChange)="onProjectChange($event)"
+            placeholder="Seleccioná una obra"
+          />
 
-          <div class="grid grid-cols-2 gap-4">
-            <app-input label="Latitud *" type="number" [value]="form().userLatitude?.toString() ?? ''" (valueChange)="updateField('userLatitude', +$event)" />
-            <app-input label="Longitud *" type="number" [value]="form().userLongitude?.toString() ?? ''" (valueChange)="updateField('userLongitude', +$event)" />
+          <div
+            class="font-mono text-xs"
+            [class.text-steel]="locationState() === 'ready'"
+            [class.text-construction-red]="locationState() === 'error'"
+          >
+            @switch (locationState()) {
+              @case ('locating') {
+                Obteniendo tu ubicación…
+              }
+              @case ('ready') {
+                Ubicación verificada: {{ locationText() }}
+              }
+              @case ('error') {
+                No pudimos obtener tu ubicación: {{ locationText() }}
+              }
+              @default {
+                La ubicación se tomará de tu navegador al fichar.
+              }
+            }
           </div>
 
           <app-input label="Notas" [value]="form().notes ?? ''" (valueChange)="updateField('notes', $event)" />
 
           <div class="flex justify-end gap-3 pt-2">
             <app-button variant="text" (click)="onClose.emit()">Cancelar</app-button>
-            <app-button variant="filled" (click)="onSubmit.emit()">Registrar</app-button>
+            <app-button variant="filled" (click)="onSubmit.emit(form())">Registrar</app-button>
           </div>
         </div>
       </div>
@@ -40,13 +65,21 @@ import { InputComponent } from '../../shared/input/input.component';
 export class ClockRegisterModalComponent {
   show = input(false);
   registeringType = input<ClockType>('ENTRY');
-  form = input<Partial<{ userId: number; projectId: number; userLatitude: number; userLongitude: number; notes: string }>>({});
+  form = input<Partial<{ projectId: number; notes: string }>>({});
+  projectOptions = input<SelectOption<number>[]>([]);
+  currentUserLabel = input('');
+  locationState = input<LocationState>('idle');
+  locationText = input('');
 
   onClose = output<void>();
-  onSubmit = output<void>();
+  onSubmit = output<Partial<{ projectId: number; notes: string }>>();
   formChange = output<Record<string, unknown>>();
 
   updateField(field: string, value: unknown): void {
     this.formChange.emit({ [field]: value });
+  }
+
+  onProjectChange(value: unknown): void {
+    this.formChange.emit({ projectId: Number(value) });
   }
 }

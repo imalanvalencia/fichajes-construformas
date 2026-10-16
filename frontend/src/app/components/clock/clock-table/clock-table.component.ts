@@ -56,7 +56,7 @@ export class ClockTableComponent {
 
   onDelete = output<number>();
 
-  formatTimestamp(timestamp: string): string {
+  formatTimestamp(timestamp?: string): string {
     if (!timestamp) return '—';
     const date = new Date(timestamp);
     return date.toLocaleString('es-ES', {
