@@ -241,3 +241,8 @@ of the rename, and the unrelated PDF files remain untouched. PRs: #3 tracker (dr
 code it verifies, and the only splits would ship an untested intermediate commit or
 separate tests from their unit, so `size:exception` is recommended and pending maintainer
 acceptance.
+
+L15 (2026-10-16) — User's decision verbatim: "SI ALO ACEPTO" — the maintainer accepts the
+`size:exception` for PR #6 (T4, 442/400 authored changed lines, +42), so that slice ships
+unsplit with its 179-line spec kept alongside the code it verifies. Exception recorded;
+chain fully delivered.
