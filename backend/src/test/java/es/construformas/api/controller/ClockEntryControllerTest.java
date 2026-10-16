@@ -23,6 +23,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -64,26 +65,71 @@ class ClockEntryControllerTest {
     }
 
     @Test
-    @DisplayName("POST /api/clock-entries should register and return entry")
-    void registerShouldReturn201() throws Exception {
+    @DisplayName("POST /api/clock-entries should accept the flat contract and echo it back")
+    void registerShouldReturn201WithFlatContract() throws Exception {
         when(clockEntryService.register(any(ClockEntry.class))).thenReturn(sampleEntry());
 
         mockMvc.perform(post("/api/clock-entries")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(sampleEntry())))
+                        .content("""
+                                {
+                                  "userId": 1,
+                                  "projectId": 1,
+                                  "clockType": "ENTRY",
+                                  "userLatitude": 40.4168,
+                                  "userLongitude": -3.7038,
+                                  "timestamp": "2026-01-15T08:00:00",
+                                  "notes": "Morning shift"
+                                }
+                                """))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(1))
-                .andExpect(jsonPath("$.clockType").value("ENTRY"));
+                .andExpect(jsonPath("$.userId").value(1))
+                .andExpect(jsonPath("$.userName").value("Worker"))
+                .andExpect(jsonPath("$.projectId").value(1))
+                .andExpect(jsonPath("$.projectName").value("Site A"))
+                .andExpect(jsonPath("$.clockType").value("ENTRY"))
+                .andExpect(jsonPath("$.userLatitude").value(40.4168))
+                .andExpect(jsonPath("$.userLongitude").value(-3.7038))
+                .andExpect(jsonPath("$.user").doesNotExist())
+                .andExpect(jsonPath("$.project").doesNotExist());
     }
 
     @Test
-    @DisplayName("GET /api/clock-entries/{id} should return entry")
-    void getByIdShouldReturnEntry() throws Exception {
+    @DisplayName("POST /api/clock-entries without userId should clock in the authenticated user")
+    void registerWithoutUserIdShouldReturn201() throws Exception {
+        when(clockEntryService.register(any(ClockEntry.class))).thenReturn(sampleEntry());
+
+        mockMvc.perform(post("/api/clock-entries")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "projectId": 1,
+                                  "clockType": "EXIT",
+                                  "userLatitude": 40.4168,
+                                  "userLongitude": -3.7038
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(1));
+
+        verify(clockEntryService).register(argThat(entry -> entry.getUser() == null));
+    }
+
+    @Test
+    @DisplayName("GET /api/clock-entries/{id} should return the flat contract")
+    void getByIdShouldReturnFlatContract() throws Exception {
         when(clockEntryService.findById(1L)).thenReturn(sampleEntry());
 
         mockMvc.perform(get("/api/clock-entries/1"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.clockType").value("ENTRY"));
+                .andExpect(jsonPath("$.clockType").value("ENTRY"))
+                .andExpect(jsonPath("$.userId").value(1))
+                .andExpect(jsonPath("$.userName").value("Worker"))
+                .andExpect(jsonPath("$.projectId").value(1))
+                .andExpect(jsonPath("$.projectName").value("Site A"))
+                .andExpect(jsonPath("$.user").doesNotExist())
+                .andExpect(jsonPath("$.project").doesNotExist());
     }
 
     @Test
@@ -100,7 +146,10 @@ class ClockEntryControllerTest {
                         .param("end", "2026-01-31T23:59:59"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$[0].clockType").value("ENTRY"));
+                .andExpect(jsonPath("$[0].clockType").value("ENTRY"))
+                .andExpect(jsonPath("$[0].userName").value("Worker"))
+                .andExpect(jsonPath("$[0].projectName").value("Site A"))
+                .andExpect(jsonPath("$[0].user").doesNotExist());
     }
 
     @Test
