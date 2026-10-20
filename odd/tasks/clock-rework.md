@@ -114,8 +114,8 @@ corrections component spec.
 | T3 | S7 | inline | done | `ClockCorrectionControllerTest` 5/5, `ClockCorrectionServiceTest` 5/5; full backend suite 271/0 |
 | T4 | S4, S5 | inline | done | `clock.component.spec.ts` 9/9; frontend suite 174 passed, 2 pre-existing `budget-editor` failures verified at baseline; commit c3461dd |
 | T5 | S7 | inline | done | `clock-corrections.component.spec.ts` 7/7; frontend suite 182 passed, 2 pre-existing `budget-editor` failures |
-| T6 | S6 | inline | pending | — |
-| T7 | S1-S7 | inline | pending | final verification |
+| T6 | S6 | inline | done | `app.routes.spec.ts` 1/1, `sidebar.component.spec.ts` 3/3 (RED observed 4F); frontend suite 186 passed, 2 pre-existing `budget-editor` failures |
+| T7 | S1-S7 | inline | done | final verification: backend `Tests run: 271, Failures: 0`; frontend 186 passed, 2 pre-existing `budget-editor` failures |
 
 Route evidence: delegation to `gentle-ai-explore`/`gentle-ai-worker` failed at launch
 with a provider error ("OpenCode's free tier can only be used from within OpenCode"), so
@@ -206,3 +206,43 @@ triggers the ADMIN-only pending endpoint. `clock-corrections.component.spec.ts` 
 Full frontend suite: 182 passed, 2 pre-existing `budget-editor` failures unchanged. Design
 note: `reject` sends an empty body because the backend endpoint takes no observation
 parameter — recording one would be a new requirement, not part of S7.
+
+L12 (2026-10-14) — T6 (S6 route + sidebar) implemented under strict TDD. RED first: 4
+assertions failed (clock route commented out; no "Fichajes" nav item for any role). GREEN
+after: `app.routes.ts` line 38 uncommented (`{ path: 'clock', component: ClockComponent }`
+inside the authenticated shell), and the sidebar entry re-enabled as
+`{ icon: 'schedule', label: 'Fichajes', route: '/clock', roles: ['ADMIN', 'OPERATOR'] }` —
+a real clock icon instead of the `home` placeholder. NavItem gained an optional `roles`
+filter applied through `AuthService.hasRole`, so an ADMIN or OPERATOR sees the entry while
+roles outside the API's `hasAnyRole('ADMIN','OPERATOR')` scope do not; the existing
+`adminOnly` filter is untouched. New specs: `app.routes.spec.ts` 1/1,
+`sidebar.component.spec.ts` 3/3. Full frontend suite: 186 passed, the same 2 pre-existing
+`budget-editor` failures. Observation (not a change): `visibleNavItems` still gates the
+`adminOnly` "Usuarios" entry with `roles.includes('ROLE_ADMIN')` while login responses
+return unprefixed `ADMIN` — pre-existing, outside S6's scope, left alone.
+
+L13 (2026-10-14) — T7 (final verification): backend `./mvnw -o test` → `Tests run: 271,
+Failures: 0, Errors: 0, Skipped: 0`, BUILD SUCCESS; frontend `ng test` → 186 passed with
+only the 2 documented pre-existing `budget-editor` failures. All specs S1-S7 are covered by
+their checks. RDD assess on the work-unit commits: `3f26020`→`bdef49d` and
+`bdef49d`→`70ee0d5` both returned `medium / under_budget` — no review due, boundaries
+advanced. Slice #2 (`02b6b4d`) was `high` with consent declined (L9). Remaining: push +
+feature-branch-chain PRs, which are the user's decision.
+
+L14 (2026-10-16) — Delivery: the four branches were pushed and the chain was structured as
+six PRs (draft tracker + five children) to honor the chained-pr 400-line review budget.
+Branch `feat/clock-rework-03-frontend-rework` was split by task boundary into
+`...-03-clock-screen` (T4), `...-04-corrections-ui` (T5) and `...-05-route-sidebar`
+(T6+T7) without rewriting any commit (same SHAs); the old remote name was deleted as part
+of the rename, and the unrelated PDF files remain untouched. PRs: #3 tracker (draft,
+`feat/clock-rework` → `dev`, 151), #4 (T1+T2, 258 → #3), #5 (T3, 274 → #4), #6 (T4, 442 →
+#5), #7 (T5, 327 → #6), #8 (T6+T7, 114 + this entry → #7). PR #6 (T4) exceeds the
+400-line budget by 42 lines: T4 is a single TDD unit whose 179-line spec ships with the
+code it verifies, and the only splits would ship an untested intermediate commit or
+separate tests from their unit, so `size:exception` is recommended and pending maintainer
+acceptance.
+
+L15 (2026-10-16) — User's decision verbatim: "SI ALO ACEPTO" — the maintainer accepts the
+`size:exception` for PR #6 (T4, 442/400 authored changed lines, +42), so that slice ships
+unsplit with its 179-line spec kept alongside the code it verifies. Exception recorded;
+chain fully delivered.

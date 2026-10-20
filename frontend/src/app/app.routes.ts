@@ -35,7 +35,7 @@ export const routes: Routes = [
       { path: 'ui', component: DesignSystem },
       // { path: 'suppliers', component: SuppliersComponent },
       // { path: 'payments', component: PaymentsComponent },
-      // { path: 'clock', component: ClockComponent },
+      { path: 'clock', component: ClockComponent },
       { path: 'users', component: UsersComponent },
     ],
   },
