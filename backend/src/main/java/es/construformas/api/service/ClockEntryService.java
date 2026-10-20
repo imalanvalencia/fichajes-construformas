@@ -9,6 +9,7 @@ import es.construformas.api.repository.UserRepository;
 import es.construformas.api.security.SecurityUtils;
 import es.construformas.api.util.HaversineUtil;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,8 +26,9 @@ public class ClockEntryService {
     private final ProjectRepository projectRepository;
 
     public ClockEntry register(ClockEntry entry) {
-        User user = userRepository.findById(entry.getUser().getId())
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        User caller = SecurityUtils.getCurrentUser(userRepository);
+        User user = resolveTargetUser(caller,
+                entry.getUser() != null ? entry.getUser().getId() : null);
         Project project = projectRepository.findById(entry.getProject().getId())
                 .orElseThrow(() -> new IllegalArgumentException("Project not found"));
 
@@ -42,6 +44,26 @@ public class ClockEntryService {
         if (entry.getTimestamp() == null) entry.setTimestamp(LocalDateTime.now());
 
         return clockEntryRepository.save(entry);
+    }
+
+    /**
+     * The authenticated caller decides whose fichaje this is. Omitting the user id
+     * clocks in the caller; naming another id is allowed for ADMIN only, so an
+     * OPERATOR can never record time for someone else.
+     */
+    private User resolveTargetUser(User caller, Long requestedUserId) {
+        if (requestedUserId == null || requestedUserId.equals(caller.getId())) {
+            return caller;
+        }
+        if (!isAdmin(caller)) {
+            throw new AccessDeniedException("Operators may only clock in for themselves");
+        }
+        return userRepository.findById(requestedUserId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+    }
+
+    private boolean isAdmin(User user) {
+        return user.getRoles().stream().anyMatch(r -> "ADMIN".equals(r.getName()));
     }
 
     public ClockEntry findById(Long id) {

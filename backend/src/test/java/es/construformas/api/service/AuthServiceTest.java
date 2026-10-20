@@ -64,6 +64,7 @@ class AuthServiceTest {
         assertThat(response.getEmail()).isEqualTo("test@test.com");
         assertThat(response.getRoles()).containsExactly("ADMIN");
         assertThat(response.getName()).isEqualTo("Test");
+        assertThat(response.getId()).isEqualTo(1L);
         verify(refreshTokenRepository).save(any(RefreshToken.class));
     }
 
