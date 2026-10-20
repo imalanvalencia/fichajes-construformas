@@ -24,8 +24,12 @@ public class ClockCorrectionService {
     private final ProjectRepository projectRepository;
 
     public ClockCorrection requestCorrection(ClockCorrection correction) {
+        User caller = SecurityUtils.getCurrentUser(userRepository);
+        User user = SecurityUtils.resolveTargetUser(userRepository, caller,
+                correction.getUser() != null ? correction.getUser().getId() : null);
+
         boolean exists = clockCorrectionRepository.existsByUserIdAndCorrectionDateAndOriginalClockTypeAndStatus(
-                correction.getUser().getId(),
+                user.getId(),
                 correction.getCorrectionDate(),
                 correction.getOriginalClockType(),
                 CorrectionStatus.PENDING
@@ -34,8 +38,6 @@ public class ClockCorrectionService {
             throw new IllegalArgumentException("A pending correction already exists for this user, date, and type");
         }
 
-        User user = userRepository.findById(correction.getUser().getId())
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
         Project project = projectRepository.findById(correction.getProject().getId())
                 .orElseThrow(() -> new IllegalArgumentException("Project not found"));
 
@@ -73,10 +75,9 @@ public class ClockCorrectionService {
         return clockCorrectionRepository.findByUserIdAndStatus(userId, CorrectionStatus.PENDING);
     }
 
-    public ClockCorrection approve(Long correctionId, Long reviewerId) {
+    public ClockCorrection approve(Long correctionId) {
         ClockCorrection correction = findById(correctionId);
-        User reviewer = userRepository.findById(reviewerId)
-                .orElseThrow(() -> new IllegalArgumentException("Reviewer not found"));
+        User reviewer = SecurityUtils.getCurrentUser(userRepository);
 
         correction.setStatus(CorrectionStatus.APPROVED);
         correction.setReviewedBy(reviewer);
@@ -96,10 +97,9 @@ public class ClockCorrectionService {
         return clockCorrectionRepository.save(correction);
     }
 
-    public ClockCorrection reject(Long correctionId, Long reviewerId) {
+    public ClockCorrection reject(Long correctionId) {
         ClockCorrection correction = findById(correctionId);
-        User reviewer = userRepository.findById(reviewerId)
-                .orElseThrow(() -> new IllegalArgumentException("Reviewer not found"));
+        User reviewer = SecurityUtils.getCurrentUser(userRepository);
 
         correction.setStatus(CorrectionStatus.REJECTED);
         correction.setReviewedBy(reviewer);

@@ -62,17 +62,32 @@ class ClockCorrectionControllerTest {
     }
 
     @Test
-    @DisplayName("POST /api/clock-corrections should create correction request")
-    void requestCorrectionShouldReturn201() throws Exception {
+    @DisplayName("POST /api/clock-corrections should accept the flat contract")
+    void requestCorrectionShouldReturn201WithFlatContract() throws Exception {
         when(clockCorrectionService.requestCorrection(any(ClockCorrection.class)))
                 .thenReturn(sampleCorrection());
 
         mockMvc.perform(post("/api/clock-corrections")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(sampleCorrection())))
+                        .content("""
+                                {
+                                  "userId": 1,
+                                  "projectId": 1,
+                                  "correctionDate": "2026-01-15",
+                                  "originalClockType": "ENTRY",
+                                  "correctedTime": "2026-01-15T07:45:00",
+                                  "reason": "Forgot to clock in"
+                                }
+                                """))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(1))
-                .andExpect(jsonPath("$.status").value("PENDING"));
+                .andExpect(jsonPath("$.userId").value(1))
+                .andExpect(jsonPath("$.userName").value("Worker"))
+                .andExpect(jsonPath("$.projectId").value(1))
+                .andExpect(jsonPath("$.projectName").value("Site A"))
+                .andExpect(jsonPath("$.status").value("PENDING"))
+                .andExpect(jsonPath("$.user").doesNotExist())
+                .andExpect(jsonPath("$.project").doesNotExist());
     }
 
     @Test
@@ -83,7 +98,10 @@ class ClockCorrectionControllerTest {
         mockMvc.perform(get("/api/clock-corrections/pending"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$[0].status").value("PENDING"));
+                .andExpect(jsonPath("$[0].status").value("PENDING"))
+                .andExpect(jsonPath("$[0].userName").value("Worker"))
+                .andExpect(jsonPath("$[0].projectName").value("Site A"))
+                .andExpect(jsonPath("$[0].user").doesNotExist());
     }
 
     @Test
@@ -98,27 +116,25 @@ class ClockCorrectionControllerTest {
     }
 
     @Test
-    @DisplayName("PUT /api/clock-corrections/{id}/approve should approve correction")
+    @DisplayName("PUT /api/clock-corrections/{id}/approve should approve as the authenticated reviewer")
     void approveShouldReturnApproved() throws Exception {
         ClockCorrection approved = sampleCorrection();
         approved.setStatus(CorrectionStatus.APPROVED);
-        when(clockCorrectionService.approve(1L, 2L)).thenReturn(approved);
+        when(clockCorrectionService.approve(1L)).thenReturn(approved);
 
-        mockMvc.perform(put("/api/clock-corrections/1/approve")
-                        .param("reviewerId", "2"))
+        mockMvc.perform(put("/api/clock-corrections/1/approve"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("APPROVED"));
     }
 
     @Test
-    @DisplayName("PUT /api/clock-corrections/{id}/reject should reject correction")
+    @DisplayName("PUT /api/clock-corrections/{id}/reject should reject as the authenticated reviewer")
     void rejectShouldReturnRejected() throws Exception {
         ClockCorrection rejected = sampleCorrection();
         rejected.setStatus(CorrectionStatus.REJECTED);
-        when(clockCorrectionService.reject(1L, 2L)).thenReturn(rejected);
+        when(clockCorrectionService.reject(1L)).thenReturn(rejected);
 
-        mockMvc.perform(put("/api/clock-corrections/1/reject")
-                        .param("reviewerId", "2"))
+        mockMvc.perform(put("/api/clock-corrections/1/reject"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("REJECTED"));
     }

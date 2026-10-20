@@ -5,6 +5,7 @@ import es.construformas.api.repository.ClockCorrectionRepository;
 import es.construformas.api.repository.ClockEntryRepository;
 import es.construformas.api.repository.ProjectRepository;
 import es.construformas.api.repository.UserRepository;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -12,6 +13,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -40,6 +44,21 @@ class ClockCorrectionServiceTest {
     private User user;
     private Project project;
 
+    @AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
+    }
+
+    /** Puts a user in the security context, mirroring what JwtAuthFilter does at runtime. */
+    private User authenticate(User authenticated, String roleName) {
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(
+                        authenticated.getEmail(), null,
+                        List.of(new SimpleGrantedAuthority("ROLE_" + roleName))));
+        when(userRepository.findByEmail(authenticated.getEmail())).thenReturn(Optional.of(authenticated));
+        return authenticated;
+    }
+
     @BeforeEach
     void setUp() {
         user = User.builder().id(1L).name("Test").build();
@@ -49,6 +68,7 @@ class ClockCorrectionServiceTest {
     @Test
     @DisplayName("requestCorrection: duplicate pending should throw")
     void requestCorrection_duplicatePending_shouldThrow() {
+        authenticate(User.builder().id(1L).email("worker@test.com").build(), "OPERATOR");
         ClockCorrection correction = ClockCorrection.builder()
                 .user(user)
                 .project(project)
@@ -70,6 +90,7 @@ class ClockCorrectionServiceTest {
     @Test
     @DisplayName("requestCorrection: new correction should save")
     void requestCorrection_new_shouldSave() {
+        authenticate(User.builder().id(1L).email("worker@test.com").build(), "OPERATOR");
         ClockCorrection correction = ClockCorrection.builder()
                 .user(user)
                 .project(project)
@@ -83,7 +104,6 @@ class ClockCorrectionServiceTest {
                 .existsByUserIdAndCorrectionDateAndOriginalClockTypeAndStatus(
                         any(), any(), any(), any()))
                 .thenReturn(false);
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(projectRepository.findById(1L)).thenReturn(Optional.of(project));
         when(correctionRepository.save(any())).thenReturn(correction);
 
@@ -93,8 +113,27 @@ class ClockCorrectionServiceTest {
     }
 
     @Test
+    @DisplayName("requestCorrection: an OPERATOR cannot request a correction for another user")
+    void requestCorrection_forAnotherUser_shouldBeDenied() {
+        authenticate(User.builder().id(1L).email("worker@test.com").build(), "OPERATOR");
+        ClockCorrection correction = ClockCorrection.builder()
+                .user(User.builder().id(2L).build())
+                .project(project)
+                .correctionDate(LocalDate.now())
+                .originalClockType(ClockType.ENTRY)
+                .correctedTime(LocalDateTime.now())
+                .reason("Test")
+                .build();
+
+        assertThrows(org.springframework.security.access.AccessDeniedException.class,
+                () -> correctionService.requestCorrection(correction));
+    }
+
+    @Test
     @DisplayName("approve: pending correction should create new entry")
     void approve_pendingCorrection_shouldCreateEntry() {
+        User reviewer = authenticate(
+                User.builder().id(1L).email("admin@test.com").build(), "ADMIN");
         ClockCorrection correction = ClockCorrection.builder()
                 .id(1L)
                 .user(user)
@@ -107,18 +146,20 @@ class ClockCorrectionServiceTest {
 
         when(correctionRepository.findById(1L))
                 .thenReturn(Optional.of(correction));
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(correctionRepository.save(any())).thenReturn(correction);
         when(clockEntryRepository.save(any())).thenReturn(null);
 
-        ClockCorrection result = correctionService.approve(1L, 1L);
+        ClockCorrection result = correctionService.approve(1L);
 
         assertEquals(CorrectionStatus.APPROVED, result.getStatus());
+        assertEquals(reviewer, result.getReviewedBy());
     }
 
     @Test
     @DisplayName("reject: pending correction should update status")
     void reject_pendingCorrection_shouldUpdateStatus() {
+        User reviewer = authenticate(
+                User.builder().id(1L).email("admin@test.com").build(), "ADMIN");
         ClockCorrection correction = ClockCorrection.builder()
                 .id(1L)
                 .user(user)
@@ -128,11 +169,11 @@ class ClockCorrectionServiceTest {
 
         when(correctionRepository.findById(1L))
                 .thenReturn(Optional.of(correction));
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(correctionRepository.save(any())).thenReturn(correction);
 
-        ClockCorrection result = correctionService.reject(1L, 1L);
+        ClockCorrection result = correctionService.reject(1L);
 
         assertEquals(CorrectionStatus.REJECTED, result.getStatus());
+        assertEquals(reviewer, result.getReviewedBy());
     }
 }

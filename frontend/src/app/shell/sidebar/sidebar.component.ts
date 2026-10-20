@@ -9,6 +9,8 @@ interface NavItem {
   label: string;
   route: string;
   adminOnly?: boolean;
+  /** When present, the item is visible only to these roles (API scope). */
+  roles?: string[];
 }
 
 @Component({
@@ -56,14 +58,17 @@ export class SidebarComponent {
     { icon: 'receipt_long', label: 'Facturas', route: '/invoices' },
     // { icon: 'home', label: 'Proveedores', route: '/suppliers' },
     // { icon: 'home', label: 'Pagos', route: '/payments' },
-    // { icon: 'home', label: 'Fichajes', route: '/clock' },
+    { icon: 'schedule', label: 'Fichajes', route: '/clock', roles: ['ADMIN', 'OPERATOR'] },
     { icon: 'user', label: 'Usuarios', route: '/users', adminOnly: true },
   ];
 
   get visibleNavItems(): NavItem[] {
     const user = this.authService.getUser();
     const isAdmin = user?.roles?.includes('ROLE_ADMIN') ?? false;
-    return this.allNavItems.filter((item) => !item.adminOnly || isAdmin);
+    return this.allNavItems.filter((item) => {
+      if (item.roles) return item.roles.some((role) => this.authService.hasRole(role));
+      return !item.adminOnly || isAdmin;
+    });
   }
 
   onLogout(): void {

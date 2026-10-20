@@ -25,8 +25,9 @@ public class ClockEntryService {
     private final ProjectRepository projectRepository;
 
     public ClockEntry register(ClockEntry entry) {
-        User user = userRepository.findById(entry.getUser().getId())
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        User caller = SecurityUtils.getCurrentUser(userRepository);
+        User user = SecurityUtils.resolveTargetUser(userRepository, caller,
+                entry.getUser() != null ? entry.getUser().getId() : null);
         Project project = projectRepository.findById(entry.getProject().getId())
                 .orElseThrow(() -> new IllegalArgumentException("Project not found"));
 

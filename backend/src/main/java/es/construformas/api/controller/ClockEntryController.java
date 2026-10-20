@@ -1,5 +1,7 @@
 package es.construformas.api.controller;
 
+import es.construformas.api.dto.ClockEntryDTO;
+import es.construformas.api.dto.ClockEntryMapper;
 import es.construformas.api.model.ClockEntry;
 import es.construformas.api.service.ClockEntryService;
 import jakarta.validation.Valid;
@@ -21,23 +23,27 @@ public class ClockEntryController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN','OPERATOR')")
-    public ResponseEntity<ClockEntry> register(@Valid @RequestBody ClockEntry entry) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(clockEntryService.register(entry));
+    public ResponseEntity<ClockEntryDTO> register(@Valid @RequestBody ClockEntryDTO dto) {
+        ClockEntry entry = clockEntryService.register(ClockEntryMapper.toEntity(dto));
+        return ResponseEntity.status(HttpStatus.CREATED).body(ClockEntryMapper.toDto(entry));
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','OPERATOR')")
-    public ResponseEntity<ClockEntry> getById(@PathVariable Long id) {
-        return ResponseEntity.ok(clockEntryService.findById(id));
+    public ResponseEntity<ClockEntryDTO> getById(@PathVariable Long id) {
+        return ResponseEntity.ok(ClockEntryMapper.toDto(clockEntryService.findById(id)));
     }
 
     @GetMapping("/user/{userId}")
     @PreAuthorize("hasAnyRole('ADMIN','OPERATOR')")
-    public ResponseEntity<List<ClockEntry>> getByUser(
+    public ResponseEntity<List<ClockEntryDTO>> getByUser(
             @PathVariable Long userId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime end) {
-        return ResponseEntity.ok(clockEntryService.findByUserAndDateRange(userId, start, end));
+        return ResponseEntity.ok(
+                clockEntryService.findByUserAndDateRange(userId, start, end).stream()
+                        .map(ClockEntryMapper::toDto)
+                        .toList());
     }
 
     @DeleteMapping("/{id}")

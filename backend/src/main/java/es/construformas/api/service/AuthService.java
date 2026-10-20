@@ -41,6 +41,7 @@ public class AuthService {
         String refreshToken = createRefreshToken(user);
 
         return AuthResponse.builder()
+                .id(user.getId())
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
                 .email(user.getEmail())
@@ -68,6 +69,7 @@ public class AuthService {
         String newRefreshToken = createRefreshToken(user);
 
         return AuthResponse.builder()
+                .id(user.getId())
                 .accessToken(newAccessToken)
                 .refreshToken(newRefreshToken)
                 .email(user.getEmail())
