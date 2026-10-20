@@ -1,5 +1,7 @@
 package es.construformas.api.controller;
 
+import es.construformas.api.dto.ClockCorrectionDTO;
+import es.construformas.api.dto.ClockCorrectionMapper;
 import es.construformas.api.model.ClockCorrection;
 import es.construformas.api.service.ClockCorrectionService;
 import jakarta.validation.Valid;
@@ -19,31 +21,38 @@ public class ClockCorrectionController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN','OPERATOR')")
-    public ResponseEntity<ClockCorrection> requestCorrection(@Valid @RequestBody ClockCorrection correction) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(clockCorrectionService.requestCorrection(correction));
+    public ResponseEntity<ClockCorrectionDTO> requestCorrection(
+            @Valid @RequestBody ClockCorrectionDTO dto) {
+        ClockCorrection correction = clockCorrectionService.requestCorrection(
+                ClockCorrectionMapper.toEntity(dto));
+        return ResponseEntity.status(HttpStatus.CREATED).body(ClockCorrectionMapper.toDto(correction));
     }
 
     @GetMapping("/pending")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<List<ClockCorrection>> getPending() {
-        return ResponseEntity.ok(clockCorrectionService.findPending());
+    public ResponseEntity<List<ClockCorrectionDTO>> getPending() {
+        return ResponseEntity.ok(clockCorrectionService.findPending().stream()
+                .map(ClockCorrectionMapper::toDto)
+                .toList());
     }
 
     @GetMapping("/user/{userId}")
     @PreAuthorize("hasAnyRole('ADMIN','OPERATOR')")
-    public ResponseEntity<List<ClockCorrection>> getByUser(@PathVariable Long userId) {
-        return ResponseEntity.ok(clockCorrectionService.findByUser(userId));
+    public ResponseEntity<List<ClockCorrectionDTO>> getByUser(@PathVariable Long userId) {
+        return ResponseEntity.ok(clockCorrectionService.findByUser(userId).stream()
+                .map(ClockCorrectionMapper::toDto)
+                .toList());
     }
 
     @PutMapping("/{id}/approve")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ClockCorrection> approve(@PathVariable Long id, @RequestParam Long reviewerId) {
-        return ResponseEntity.ok(clockCorrectionService.approve(id, reviewerId));
+    public ResponseEntity<ClockCorrectionDTO> approve(@PathVariable Long id) {
+        return ResponseEntity.ok(ClockCorrectionMapper.toDto(clockCorrectionService.approve(id)));
     }
 
     @PutMapping("/{id}/reject")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ClockCorrection> reject(@PathVariable Long id, @RequestParam Long reviewerId) {
-        return ResponseEntity.ok(clockCorrectionService.reject(id, reviewerId));
+    public ResponseEntity<ClockCorrectionDTO> reject(@PathVariable Long id) {
+        return ResponseEntity.ok(ClockCorrectionMapper.toDto(clockCorrectionService.reject(id)));
     }
 }
