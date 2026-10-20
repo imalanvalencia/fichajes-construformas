@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { of, throwError } from 'rxjs';
 import { ClockComponent } from './clock.component';
 import { ClockEntryService } from './services/clock-entry.service';
+import { ClockCorrectionService } from './services/clock-correction.service';
 import { GeolocationService } from './services/geolocation.service';
 import { ProjectService } from '../projects/services/project.service';
 import { AuthService } from '../../auth/services/auth.service';
@@ -14,6 +15,7 @@ describe('ClockComponent', () => {
   let fixture: ComponentFixture<ClockComponent>;
 
   let clockService: { getByUser: ReturnType<typeof vi.fn>; register: ReturnType<typeof vi.fn>; delete: ReturnType<typeof vi.fn> };
+  let correctionService: { getPending: ReturnType<typeof vi.fn>; approve: ReturnType<typeof vi.fn>; reject: ReturnType<typeof vi.fn> };
   let geolocation: { getPosition: ReturnType<typeof vi.fn> };
   let projectService: { getAll: ReturnType<typeof vi.fn> };
   let notifications: { success: ReturnType<typeof vi.fn>; error: ReturnType<typeof vi.fn> };
@@ -40,6 +42,11 @@ describe('ClockComponent', () => {
       register: vi.fn().mockReturnValue(of({ id: 1 })),
       delete: vi.fn().mockReturnValue(of(undefined)),
     };
+    correctionService = {
+      getPending: vi.fn().mockReturnValue(of([])),
+      approve: vi.fn().mockReturnValue(of({})),
+      reject: vi.fn().mockReturnValue(of({})),
+    };
     geolocation = { getPosition: positionResult() };
     projectService = { getAll: vi.fn().mockReturnValue(of([project])) };
     notifications = { success: vi.fn(), error: vi.fn() };
@@ -50,12 +57,16 @@ describe('ClockComponent', () => {
       imports: [ClockComponent],
       providers: [
         { provide: ClockEntryService, useValue: clockService },
+        { provide: ClockCorrectionService, useValue: correctionService },
         { provide: GeolocationService, useValue: geolocation },
         { provide: ProjectService, useValue: projectService },
         { provide: NotificationService, useValue: notifications },
         {
           provide: AuthService,
-          useValue: { getUser: vi.fn().mockReturnValue({ id: 42, name: 'Ana Operaria', email: 'ana@test.com', roles: ['ROLE_OPERATOR'] }) },
+          useValue: {
+            getUser: vi.fn().mockReturnValue({ id: 42, name: 'Ana Operaria', email: 'ana@test.com', roles: ['ROLE_OPERATOR'] }),
+            hasRole: vi.fn().mockReturnValue(false),
+          },
         },
       ],
     }).compileComponents();
@@ -149,6 +160,18 @@ describe('ClockComponent', () => {
       component.submitEntry({ projectId: 7, notes: '' });
 
       expect(clockService.register).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('corrections gating (S7)', () => {
+    it('shows an OPERATOR no approve/reject controls and never hits the pending endpoint', async () => {
+      setup(() => vi.fn().mockReturnValue(of(position)));
+      await compile();
+
+      const text: string = fixture.nativeElement.textContent;
+      expect(text).not.toContain('Aprobar');
+      expect(text).not.toContain('Rechazar');
+      expect(correctionService.getPending).not.toHaveBeenCalled();
     });
   });
 
