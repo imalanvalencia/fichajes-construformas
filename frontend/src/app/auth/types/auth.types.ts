@@ -5,6 +5,8 @@ export interface LoginRequest {
 }
 
 export interface AuthResponse {
+  /** User id; absent in tokens issued before the clock rework. */
+  id?: number;
   accessToken: string;
   refreshToken: string;
   email: string;
